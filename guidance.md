@@ -181,6 +181,20 @@ ogni pezzo e perché serve.
     cartelle `__pycache__` nel progetto didattico. Se un comando come
     `compileall` crea `__pycache__`, rimuovere solo quei file generati prima di
     considerare chiusa la modifica. La cartella `LearnGPT` deve restare pulita.
+35. Quando implementiamo l'output CLI del training finale, l'header iniziale
+    deve usare il nome aggiornato del progetto:
+
+    ```text
+    LearnGPT training
+    ```
+
+    Non usare più varianti del vecchio nome del progetto. L'output deve
+    includere un header iniziale con device, precisione, dataset, modello e
+    configurazione di training; righe periodiche con step, percentuale, loss,
+    learning rate, token al secondo, tempo trascorso ed ETA; righe di evaluation
+    con training loss, validation loss, perplexity, best validation loss e stato
+    del checkpoint. Includere `grad_norm` solo se viene calcolato catturando il
+    valore restituito da `torch.nn.utils.clip_grad_norm_`.
 
 ## Metodo per ogni step
 
