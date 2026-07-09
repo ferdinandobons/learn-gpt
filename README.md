@@ -124,24 +124,18 @@ Validate that the local data exists:
 python -B tools/validate_learngpt.py --require-data
 ```
 
-Choose one training backend.
+Choose one training backend. Expand only the section that matches your machine.
 
-Apple Silicon MPS check:
+<details>
+<summary>Apple Silicon MPS training</summary>
+
+Check that PyTorch can see MPS:
 
 ```bash
 python -c "import torch; print(torch.backends.mps.is_built(), torch.backends.mps.is_available())"
 ```
 
-NVIDIA CUDA check:
-
-```bash
-python -c "import torch; print(torch.cuda.is_available()); print(torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'no cuda device')"
-```
-
-CPU always works when PyTorch is installed, but it is much slower for real
-training.
-
-Train on Apple Silicon MPS:
+Train:
 
 ```bash
 python -m final_project.training \
@@ -159,7 +153,43 @@ python -m final_project.training \
   --eval-batches 10
 ```
 
-Train on NVIDIA CUDA:
+Resume:
+
+```bash
+python -m final_project.training \
+  --device mps \
+  --data-dir data/processed/fineweb_edu \
+  --checkpoint-path checkpoints/learngpt-mps.pt \
+  --resume-checkpoint-path checkpoints/learngpt-mps.pt
+```
+
+Generate:
+
+```bash
+python -m final_project.generate \
+  --device mps \
+  --checkpoint-path checkpoints/learngpt-mps.pt \
+  --prompt "Once upon a time" \
+  --max-new-tokens 120 \
+  --temperature 0.9 \
+  --top-k 50
+```
+
+If MPS is not available in the current PyTorch runtime, fix the PyTorch/macOS
+environment before training with `--device mps`.
+
+</details>
+
+<details>
+<summary>NVIDIA CUDA training</summary>
+
+Check that PyTorch can see CUDA:
+
+```bash
+python -c "import torch; print(torch.cuda.is_available()); print(torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'no cuda device')"
+```
+
+Train:
 
 ```bash
 python -m final_project.training \
@@ -179,7 +209,39 @@ python -m final_project.training \
   --precision-dtype float16
 ```
 
-Train on CPU as a slow fallback:
+Resume:
+
+```bash
+python -m final_project.training \
+  --device cuda \
+  --data-dir data/processed/fineweb_edu \
+  --checkpoint-path checkpoints/learngpt-cuda.pt \
+  --resume-checkpoint-path checkpoints/learngpt-cuda.pt \
+  --mixed-precision \
+  --precision-dtype float16
+```
+
+Generate:
+
+```bash
+python -m final_project.generate \
+  --device cuda \
+  --checkpoint-path checkpoints/learngpt-cuda.pt \
+  --prompt "Once upon a time" \
+  --max-new-tokens 120 \
+  --temperature 0.9 \
+  --top-k 50
+```
+
+</details>
+
+<details>
+<summary>CPU fallback training</summary>
+
+CPU always works when PyTorch is installed, but it is much slower for real
+training. Use this mainly for smoke tests or very small runs.
+
+Train:
 
 ```bash
 python -m final_project.training \
@@ -197,35 +259,33 @@ python -m final_project.training \
   --eval-batches 5
 ```
 
-The training CLI prints the selected device, dataset size, model config,
-training config, validation loss, learning rate, gradient norm, tokens per
-second, and estimated remaining time.
-
-Resume from a checkpoint by matching the device and checkpoint path you used:
+Resume:
 
 ```bash
 python -m final_project.training \
-  --device mps \
+  --device cpu \
   --data-dir data/processed/fineweb_edu \
-  --checkpoint-path checkpoints/learngpt-mps.pt \
-  --resume-checkpoint-path checkpoints/learngpt-mps.pt
+  --checkpoint-path checkpoints/learngpt-cpu.pt \
+  --resume-checkpoint-path checkpoints/learngpt-cpu.pt
 ```
 
-Generate text from a checkpoint:
+Generate:
 
 ```bash
 python -m final_project.generate \
-  --device mps \
-  --checkpoint-path checkpoints/learngpt-mps.pt \
+  --device cpu \
+  --checkpoint-path checkpoints/learngpt-cpu.pt \
   --prompt "Once upon a time" \
   --max-new-tokens 120 \
   --temperature 0.9 \
   --top-k 50
 ```
 
-Use `--device cuda` with a CUDA checkpoint or `--device cpu` with a CPU
-checkpoint. If MPS is not available in the current PyTorch runtime, fix the
-PyTorch/macOS environment before training with `--device mps`.
+</details>
+
+The training CLI prints the selected device, dataset size, model config,
+training config, validation loss, learning rate, gradient norm, tokens per
+second, and estimated remaining time.
 
 ## Publishing Checkpoints
 
