@@ -67,6 +67,14 @@ tracked by Git.
 
 ## Quick Start: Study The Course
 
+Create and activate a local virtual environment:
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip setuptools wheel
+```
+
 Install dependencies:
 
 ```bash
@@ -94,6 +102,81 @@ python -B study/lessons/42_final_project.py
 Read the course while running the numbered lesson scripts. The Markdown files
 explain the new code introduced by each lesson, while `study/snapshots/` keeps
 the complete code state for that lesson.
+
+## PyTorch Installation By Backend
+
+For most local study runs, `python -m pip install -r final_project/requirements.txt`
+is enough. For real training, install the PyTorch build that matches your
+hardware first, then install the remaining project dependencies.
+
+Use the official [PyTorch install selector](https://pytorch.org/get-started/locally/)
+when you need the latest backend-specific command.
+
+<details>
+<summary>Apple Silicon MPS PyTorch install</summary>
+
+On macOS with Apple Silicon, install the standard macOS wheel:
+
+```bash
+python -m pip install torch
+python -m pip install datasets numpy tiktoken
+```
+
+Verify MPS from a normal Terminal session:
+
+```bash
+python -c "import torch; print(torch.backends.mps.is_built(), torch.backends.mps.is_available()); print(torch.ones(1, device='mps'))"
+```
+
+Expected result:
+
+```text
+True True
+tensor(..., device='mps:0')
+```
+
+If this prints `True False` inside a managed or sandboxed shell, rerun the same
+check from a normal Terminal. Sandboxed processes can be blocked from creating a
+Metal device even when the Mac supports MPS.
+
+</details>
+
+<details>
+<summary>NVIDIA CUDA PyTorch install</summary>
+
+Choose the CUDA wheel that matches your machine from the PyTorch install
+selector. For example, with CUDA 12.8:
+
+```bash
+python -m pip install torch --index-url https://download.pytorch.org/whl/cu128
+python -m pip install datasets numpy tiktoken
+```
+
+Verify CUDA:
+
+```bash
+python -c "import torch; print(torch.cuda.is_available()); print(torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'no cuda device')"
+```
+
+</details>
+
+<details>
+<summary>CPU-only PyTorch install</summary>
+
+Use this when you do not have a GPU backend available:
+
+```bash
+python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+python -m pip install datasets numpy tiktoken
+```
+
+Verify CPU:
+
+```bash
+python -c "import torch; print(torch.__version__); print(torch.ones(1).device)"
+```
+
+</details>
 
 ## Quick Start: Local Training
 
@@ -133,6 +216,44 @@ Check that PyTorch can see MPS:
 
 ```bash
 python -c "import torch; print(torch.backends.mps.is_built(), torch.backends.mps.is_available())"
+```
+
+Run this check from a normal Terminal session. Some managed or sandboxed shells
+can be blocked from creating a Metal device and may print `True False` even
+when MPS works normally outside the sandbox.
+
+Smoke test MPS with one tiny training step:
+
+```bash
+python -m final_project.training \
+  --device mps \
+  --data-dir data/processed/fineweb_edu \
+  --checkpoint-path /tmp/learngpt-mps-smoke.pt \
+  --context-size 8 \
+  --embedding-size 16 \
+  --num-heads 4 \
+  --num-transformer-blocks 1 \
+  --batch-size 1 \
+  --gradient-accumulation-steps 1 \
+  --training-steps 1 \
+  --eval-interval 1 \
+  --eval-batches 1 \
+  --base-learning-rate 1e-4 \
+  --min-learning-rate 1e-5 \
+  --warmup-steps 0 \
+  --decay-steps 1
+```
+
+Generate from the smoke-test checkpoint:
+
+```bash
+python -m final_project.generate \
+  --device mps \
+  --checkpoint-path /tmp/learngpt-mps-smoke.pt \
+  --prompt "Once upon" \
+  --max-new-tokens 8 \
+  --temperature 1.0 \
+  --top-k 20
 ```
 
 Train:

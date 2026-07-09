@@ -122,6 +122,29 @@ ITALIAN_CODE_MARKERS = {
     "non è",
 }
 
+IGNORED_SCAN_DIR_NAMES = {
+    ".git",
+    ".mypy_cache",
+    ".pytest_cache",
+    ".ruff_cache",
+    ".venv",
+    "venv",
+}
+
+
+def is_in_ignored_scan_dir(path: Path, project_dir: Path) -> bool:
+    relative_parts = path.relative_to(project_dir).parts
+
+    return any(part in IGNORED_SCAN_DIR_NAMES for part in relative_parts)
+
+
+def project_python_files(project_dir: Path) -> list[Path]:
+    return [
+        path
+        for path in sorted(project_dir.rglob("*.py"))
+        if not is_in_ignored_scan_dir(path, project_dir)
+    ]
+
 
 def lesson_numbers_from_study(project_dir: Path) -> list[int]:
     numbers: list[int] = []
@@ -330,7 +353,7 @@ def check_study_scripts(project_dir: Path, errors: list[str]) -> None:
 
 
 def check_english_code_identifiers(project_dir: Path, errors: list[str]) -> None:
-    for path in sorted(project_dir.glob("**/*.py")):
+    for path in project_python_files(project_dir):
         text = read_text(path)
 
         try:
@@ -344,7 +367,7 @@ def check_english_code_identifiers(project_dir: Path, errors: list[str]) -> None
 
 
 def check_python_text_is_english(project_dir: Path, errors: list[str]) -> None:
-    for path in sorted(project_dir.glob("**/*.py")):
+    for path in project_python_files(project_dir):
         if path == project_dir / "tools" / "validate_learngpt.py":
             continue
 
@@ -443,7 +466,11 @@ def check_final_project_snapshot(project_dir: Path, errors: list[str]) -> None:
 
 
 def check_no_pycache(project_dir: Path, errors: list[str]) -> None:
-    pycache_dirs = sorted(project_dir.rglob("__pycache__"))
+    pycache_dirs = [
+        path
+        for path in sorted(project_dir.rglob("__pycache__"))
+        if not is_in_ignored_scan_dir(path, project_dir)
+    ]
     for path in pycache_dirs:
         errors.append(f"__pycache__ directory present: {path}")
 
