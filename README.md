@@ -4,8 +4,10 @@
 the main pieces of a small decoder-only language model understandable before
 using them together in a final runnable project.
 
-The full course document is [corso.md](corso.md). It contains the lesson-by-
-lesson explanations, code snippets, diagrams, and the current learning path.
+The course is available in two synchronized Markdown versions:
+[course_en.md](course_en.md) and [course_it.md](course_it.md). They contain
+the lesson-by-lesson explanations, code snippets, diagrams, and the current
+learning path.
 
 ## Project Direction
 
@@ -47,18 +49,19 @@ for local dataset preparation.
 
 ```text
 LearnGPT/
-  corso.md
+  course_en.md
+  course_it.md
   README.md
 
   data/
     raw/
     processed/
 
-  studio/
-    lezioni/
-    snapshot/
+  study/
+    lessons/
+    snapshots/
 
-  progetto_finale/
+  final_project/
     config.py
     tokenizer.py
     prepare_data.py
@@ -70,16 +73,16 @@ LearnGPT/
     generate.py
     requirements.txt
 
-  strumenti/
+  tools/
     validate_learngpt.py
 ```
 
-`studio/lezioni/` contains numbered lesson scripts.
+`study/lessons/` contains numbered lesson scripts.
 
-`studio/snapshot/` contains lesson-specific code snapshots, so old lessons can
+`study/snapshots/` contains lesson-specific code snapshots, so old lessons can
 remain reproducible while the final project evolves.
 
-`progetto_finale/` contains the current final version of the project.
+`final_project/` contains the current final version of the project.
 
 ## Final Project Components
 
@@ -98,31 +101,31 @@ remain reproducible while the final project evolves.
 Install dependencies:
 
 ```bash
-python -m pip install -r progetto_finale/requirements.txt
+python -m pip install -r final_project/requirements.txt
 ```
 
 Validate the course structure:
 
 ```bash
-python -B strumenti/validate_learngpt.py
+python -B tools/validate_learngpt.py
 ```
 
 Validate the local dataset too:
 
 ```bash
-python -B strumenti/validate_learngpt.py --require-data
+python -B tools/validate_learngpt.py --require-data
 ```
 
 Run the final smoke test:
 
 ```bash
-python -B studio/lezioni/42_final_project.py
+python -B study/lessons/42_final_project.py
 ```
 
 Prepare FineWeb-Edu again:
 
 ```bash
-python -B progetto_finale/prepare_data.py \
+python -B final_project/prepare_data.py \
   --target-gb 5 \
   --output-dir data/processed/fineweb_edu \
   --overwrite
