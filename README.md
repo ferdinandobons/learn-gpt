@@ -1,67 +1,49 @@
 # LearnGPT
 
-`LearnGPT` is a didactic GPT project built step by step. The goal is to make
-the main pieces of a small decoder-only language model understandable before
-using them together in a final runnable project.
+LearnGPT is a study-first GPT project inspired by Andrej Karpathy's
+[nanoGPT](https://github.com/karpathy/nanoGPT). Its goal is to decompose the
+main ideas behind GPT-style decoder-only Transformers into small, precise
+lessons before bringing them back together in a clean final PyTorch project.
 
-The course is available in two synchronized Markdown versions:
-[course_en.md](course_en.md) and [course_it.md](course_it.md). They contain
-the lesson-by-lesson explanations, new code snippets, diagrams, and the current
-learning path. They intentionally do not duplicate full Python files: complete
-lesson code lives in `study/snapshots/`, and the clean current version lives in
-`final_project/`.
+The repository is intentionally more explicit than nanoGPT. Instead of hiding
+the model behind compact production code, each concept is introduced step by
+step: tokenization, batches, embeddings, causal self-attention, multi-head
+attention, Transformer blocks, optimization, checkpointing, and generation.
 
-## Project Direction
+The course is available in two Markdown versions:
 
-The project broadly follows the architecture direction of nanoGPT:
+- [course_en.md](course_en.md)
+- [course_it.md](course_it.md)
 
-- token and position embeddings
-- causal self-attention
-- multi-head attention
-- Transformer blocks
-- LayerNorm
-- feed-forward / MLP layers
-- residual connections
-- AdamW training
-- checkpointing
-- text generation with sampling controls
+## What This Project Contains
 
-The code intentionally stays more explicit than nanoGPT so each intermediate
-step is easier to study.
+- A lesson-by-lesson study path for building a GPT-like language model.
+- Reproducible lesson snapshots under `study/snapshots/`.
+- A clean final project under `final_project/`.
+- GPT-2 BPE tokenization with `tiktoken`.
+- FineWeb-Edu data preparation for local training.
+- Memmapped `train.bin` / `val.bin` loading for large local datasets.
+- CPU, CUDA, and Apple Silicon MPS device selection.
+- AdamW optimizer groups, gradient accumulation, learning-rate scheduling,
+  gradient clipping, checkpoints, resume support, optional mixed precision, and
+  optional `torch.compile`.
 
-## Data
-
-The project uses FineWeb-Edu as the main dataset, but the repository does not
-include datasets or processed binary files.
-
-Local processed data should live in:
-
-```text
-data/processed/fineweb_edu/
-  train.bin
-  val.bin
-  meta.json
-```
-
-The final project reads `train.bin` and `val.bin` with NumPy memmap so the
-dataset does not need to be loaded fully into RAM. See [data/README.md](data/README.md)
-for local dataset preparation.
-
-## Directory Layout
+## Project Layout
 
 ```text
 LearnGPT/
+  README.md
   course_en.md
   course_it.md
-  README.md
 
   data/
-    raw/
-    processed/
+    README.md
+    raw/                 # ignored by Git
+    processed/           # ignored by Git
 
   study/
-    lessons/
-    snapshots/
+    lessons/             # numbered lesson scripts
+    snapshots/           # lesson-specific project snapshots
 
   final_project/
     config.py
@@ -79,26 +61,11 @@ LearnGPT/
     validate_learngpt.py
 ```
 
-`study/lessons/` contains numbered lesson scripts.
+`study/` is for learning. `final_project/` is the clean current version of the
+project. Datasets, checkpoints, and generated model files are intentionally not
+tracked by Git.
 
-`study/snapshots/` contains lesson-specific code snapshots, so old lessons can
-remain reproducible while the final project evolves.
-
-`final_project/` contains the current final version of the project.
-
-## Final Project Components
-
-- `tokenizer.py`: GPT-2 BPE tokenizer wrapper using `tiktoken`
-- `config.py`: model, training, and generation configuration dataclasses
-- `prepare_data.py`: streams FineWeb-Edu and writes `train.bin` / `val.bin`
-- `batching.py`: creates training batches from memmapped token files
-- `device.py`: chooses CPU, CUDA, or Apple MPS
-- `model.py`: decoder-only Transformer language model
-- `training.py`: optimizer, scheduler, loss estimation, and training loop
-- `checkpoint.py`: checkpoint save/load helpers
-- `generate.py`: text generation from a saved checkpoint
-
-## Common Commands
+## Quick Start: Study The Course
 
 Install dependencies:
 
@@ -106,54 +73,131 @@ Install dependencies:
 python -m pip install -r final_project/requirements.txt
 ```
 
-Validate the course structure:
+Validate the repository structure:
 
 ```bash
 python -B tools/validate_learngpt.py
 ```
 
-Validate the local dataset too:
+Run a specific lesson:
 
 ```bash
-python -B tools/validate_learngpt.py --require-data
+python -B study/lessons/01_read_text.py
 ```
 
-Run the final smoke test:
+Run the final lesson smoke test:
 
 ```bash
 python -B study/lessons/42_final_project.py
 ```
 
-Run a specific study lesson:
+Read the course while running the numbered lesson scripts. The Markdown files
+explain the new code introduced by each lesson, while `study/snapshots/` keeps
+the complete code state for that lesson.
 
-```bash
-python -B study/lessons/NN_lesson_name.py
-```
+## Quick Start: Local Training
 
-Prepare FineWeb-Edu again:
+The final project trains on
+[FineWeb-Edu](https://huggingface.co/datasets/HuggingFaceFW/fineweb-edu) using
+the GPT-2 BPE tokenizer. The dataset is not committed to the repository.
+
+Prepare about 5 GB of tokenized data:
 
 ```bash
 python -B final_project/prepare_data.py \
   --target-gb 5 \
-  --output-dir data/processed/fineweb_edu \
-  --overwrite
+  --output-dir data/processed/fineweb_edu
 ```
 
-## Current Status
+This creates:
 
-The final project uses:
+```text
+data/processed/fineweb_edu/
+  train.bin
+  val.bin
+  meta.json
+```
 
-- FineWeb-Edu processed data
-- GPT-2 BPE tokenization
-- memmapped binary token files
-- CPU/CUDA/MPS device handling
-- optimizer parameter groups
-- gradient accumulation
-- resume-capable checkpoints
-- optional `torch.compile`
-- optional mixed precision
-- checkpoint-based generation
+Validate that the local data exists:
 
-The early lessons still start with a deliberately rough character-level
-tokenizer to make the idea of tokenization concrete. The course then moves
-toward the BPE/FineWeb pipeline used by the final project.
+```bash
+python -B tools/validate_learngpt.py --require-data
+```
+
+Check whether Apple Silicon MPS is available:
+
+```bash
+python -c "import torch; print(torch.backends.mps.is_built(), torch.backends.mps.is_available())"
+```
+
+Train on Apple Silicon MPS when available:
+
+```bash
+python -m final_project.training \
+  --device mps \
+  --data-dir data/processed/fineweb_edu \
+  --checkpoint-path checkpoints/learngpt.pt \
+  --context-size 128 \
+  --embedding-size 256 \
+  --num-heads 4 \
+  --num-transformer-blocks 4 \
+  --batch-size 8 \
+  --gradient-accumulation-steps 4 \
+  --training-steps 1000 \
+  --eval-interval 100 \
+  --eval-batches 10
+```
+
+The training CLI prints the selected device, dataset size, model config,
+training config, validation loss, learning rate, gradient norm, tokens per
+second, and estimated remaining time.
+
+Resume from a checkpoint:
+
+```bash
+python -m final_project.training \
+  --device mps \
+  --data-dir data/processed/fineweb_edu \
+  --checkpoint-path checkpoints/learngpt.pt \
+  --resume-checkpoint-path checkpoints/learngpt.pt
+```
+
+Generate text from a checkpoint:
+
+```bash
+python -m final_project.generate \
+  --device mps \
+  --checkpoint-path checkpoints/learngpt.pt \
+  --prompt "Once upon a time" \
+  --max-new-tokens 120 \
+  --temperature 0.9 \
+  --top-k 50
+```
+
+If MPS is not available in the current PyTorch runtime, use `--device cpu` or
+fix the PyTorch/macOS environment before training with `--device mps`.
+
+## Publishing Checkpoints
+
+Checkpoints can become large, so they are ignored by Git. If you want to share a
+trained model publicly, prefer GitHub Release assets or an external model host
+instead of committing `.pt`, `.pth`, or `.ckpt` files to the repository.
+
+## Relationship To nanoGPT
+
+LearnGPT follows the broad nanoGPT direction:
+
+- decoder-only Transformer architecture
+- learned token and position embeddings
+- causal self-attention
+- multi-head attention
+- pre-LayerNorm Transformer blocks
+- residual connections
+- MLP/feed-forward blocks with GELU
+- AdamW training
+- checkpointing and autoregressive generation
+
+The main difference is educational structure. nanoGPT is compact and optimized
+for people who already know the moving parts. LearnGPT keeps names and steps
+more verbose so the reader can inspect how each tensor shape and training step
+fits into the complete model.

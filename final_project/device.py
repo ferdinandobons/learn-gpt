@@ -34,6 +34,25 @@ def get_default_device():
     return torch.device("cpu")
 
 
+def resolve_device(device_name):
+    if device_name == "auto":
+        return get_default_device()
+
+    device = torch.device(device_name)
+
+    if device.type == "mps" and not is_mps_available():
+        raise RuntimeError(
+            "MPS was requested but is not available in the current PyTorch "
+            "runtime. Check torch.backends.mps.is_available() before training "
+            "or generation."
+        )
+
+    if device.type == "cuda" and not torch.cuda.is_available():
+        raise RuntimeError("CUDA was requested but is not available.")
+
+    return device
+
+
 def get_device_type(device):
     return torch.device(device).type
 

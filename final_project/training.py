@@ -8,19 +8,27 @@ File purpose:
 """
 
 from contextlib import nullcontext
+import argparse
 import inspect
+import json
 import math
+from pathlib import Path
+import time
 
 import torch
 
-from .batching import create_batch
+from .batching import DEFAULT_DATA_DIR, create_batch, load_training_and_validation_data
 from .checkpoint import load_checkpoint, save_checkpoint
+from .config import ModelConfig, TrainingConfig
 from .device import (
     get_default_device,
     get_device_type,
     get_precision_dtype,
+    resolve_device,
     supports_mixed_precision,
 )
+from .model import LanguageModel
+from .tokenizer import DEFAULT_ENCODING_NAME, get_vocabulary_size
 
 
 def configure_optimizer(
@@ -206,6 +214,7 @@ def train_model(
     mixed_precision=False,
     precision_dtype="float16",
     device=None,
+    print_progress=False,
 ):
     if batch_size < 1:
         raise ValueError("batch_size must be at least 1.")
@@ -239,6 +248,7 @@ def train_model(
     best_validation_loss = math.inf
     best_checkpoint_path = None
     start_step = 1
+    training_start_time = time.time()
 
     if resume_checkpoint_path is not None:
         checkpoint = load_checkpoint(
@@ -269,6 +279,7 @@ def train_model(
 
         optimizer.zero_grad(set_to_none=True)
         total_loss = 0.0
+        grad_norm = None
 
         for _ in range(gradient_accumulation_steps):
             input_tensor, target_tensor = create_batch(
@@ -291,7 +302,11 @@ def train_model(
 
         if gradient_clip is not None:
             scaler.unscale_(optimizer)
-            torch.nn.utils.clip_grad_norm_(model.parameters(), gradient_clip)
+            grad_norm = torch.nn.utils.clip_grad_norm_(
+                model.parameters(),
+                gradient_clip,
+            )
+            grad_norm = float(grad_norm.detach().cpu().item())
 
         scaler.step(optimizer)
         scaler.update()
@@ -299,6 +314,13 @@ def train_model(
         should_evaluate = step == 1 or step % eval_interval == 0
 
         if should_evaluate:
+            elapsed_seconds = max(time.time() - training_start_time, 0.001)
+            completed_steps = max(step - start_step + 1, 1)
+            tokens_per_step = batch_size * context_size * gradient_accumulation_steps
+            tokens_seen = completed_steps * tokens_per_step
+            tokens_per_second = tokens_seen / elapsed_seconds
+            remaining_steps = max(training_steps - step, 0)
+            eta_seconds = remaining_steps * elapsed_seconds / completed_steps
             losses = estimate_loss(
                 model=model,
                 training_data=training_data,
@@ -315,8 +337,35 @@ def train_model(
                     "loss": total_loss,
                     "training": losses["training"],
                     "validation": losses["validation"],
+                    "grad_norm": grad_norm,
+                    "tokens_per_second": tokens_per_second,
+                    "eta_seconds": eta_seconds,
                 }
             )
+
+            if print_progress:
+                grad_norm_text = "n/a" if grad_norm is None else f"{grad_norm:.4f}"
+                print(
+                    "step={step}/{training_steps} "
+                    "train={training:.4f} "
+                    "val={validation:.4f} "
+                    "loss={loss:.4f} "
+                    "lr={learning_rate:.2e} "
+                    "grad_norm={grad_norm} "
+                    "tok/s={tokens_per_second:.0f} "
+                    "eta={eta}".format(
+                        step=step,
+                        training_steps=training_steps,
+                        training=losses["training"],
+                        validation=losses["validation"],
+                        loss=total_loss,
+                        learning_rate=learning_rate,
+                        grad_norm=grad_norm_text,
+                        tokens_per_second=tokens_per_second,
+                        eta=format_duration(eta_seconds),
+                    ),
+                    flush=True,
+                )
 
             if losses["validation"] < best_validation_loss:
                 best_validation_loss = losses["validation"]
@@ -333,3 +382,157 @@ def train_model(
                 )
 
     return history, best_checkpoint_path
+
+
+def format_duration(seconds):
+    seconds = max(int(seconds), 0)
+    hours, remainder = divmod(seconds, 3600)
+    minutes, seconds = divmod(remainder, 60)
+
+    if hours:
+        return f"{hours}h {minutes}m {seconds}s"
+
+    if minutes:
+        return f"{minutes}m {seconds}s"
+
+    return f"{seconds}s"
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description="Train the final LearnGPT model on prepared token data.",
+    )
+    parser.add_argument("--data-dir", type=Path, default=DEFAULT_DATA_DIR)
+    parser.add_argument("--checkpoint-path", type=Path, default=Path("checkpoints/learngpt.pt"))
+    parser.add_argument("--resume-checkpoint-path", type=Path, default=None)
+    parser.add_argument("--device", default="auto", choices=["auto", "cpu", "cuda", "mps"])
+    parser.add_argument("--encoding-name", default=DEFAULT_ENCODING_NAME)
+
+    parser.add_argument("--context-size", type=int, default=128)
+    parser.add_argument("--embedding-size", type=int, default=256)
+    parser.add_argument("--num-heads", type=int, default=4)
+    parser.add_argument("--num-transformer-blocks", type=int, default=4)
+    parser.add_argument("--dropout", type=float, default=0.1)
+    parser.add_argument("--no-weight-tying", action="store_true")
+    parser.add_argument("--use-scaled-dot-product-attention", action="store_true")
+
+    parser.add_argument("--batch-size", type=int, default=8)
+    parser.add_argument("--training-steps", type=int, default=1000)
+    parser.add_argument("--eval-interval", type=int, default=100)
+    parser.add_argument("--eval-batches", type=int, default=10)
+    parser.add_argument("--base-learning-rate", type=float, default=3e-4)
+    parser.add_argument("--min-learning-rate", type=float, default=3e-5)
+    parser.add_argument("--warmup-steps", type=int, default=100)
+    parser.add_argument("--decay-steps", type=int, default=1000)
+    parser.add_argument("--weight-decay", type=float, default=0.1)
+    parser.add_argument("--gradient-clip", type=float, default=1.0)
+    parser.add_argument("--no-gradient-clip", action="store_true")
+    parser.add_argument("--gradient-accumulation-steps", type=int, default=4)
+
+    parser.add_argument("--compile-model", action="store_true")
+    parser.add_argument("--mixed-precision", action="store_true")
+    parser.add_argument(
+        "--precision-dtype",
+        default="float16",
+        choices=["float16", "bfloat16", "float32"],
+    )
+
+    return parser.parse_args()
+
+
+def main():
+    args = parse_args()
+    device = resolve_device(args.device)
+    training_data, validation_data = load_training_and_validation_data(args.data_dir)
+
+    model_config = ModelConfig(
+        vocabulary_size=get_vocabulary_size(args.encoding_name),
+        context_size=args.context_size,
+        embedding_size=args.embedding_size,
+        num_heads=args.num_heads,
+        num_transformer_blocks=args.num_transformer_blocks,
+        dropout=args.dropout,
+        tie_weights=not args.no_weight_tying,
+        use_scaled_dot_product_attention=args.use_scaled_dot_product_attention,
+    )
+    training_config = TrainingConfig(
+        batch_size=args.batch_size,
+        training_steps=args.training_steps,
+        eval_interval=args.eval_interval,
+        eval_batches=args.eval_batches,
+        base_learning_rate=args.base_learning_rate,
+        min_learning_rate=args.min_learning_rate,
+        warmup_steps=args.warmup_steps,
+        decay_steps=args.decay_steps,
+        weight_decay=args.weight_decay,
+        gradient_clip=None if args.no_gradient_clip else args.gradient_clip,
+        gradient_accumulation_steps=args.gradient_accumulation_steps,
+        resume_from_checkpoint=args.resume_checkpoint_path is not None,
+        compile_model=args.compile_model,
+        mixed_precision=args.mixed_precision,
+        precision_dtype=args.precision_dtype,
+    )
+
+    model = LanguageModel(**model_config.to_model_kwargs())
+    model = maybe_compile_model(model, compile_model=args.compile_model)
+    optimizer = configure_optimizer(
+        model=model,
+        learning_rate=args.base_learning_rate,
+        weight_decay=args.weight_decay,
+        device=device,
+    )
+
+    tokenizer_config = {"encoding_name": args.encoding_name}
+
+    print("LearnGPT training")
+    print(json.dumps(
+        {
+            "device": str(device),
+            "data_dir": str(args.data_dir),
+            "checkpoint_path": str(args.checkpoint_path),
+            "train_tokens": int(len(training_data)),
+            "val_tokens": int(len(validation_data)),
+            "model_config": model_config.to_checkpoint_dict(),
+            "training_config": training_config.to_checkpoint_dict(),
+        },
+        indent=2,
+    ))
+    print()
+
+    history, best_checkpoint_path = train_model(
+        model=model,
+        optimizer=optimizer,
+        training_data=training_data,
+        validation_data=validation_data,
+        batch_size=args.batch_size,
+        context_size=args.context_size,
+        training_steps=args.training_steps,
+        eval_interval=args.eval_interval,
+        eval_batches=args.eval_batches,
+        checkpoint_path=args.checkpoint_path,
+        model_config=model_config.to_checkpoint_dict(),
+        tokenizer_config=tokenizer_config,
+        base_learning_rate=args.base_learning_rate,
+        min_learning_rate=args.min_learning_rate,
+        warmup_steps=args.warmup_steps,
+        decay_steps=args.decay_steps,
+        gradient_clip=None if args.no_gradient_clip else args.gradient_clip,
+        gradient_accumulation_steps=args.gradient_accumulation_steps,
+        resume_checkpoint_path=args.resume_checkpoint_path,
+        training_config=training_config.to_checkpoint_dict(),
+        mixed_precision=args.mixed_precision,
+        precision_dtype=args.precision_dtype,
+        device=device,
+        print_progress=True,
+    )
+
+    print()
+    print("Training finished.")
+    print("Best checkpoint:", best_checkpoint_path)
+    if history:
+        print("Last metrics:")
+        print(json.dumps(history[-1], indent=2))
+
+
+if __name__ == "__main__":
+    main()

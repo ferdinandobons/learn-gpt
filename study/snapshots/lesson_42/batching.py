@@ -23,7 +23,7 @@ def load_token_data(data_dir=DEFAULT_DATA_DIR, split="train"):
     data_path = data_dir / f"{split}.bin"
 
     if not data_path.exists():
-        raise FileNotFoundError(f"Dataset processato non trovato: {data_path}")
+        raise FileNotFoundError(f"Processed dataset not found: {data_path}")
 
     return np.memmap(data_path, dtype=np.uint16, mode="r")
 

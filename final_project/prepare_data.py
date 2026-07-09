@@ -224,9 +224,9 @@ def prepare_dataset(args):
                 mb_written = counters["total_bytes"] / 1024**2
                 mb_per_second = mb_written / elapsed_seconds
                 print(
-                    f"{mb_written:.0f} MiB scritti "
+                    f"{mb_written:.0f} MiB written "
                     f"({mb_per_second:.2f} MiB/s, "
-                    f"documenti={counters['documents_written']})",
+                    f"documents={counters['documents_written']})",
                     flush=True,
                 )
                 metadata["elapsed_seconds"] = elapsed_seconds
@@ -252,7 +252,7 @@ def prepare_dataset(args):
     write_json(meta_path, metadata)
 
     print()
-    print("Preparazione completata:" if metadata["complete"] else "Preparazione interrotta:")
+    print("Preparation completed:" if metadata["complete"] else "Preparation interrupted:")
     print(json.dumps(metadata, indent=2, ensure_ascii=False))
 
     return metadata

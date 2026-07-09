@@ -7,9 +7,12 @@ File purpose:
 - Generate text from a saved checkpoint.
 """
 
+import argparse
+from pathlib import Path
+
 import torch
 
-from .device import get_default_device
+from .device import get_default_device, resolve_device
 from .model import LanguageModel
 from .tokenizer import DEFAULT_ENCODING_NAME, decode, encode
 
@@ -113,3 +116,46 @@ def generate_samples_from_checkpoint(
         samples.append(generated_text)
 
     return samples, checkpoint
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description="Generate text with a trained LearnGPT checkpoint.",
+    )
+    parser.add_argument("--checkpoint-path", type=Path, required=True)
+    parser.add_argument("--prompt", default="The")
+    parser.add_argument("--max-new-tokens", type=int, default=100)
+    parser.add_argument("--temperature", type=float, default=0.9)
+    parser.add_argument("--top-k", type=int, default=50)
+    parser.add_argument("--no-top-k", action="store_true")
+    parser.add_argument("--num-samples", type=int, default=1)
+    parser.add_argument("--device", default="auto", choices=["auto", "cpu", "cuda", "mps"])
+    parser.add_argument("--compile-model", action="store_true")
+
+    return parser.parse_args()
+
+
+def main():
+    args = parse_args()
+    device = resolve_device(args.device)
+    top_k = None if args.no_top_k else args.top_k
+
+    samples, _ = generate_samples_from_checkpoint(
+        checkpoint_path=args.checkpoint_path,
+        prompt_text=args.prompt,
+        max_new_tokens=args.max_new_tokens,
+        num_samples=args.num_samples,
+        temperature=args.temperature,
+        top_k=top_k,
+        device=device,
+        compile_model=args.compile_model,
+    )
+
+    for index, sample in enumerate(samples, start=1):
+        if args.num_samples > 1:
+            print(f"--- sample {index} ---")
+        print(sample)
+
+
+if __name__ == "__main__":
+    main()
