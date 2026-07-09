@@ -1,35 +1,16 @@
 # LearnGPT Course
 
-This file is the living document of the path `LearnGPT`.
+This file is the English version of the `LearnGPT` study path.
 
-Ultimate goal: Gradually build a small GPT-based project
-FineWeb-Edu, understanding every step. At the end of the course this document will be
-the basis for creating a PDF.
+Final goal: understand, step by step, how to build a small didactic GPT model
+based on FineWeb-Edu. The course does not contain full copies of every Python
+file: complete files live in `study/snapshots/` and `final_project/`. Here we
+keep the objective, the reason behind each change, the new code snippets, and
+the explanation of the main transformations.
 
-Rule of thumb: any new lesson and any extra clarification required during the
-route must be added here, in the correct lesson section.
-
-Name rule: Python code uses English identifiers, for example
-`text`, `model`, `create_batch`, `char_to_id`. The public surface of the
-project uses English names and messages; this file is the English version
-of the course.
-
-## Document Navigation
-
-The course exists in two main files: `course_it.md` for Italian and
-`course_en.md` for English. Educational content must remain synchronized
-between the two versions.
-
-The main references are:
-
-- [`course_en.md`](course_en.md): English version of the same course;
-- [`data/`](data/): shared datasets and processed files not duplicated in
-  snapshot;
-- [`study/`](study/): numbered scripts to run lesson by lesson;
-- [`study/snapshots/`](study/snapshots/): complete snapshots of the lessons;
-- [`final_project/`](final_project/): last clean version of the project;
-- [`tools/validate_learngpt.py`](tools/validate_learngpt.py):
-  local validator of the course structure.
+Naming rule: Python code uses English identifiers, for example `text`, `model`,
+`create_batch`, and `char_to_id`. The public project surface uses English names
+and messages.
 
 ## Source Map
 
@@ -67,45 +48,6 @@ These sources support the journey up to lesson 42:
 - `LearnGPT/study/snapshots/lesson_NN/`: local source for code
   executable of the single lesson. Each section of the course must remain
   consistent with your snapshot.
-
-## Updated Teaching Direction
-
-Dataset management doesn't just have to come at the end of the road. The
-correct progression is:
-
-```text
-small readable text
--> rough character tokenizer
--> GPT-2 BPE tokenizer with tiktoken
--> FineWeb-Edu processed into train.bin / val.bin
--> batches from memmap
--> model and Transformer
--> training and generation
-```
-
-So the first lessons can remain deliberately crude, because they are useful
-understand the basic concept: text becomes numbers. But the course must introduce
-soon also the realistic tokenizer and the processed dataset. From that point on
-then when we build model, batching and training, we need to connect each
-piece to the actual pipeline of the final project.
-
-### Status applied after FineWeb download
-
-The final project code has been ported to the realistic pipeline:
-
-```text
-final_project/tokenizer.py   -> GPT-2 BPE con tiktoken
-final_project/batching.py    -> train.bin / val.bin letti con memmap
-final_project/device.py      -> scelta CPU, CUDA o MPS
-final_project/checkpoint.py  -> salva tokenizer_config, non vocabolari a caratteri
-final_project/training.py    -> batch su device e checkpoint migliore
-final_project/generate.py    -> prompt e decode con BPE
-```
-
-Lesson 42 uses the same final pipeline. The previous lessons are still there
-educational and can use the character tokenizer to explain the concept
-basis, but a future teaching reorganization may anticipate BPE and FineWeb in the
-first lessons: after the raw tokenizer, not at the end.
 
 ## Lesson Index
 
@@ -154,149 +96,46 @@ This index must be updated every time we add a new lesson.
 41. [Lesson 41 - Performance Flags and DDP](#lesson-41---performance-flags-and-ddp)
 42. [Lesson 42 - Final Project](#lesson-42---final-project)
 
-## Project Structure```text
-LearnGPT/
-  course_en.md
-  course_it.md
-  data/
-    raw/
-      fineweb_edu_sample.txt
-    processed/
-      fineweb_edu/
-        train.bin
-        val.bin
-        meta.json
-  study/
-    lezioni/
-      01_read_text.py
-      02_character_tokenizer.py
-      ...
-      42_final_project.py
-    snapshot/
-      __init__.py
-      lesson_01/
-        __init__.py
-      lesson_02/
-        ...
-      lesson_42/
-        config.py
-        tokenizer.py
-        batching.py
-        device.py
-        model.py
-        training.py
-        checkpoint.py
-        generate.py
-  final_project/
-    __init__.py
-    config.py
-    tokenizer.py
-    prepare_data.py
-    batching.py
-    device.py
-    model.py
-    training.py
-    checkpoint.py
-    generate.py
-    requirements.txt
-  tools/
-    validate_learngpt.py
+## How to Run Study Scripts
+
+Every lesson has a numbered script inside `study/lessons/`.
+
+General pattern:
+
+```bash
+python -B study/lessons/NN_lesson_name.py
 ```
 
-The `study/lessons` folder contains the path numbered files.
+Example:
 
-The `data` folder contains shared datasets and processed files. It is used for
-large datasets, for example FineWeb-Edu, which should not be duplicated inside
-each lesson snapshot.
-
-The `study/snapshots` folder contains a complete snapshot for each lesson.
-Each script inside `study/lessons` imports from its own snapshot, so a
-An old lesson can still be re-executed even if the final project changes.
-
-The `final_project` folder contains the latest clean version of the
-project, the one that must remain as the final result at the end of the course.
-
-The `tools` folder contains helper controls to keep you consistent
-`course_it.md`, `course_en.md`, snapshots and study scripts.
-
-Compatibility rule:
-
-```text
-study/lessons/19_self_attention_head.py -> imports from study/snapshots/lesson_19/
-study/lessons/20_multi_head_attention.py -> imports from study/snapshots/lesson_20/
-study/lessons/21_attention_projection.py -> imports from study/snapshots/lesson_21/
-study/lessons/22_residual_connection.py -> imports from study/snapshots/lesson_22/
-study/lessons/23_layer_norm_attention.py -> imports from study/snapshots/lesson_23/
-study/lessons/24_feed_forward.py -> imports from study/snapshots/lesson_24/
-study/lessons/25_transformer_block.py -> imports from study/snapshots/lesson_25/
-study/lessons/26_more_transformer_blocks.py -> imports from study/snapshots/lesson_26/
-study/lessons/27_final_layer_norm.py -> imports from study/snapshots/lesson_27/
-study/lessons/28_transformer_training.py -> imports from study/snapshots/lesson_28/
-study/lessons/29_loss_estimation.py -> imports from study/snapshots/lesson_29/
-study/lessons/30_checkpoint.py -> imports from study/snapshots/lesson_30/
-study/lessons/31_generate.py -> imports from study/snapshots/lesson_31/
-study/lessons/32_sampling_controls.py -> imports from study/snapshots/lesson_32/
-study/lessons/33_best_checkpoint_training.py -> imports from study/snapshots/lesson_33/
-study/lessons/34_optimizer_scheduler.py -> imports from study/snapshots/lesson_34/
-study/lessons/35_dropout_weight_tying.py -> imports from study/snapshots/lesson_35/
-study/lessons/36_optimizer_groups.py -> imports from study/snapshots/lesson_36/
-study/lessons/37_gradient_accumulation.py -> imports from study/snapshots/lesson_37/
-study/lessons/38_resume_config.py -> imports from study/snapshots/lesson_38/
-study/lessons/39_last_token_output_head.py -> imports from study/snapshots/lesson_39/
-study/lessons/40_scaled_dot_product_attention.py -> imports from study/snapshots/lesson_40/
-study/lessons/41_performance_flags_and_ddp.py -> imports from study/snapshots/lesson_41/
-study/lessons/42_final_project.py -> imports from study/snapshots/lesson_42/
-final_project/ -> evolve con l'ultima versione del progetto
-```## Updated rule on model snapshots
-
-After the cleanup done in lesson 27, the model snapshots follow a
-simplest rule:```text
-study/snapshots/lesson_NN/model.py -> contiene solo il codice necessario alla lesson NN
+```bash
+python -B study/lessons/19_self_attention_head.py
 ```
 
-The main model is always called:```python
-LanguageModel
-```
+Specific commands are not repeated inside every lesson: the rule is always the
+same. If a lesson needs processed data, it uses shared files in `data/` instead
+of duplicating them inside the snapshot.
 
-The model version is no longer indicated by the class name, but by the
-path from which we import it.
+## How Study Snapshots Work
 
-Example:```python
-from study.snapshots.lesson_17.model import LanguageModel
-```
+Scripts in `study/lessons/` import code from the snapshot folder with the same
+lesson number. This makes older lessons readable and runnable without depending
+on later changes in the final project.
 
-significa:
-
-```text
-usa il LanguageModel come esiste nella lesson 17
-```
-
-mentre:
+Example:
 
 ```python
-from study.snapshots.lesson_31.model import LanguageModel
+from study.snapshots.lesson_19.model import LanguageModel
 ```
 
-significa:
+means: use the version of `LanguageModel` that belongs to lesson 19.
 
-```text
-usa il LanguageModel come esiste nella lesson 31
-```
+The practical rule is:
 
-This choice reduces mental noise. While studying we don't have to
-remember increasingly long names like "template with embedding", "template with
-attention", "model with blocks", etc. The name remains stable, while the number
-of the folder tells where we are along the path.
-
-The full rule is:
-
-- `study/lessons/NN_qualcosa.py` always imports from snapshot
-  `study/snapshots/lesson_NN/`;
-- inside that snapshot the main model is called `LanguageModel`;
-- `model.py` must not contain old historical classes not used by
-  lesson;
-- `final_project/model.py` contains only the latest clean version of the
-  final project.
+- `study/lessons/NN_something.py` imports from `study/snapshots/lesson_NN/`;
+- inside the snapshot, the main model is always called `LanguageModel`;
+- each snapshot contains only the code needed by that lesson;
+- `final_project/` contains only the clean final version.
 
 ## General map of transformations
 
@@ -305,10 +144,10 @@ It should be kept at the beginning of the course because it serves as an overvie
 we will add a new important piece, we will also update this map.
 
 For now the flow reaches up to:```text
-testo -> token IDs -> training/validation split -> batch -> embeddings -> più TransformerBlock -> final LayerNorm -> logits -> loss -> backward -> gradient clipping -> optimizer.step -> pesi aggiornati -> estimate_loss -> miglior checkpoint -> checkpoint ricaricato -> sampling controllato -> testo generato
+text -> token IDs -> training/validation split -> batch -> embeddings -> more TransformerBlock -> final LayerNorm -> logits -> loss -> backward -> gradient clipping -> optimizer.step -> weights aggiornati -> estimate_loss -> miglior checkpoint -> checkpoint ricaricato -> sampling controllato -> generated text
 ```
 
-Ogni `TransformerBlock` contiene i passaggi studiati nelle lezioni precedenti:
+Each `TransformerBlock` contains the steps studied in the previous lessons:
 
 ```text
 LayerNorm -> multi-head attention -> residual connection -> LayerNorm -> feed-forward -> residual connection
@@ -389,16 +228,16 @@ flowchart TD
     B["prepare_data.py<br/>streaming + BPE"]
     C["train.bin / val.bin<br/>token IDs uint16"]
     D["create_batch<br/>input [4, 32]<br/>target [4, 32]"]
-    E["embedding token + posizione<br/>[4, 32, 64]"]
+    E["embedding token + position<br/>[4, 32, 64]"]
     F["TransformerBlock x 2<br/>attention + MLP + residual"]
     G["final_layer_norm<br/>[4, 32, 64]"]
     H["output_head<br/>training: [4, 32, 50257]"]
     I["cross_entropy loss"]
-    J["backward + AdamW<br/>pesi aggiornati"]
+    J["backward + AdamW<br/>weights aggiornati"]
     K["checkpoint migliore"]
     L["generate.py<br/>checkpoint + prompt"]
     M["ultimo token -> softmax -> sampling"]
-    N["decode BPE<br/>testo generato"]
+    N["decode BPE<br/>generated text"]
 
     A --> B --> C --> D --> E --> F --> G --> H --> I --> J --> K
     K --> L --> M --> N
@@ -422,7 +261,7 @@ FineWeb-Edu
 -> logits dell'ultimo token
 -> softmax e sampling
 -> decode
--> testo generato
+-> generated text
 ```### Flowchart - extended version
 
 This second version is the complete map of the final project. It shouldn't be read
@@ -475,7 +314,7 @@ flowchart TD
         D4["position_embedding_table<br/>[T, C] = [32, 64]"]
         D5["token_embeddings<br/>[B, T, C] = [4, 32, 64]"]
         D6["position_embeddings<br/>[T, C] = [32, 64]"]
-        D7["somma con broadcasting<br/>token + posizione"]
+        D7["somma con broadcasting<br/>token + position"]
         D8["embedding_dropout"]
         D9["block_input<br/>[B, T, C] = [4, 32, 64]"]
     end
@@ -515,15 +354,15 @@ flowchart TD
         G1["get_learning_rate<br/>warmup + cosine decay"]
         G2["optimizer.zero_grad"]
         G3["gradient accumulation<br/>loss / micro-batch"]
-        G4["loss.backward<br/>gradienti nei parametri"]
+        G4["loss.backward<br/>gradients nei parametri"]
         G5["gradient clipping"]
-        G6["AdamW optimizer groups<br/>decay solo sui pesi giusti"]
-        G7["optimizer.step<br/>pesi aggiornati"]
+        G6["AdamW optimizer groups<br/>decay only on the right weights"]
+        G7["optimizer.step<br/>weights aggiornati"]
         G8["estimate_loss<br/>train + validation senza backward"]
         G9["save_checkpoint<br/>model, optimizer, config, tokenizer, step"]
     end
 
-    subgraph GENERATE["Generazione da checkpoint"]
+    subgraph GENERATE["Generation from checkpoint"]
         H1["load checkpoint"]
         H2["ricostruisci LanguageModel"]
         H3["prompt_text"]
@@ -535,9 +374,9 @@ flowchart TD
         H9["last_token_logits<br/>[B, V]"]
         H10["temperature<br/>divide i logits"]
         H11["top_k<br/>tiene i candidati migliori"]
-        H12["softmax<br/>probabilità"]
+        H12["softmax<br/>probabilities"]
         H13["torch.multinomial<br/>next_token_id"]
-        H14["cat al contesto generato"]
+        H14["cat al congenerated text"]
         H15["ripeti per generated_tokens"]
         H16["decode BPE<br/>generated_text"]
     end
@@ -622,7 +461,7 @@ token_embeddings.shape = [4, 32, 64]
 This form reads from left to right:```text
 [4, 32, 64]
  |   |   |
- |   |   +-- 64 numeri per rappresentare un singolo token
+ |   |   +-- 64 numbers per rappresentare un singolo token
  |   +------ 32 token dentro ogni esempio
  +--------- 4 esempi dentro il batch
 ```
@@ -630,23 +469,23 @@ This form reads from left to right:```text
 So `token_embeddings` is not a single 64-number vector. Contains 128
 64-number vectors:```text
 4 esempi x 32 token per esempio = 128 token totali nel batch
-128 token x 64 numeri per token = 8192 numeri totali nel tensore
+128 token x 64 numbers per token = 8192 numbers totali nel tensore
 ```
 
 The nested form is this:```text
 token_embeddings =
 [
   [  # esempio 0: contiene 32 token embeddings
-    [64 numeri],  # token in posizione 0
-    [64 numeri],  # token in posizione 1
-    [64 numeri],  # token in posizione 2
+    [64 numbers],  # token in position 0
+    [64 numbers],  # token in position 1
+    [64 numbers],  # token in position 2
     ...
-    [64 numeri],  # token in posizione 31
+    [64 numbers],  # token in position 31
   ],
 
   [  # esempio 1: altri 32 token embeddings
-    [64 numeri],
-    [64 numeri],
+    [64 numbers],
+    [64 numbers],
     ...
   ],
 
@@ -674,7 +513,7 @@ token_embeddings[0, 0, 0]
 
 Sample of a single token embedding:```text
 token_embeddings[0, 0] =
-[0.34, -1.12, 0.08, 0.51, ..., -0.27]  # 64 numeri
+[0.34, -1.12, 0.08, 0.51, ..., -0.27]  # 64 numbers
 ```
 
 The `position_embedding_table` instead receives the location IDs:```text
@@ -684,11 +523,11 @@ position_embeddings.shape = [context_size, embedding_size]
 position_embeddings.shape = [8, 16]
 ```
 
-Facsimile del vettore della posizione `0`:
+Facsimile del vettore della position `0`:
 
 ```text
 position_embeddings[0] =
-[0.10, 0.05, -0.30, 0.70, ..., 0.12]  # 16 numeri
+[0.10, 0.05, -0.30, 0.70, ..., 0.12]  # 16 numbers
 ```
 
 Then we add the two vectors. The addition is possible because both are long
@@ -761,14 +600,14 @@ last_token_logits[0] =
 
 During generation, `softmax` transforms these scores into probabilities:```text
 probabilities[0] =
-[0.01, 0.04, 0.02, 0.005, ..., 0.03]  # 68 probabilità
+[0.01, 0.04, 0.02, 0.005, ..., 0.03]  # 68 probabilities
 ```
 
 Then `torch.multinomial` chooses an ID based on those probabilities:```text
 next_token_id = 50
 ```
 
-Infine `decode` trasforma l'ID scelto nel carattere corrispondente:
+Infine `decode` trasforma l'ID scelto nel character corrispondente:
 
 ```text
 decode([50]) -> "r"
@@ -782,7 +621,7 @@ to initializing weights and training.
 
 ## Lesson 01 - Read the Text
 
-### What is added
+### What changes and why
 
 Let's create the first numbered script:```text
 study/lessons/01_read_text.py
@@ -808,49 +647,9 @@ Poi:
 DATASET_PATH = PROJECT_DIR / "data" / "raw" / "fineweb_edu_sample.txt"
 ```builds the path to the dataset.
 
-### Complete code```python
-"""
-Differenza rispetto ai file precedenti:
-- Questo è il primo file del percorso, quindi non confronta ancora codice
-  precedente.
-
-Objective del file:
-- Leggere `data/raw/fineweb_edu_sample.txt`.
-- Stampare quanti caratteri contiene.
-- Mostrare l'inizio del testo per verificare che il file venga letto bene.
-"""
-
-from pathlib import Path
-
-
-PROJECT_DIR = Path(__file__).resolve().parents[2]
-DATASET_PATH = PROJECT_DIR / "data" / "raw" / "fineweb_edu_sample.txt"
-
-
-def main():
-    text = DATASET_PATH.read_text(encoding="utf-8")
-
-    print("File letto:", DATASET_PATH)
-    print("Numero caratteri:", len(text))
-    print()
-    print("Primi 500 caratteri:")
-    print(text[:500])
-
-
-if __name__ == "__main__":
-    main()
-```
-
-### Comando
-
-```bash
-cd /Users/ferdinandobons/Desktop/MiniGPT
-python LearnGPT/study/lessons/01_read_text.py
-```---
-
 ## Lesson 02 - Character Tokenizer
 
-### What is added
+### What changes and why
 
 Let's create:```text
 study/lessons/02_character_tokenizer.py
@@ -878,77 +677,15 @@ unique_chars = sorted(set(text))
 - `sorted(...)` puts them in stable order.
 
 We then create two opposite dictionaries:```text
-carattere -> numero
-numero -> carattere
+character -> number
+number -> character
 ```
 
 The first is for coding. The second is for decoding.
 
-### Complete code```python
-"""
-Differenza rispetto al file precedente:
-- Prima leggevamo soltanto il testo.
-- Qui costruiamo un vocabolario di caratteri e trasformiamo un esempio in
-  numeri.
-
-Objective del file:
-- Mostrare che un testo deve diventare una sequenza di ID numerici.
-- Verificare che i numeri possano essere riconvertiti nel testo originale.
-"""
-
-from pathlib import Path
-
-
-PROJECT_DIR = Path(__file__).resolve().parents[2]
-DATASET_PATH = PROJECT_DIR / "data" / "raw" / "fineweb_edu_sample.txt"
-
-
-def main():
-    text = DATASET_PATH.read_text(encoding="utf-8")
-
-    unique_chars = sorted(set(text))
-
-    char_to_id = {}
-    id_to_char = {}
-
-    for token_id, char in enumerate(unique_chars):
-        char_to_id[char] = token_id
-        id_to_char[token_id] = char
-    print(char_to_id)
-    print(id_to_char)
-
-    sample = "Nel mezzo del cammin"
-
-    token_ids = []
-    for char in sample:
-        token_id = char_to_id[char]
-        token_ids.append(token_id)
-
-    reconstructed_text = ""
-    for token_id in token_ids:
-        char = id_to_char[token_id]
-        reconstructed_text += char
-
-    print("Numero caratteri totali nel testo:", len(text))
-    print("Numero caratteri diversi:", len(unique_chars))
-    print()
-    print("Esempio originale:")
-    print(sample)
-    print()
-    print("Esempio trasformato in numeri:")
-    print(token_ids)
-    print()
-    print("Esempio ricostruito dai numeri:")
-    print(reconstructed_text)
-
-
-if __name__ == "__main__":
-    main()
-```---
-
 ## Lesson 03 - Encode and Decode
 
-### What is added
+### What changes and why
 
 Let's separate the logic into functions:```python
 def create_vocabulary(text):
@@ -958,8 +695,8 @@ def decode(token_ids, id_to_char):
 
 Previously the code was all inside `main`. Now let's make the two explicit
 fundamental operations:```text
-encode: testo -> numeri
-decode: numeri -> testo
+encode: text -> numbers
+decode: numbers -> text
 ```
 
 The important check is:```python
@@ -968,95 +705,9 @@ reconstructed_text == sample
 
 If it produces `True`, the tokenizer is reversible.
 
-### Complete code```python
-"""
-Differenza rispetto al file precedente:
-- Prima la conversione testo/numeri era scritta direttamente dentro `main`.
-- Qui la separiamo in funzioni riutilizzabili: `create_vocabulary`, `encode` e
-  `decode`.
-
-Objective del file:
-- Rendere esplicite le due operazioni centrali del tokenizer:
-  testo -> numeri e numeri -> testo.
-"""
-
-from pathlib import Path
-
-
-PROJECT_DIR = Path(__file__).resolve().parents[2]
-DATASET_PATH = PROJECT_DIR / "data" / "raw" / "fineweb_edu_sample.txt"
-
-
-def create_vocabulary(text):
-    unique_chars = sorted(set(text))
-
-    char_to_id = {}
-    id_to_char = {}
-
-    for token_id, char in enumerate(unique_chars):
-        char_to_id[char] = token_id
-        id_to_char[token_id] = char
-
-    # print(f"Carattere a ID: {char_to_id}")
-    # print("")
-    # print(f"ID a Carattere: {id_to_char}")
-
-    return char_to_id, id_to_char
-
-
-def encode(text, char_to_id):
-    token_ids = []
-
-    for char in text:
-        token_id = char_to_id[char]
-        token_ids.append(token_id)
-    print(token_ids)
-
-    return token_ids
-
-
-def decode(token_ids, id_to_char):
-    text = ""
-
-    for token_id in token_ids:
-        char = id_to_char[token_id]
-        text += char
-
-    return text
-
-
-def main():
-    full_text = DATASET_PATH.read_text(encoding="utf-8")
-
-    char_to_id, id_to_char = create_vocabulary(full_text)
-
-    sample = full_text[:100]
-
-    token_ids = encode(sample, char_to_id)
-    reconstructed_text = decode(token_ids, id_to_char)
-
-    print("Vocabolario:", len(char_to_id), "caratteri diversi")
-    print()
-    print("Testo originale:")
-    print(sample)
-    print()
-    print("Numeri:")
-    print(token_ids)
-    print()
-    print("Testo ricostruito:")
-    print(reconstructed_text)
-    print()
-    print("Il testo ricostruito è uguale all'originale?")
-    print(reconstructed_text == sample)
-
-
-if __name__ == "__main__":
-    main()
-```---
-
 ## Lesson 04 - Tokenizer Module
 
-### What is added
+### What changes and why
 
 We move the reusable functions into the final project and into the snapshot
 of the lesson:```text
@@ -1068,21 +719,21 @@ study/lessons/04_test_tokenizer.py
 
 This is the first separation between:```text
 study/                      esercizi didattici
-study/snapshots/lesson_04/ snapshot usato dalla lezione
-final_project/             codice finale vivo
+study/snapshots/lesson_04/ snapshot used by the lesson
+final_project/             live final code
 ```
 
 Study scripts now import from your lesson snapshot:```python
 from study.snapshots.lesson_04.tokenizer import create_vocabulary, encode, decode
 ```### Code added: `study/snapshots/lesson_04/tokenizer.py````python
 """
-Differenza rispetto agli script precedenti:
-- Prima le funzioni del tokenizer vivevano dentro un file di esercizio.
+Difference compared with the previous scripts:
+- Previously, tokenizer functions lived inside an exercise file.
 - Qui diventano un modulo riutilizzabile da altri script.
 
 Objective del file:
-- Contenere le funzioni comuni per creare il vocabolario, codificare testo in
-  numeri e decodificare numeri in testo.
+- Contain the shared functions to create the vocabulary, encode text into
+  numbers and decode numbers back into text.
 """
 
 def create_vocabulary(text):
@@ -1116,147 +767,10 @@ def decode(token_ids, id_to_char):
         text += char
 
     return text
-```### Complete code: `study/lessons/04_test_tokenizer.py````python
-"""
-Changes compared with the previous file:
-- This lesson script uses the English project layout and imports lesson-specific
-  snapshot code.
-- It belongs to lesson 04 of the guided LearnGPT path.
-
-File purpose:
-- Run the lesson example in a reproducible way.
-- Print the relevant intermediate values, tensor shapes, losses, or generated
-  text for inspection.
-"""
-
-from pathlib import Path
-import sys
-
-
-PROJECT_DIR = Path(__file__).resolve().parents[2]
-DATASET_PATH = PROJECT_DIR / "data" / "raw" / "fineweb_edu_sample.txt"
-
-sys.path.append(str(PROJECT_DIR))
-
-from study.snapshots.lesson_04.tokenizer import create_vocabulary, encode, decode
-
-
-def main():
-    full_text = DATASET_PATH.read_text(encoding="utf-8")
-
-    char_to_id, id_to_char = create_vocabulary(full_text)
-
-    sample = full_text[:200]
-
-    token_ids = encode(sample, char_to_id)
-    reconstructed_text = decode(token_ids, id_to_char)
-
-    print("Number of different characters:", len(char_to_id))
-    print("First 30 issues:")
-    print(token_ids[:30])
-    print()
-    print("Is the reconstructed text the same as the original?")
-    print(reconstructed_text == sample)
-
-
-if __name__ == "__main__":
-    main()
-```---
-
-## Lesson 05 - Training and Validation
-
-### What is added
-
-We divide all tokens into:```text
-90% training
-10% validation
-```### Explanation
-
-The training set is used to update the model. Validation is for
-check whether the model is learning in a useful way, not just memorizing.
-
-The line:```python
-split_index = int(len(token_ids) * 0.9)
-```find the point at 90% of the list.
-
-Then:```python
-training_data = token_ids[:split_index]
-validation_data = token_ids[split_index:]
-```create the two parts.
-
-### Complete code```python
-"""
-Differenza rispetto al file precedente:
-- Prima testavamo solo il tokenizer su un piccolo esempio.
-- Qui codifichiamo tutto il corpus e lo dividiamo in training e validation.
-
-Objective del file:
-- Preparare due parti del dataset: una per allenare il modello e una per
-  controllare se sta imparando.
-"""
-
-from pathlib import Path
-import sys
-
-
-PROJECT_DIR = Path(__file__).resolve().parents[2]
-DATASET_PATH = PROJECT_DIR / "data" / "raw" / "fineweb_edu_sample.txt"
-
-sys.path.append(str(PROJECT_DIR))
-
-from study.snapshots.lesson_05.tokenizer import create_vocabulary, encode, decode
-
-
-def main():
-    text = DATASET_PATH.read_text(encoding="utf-8")
-
-    char_to_id, id_to_char = create_vocabulary(text)
-
-    token_ids = encode(text, char_to_id)
-
-    split_index = int(len(token_ids) * 0.9)
-
-    training_data = token_ids[:split_index]
-    validation_data = token_ids[split_index:]
-
-    print("Caratteri totali nel testo:", len(text))
-    print("Token numerici totali:", len(token_ids))
-    print("Token training:", len(training_data))
-    print("Token validation:", len(validation_data))
-    print()
-
-    print("Primi 80 token del training:")
-    print(training_data[:80])
-    print()
-
-    print("Gli stessi token riconvertiti in testo:")
-    print(decode(training_data[:80], id_to_char))
-
-
-if __name__ == "__main__":
-    main()
-```---
-
-## Lesson 06 - Input and Target
-
-### What is added
-
-Let's create a pair:```python
-input_tokens = token_ids[:CONTEXT_SIZE]
-target_tokens = token_ids[1:CONTEXT_SIZE + 1]
-```### Explanation
-
-A GPT learns to predict the next token.
-
-If the input is:```text
-Nel mezz
-```the target is:```text
-el mezzo
-```
 
 The target is the same as the input, but moved forward one character.
 
-### Extra clarification: `contesto = input_tokens[:posizione + 1]`
+### Extra clarification: `contesto = input_tokens[:position + 1]`
 
 This line takes up an increasingly longer portion of the input.
 
@@ -1280,178 +794,12 @@ Conceptually:```text
 'Ne'    -> prevedi 'l'
 'Nel'   -> prevedi ' '
 'Nel '  -> prevedi 'm'
-```### Complete code```python
-"""
-Differenza rispetto al file precedente:
-- Prima dividevamo il dataset in training e validation.
-- Qui creiamo una coppia input/target spostata di un token.
-
-Objective del file:
-- Mostrare il problema che un GPT deve imparare: dato un contesto, prevedere il
-  token successivo.
-"""
-
-from pathlib import Path
-import sys
-
-
-PROJECT_DIR = Path(__file__).resolve().parents[2]
-DATASET_PATH = PROJECT_DIR / "data" / "raw" / "fineweb_edu_sample.txt"
-
-sys.path.append(str(PROJECT_DIR))
-
-from study.snapshots.lesson_06.tokenizer import create_vocabulary, encode, decode
-
-CONTEXT_SIZE = 24
-
-
-def main():
-    text = DATASET_PATH.read_text(encoding="utf-8")
-
-    char_to_id, id_to_char = create_vocabulary(text)
-
-    token_ids = encode(text, char_to_id)
-
-    input_tokens = token_ids[:CONTEXT_SIZE]
-    target_tokens = token_ids[1:CONTEXT_SIZE + 1]
-
-    print("Input tokens:")
-    print(input_tokens)
-    print()
-
-    print("Target tokens:")
-    print(target_tokens)
-    print()
-
-    print("Input come testo:")
-    print(repr(decode(input_tokens, id_to_char)))
-    print()
-
-    print("Target come testo:")
-    print(repr(decode(target_tokens, id_to_char)))
-    print()
-
-    print("Esempi di previsione:")
-    for position in range(CONTEXT_SIZE):
-        context = input_tokens[:position + 1]
-        next_token = target_tokens[position]
-
-        context_text = decode(context, id_to_char)
-        next_char = decode([next_token], id_to_char)
-
-        print(repr(context_text), "->", repr(next_char))
-
-
-if __name__ == "__main__":
-    main()
-```---
-
-## Lesson 07 - Random Examples
-
-### What is added
-
-Before we always used the beginning of the text. Now let's choose a random location:```python
-start_position = random.randint(0, len(data) - context_size - 1)
-```### Explanation
-
-To train a model we need to show it different parts of the corpus. If he
-if we always showed the beginning, he would only learn that area.
-
-The `create_example` function takes:```text
-data
-context_size
-```
 
 e restituisce:
 
 ```text
 input_tokens
 target_tokens
-```### Complete code```python
-"""
-Differenza rispetto al file precedente:
-- Prima usavamo solo l'inizio del testo.
-- Qui prendiamo esempi casuali da punti diversi del training set.
-
-Objective del file:
-- Far vedere che il modello deve allenarsi su molte zone del testo, non sempre
-  sugli stessi primi caratteri.
-"""
-
-from pathlib import Path
-import random
-import sys
-
-
-PROJECT_DIR = Path(__file__).resolve().parents[2]
-DATASET_PATH = PROJECT_DIR / "data" / "raw" / "fineweb_edu_sample.txt"
-
-sys.path.append(str(PROJECT_DIR))
-
-from study.snapshots.lesson_07.tokenizer import create_vocabulary, encode, decode
-
-CONTEXT_SIZE = 32
-
-
-def create_example(data, context_size):
-    start_position = random.randint(0, len(data) - context_size - 1)
-
-    input_tokens = data[start_position:start_position + context_size]
-    target_tokens = data[start_position + 1:start_position + context_size + 1]
-
-    return input_tokens, target_tokens
-
-
-def main():
-    random.seed(42)
-
-    text = DATASET_PATH.read_text(encoding="utf-8")
-
-    char_to_id, id_to_char = create_vocabulary(text)
-
-    token_ids = encode(text, char_to_id)
-
-    split_index = int(len(token_ids) * 0.9)
-    training_data = token_ids[:split_index]
-    validation_data = token_ids[split_index:]
-
-    print("Token training:", len(training_data))
-    print("Token validation:", len(validation_data))
-    print()
-
-    for example_number in range(5):
-        input_tokens, target_tokens = create_example(training_data, CONTEXT_SIZE)
-
-        input_text = decode(input_tokens, id_to_char)
-        target_text = decode(target_tokens, id_to_char)
-
-        print("Esempio", example_number + 1)
-        print("Input:")
-        print(repr(input_text))
-        print("Target:")
-        print(repr(target_text))
-        print()
-
-
-if __name__ == "__main__":
-    main()
-```---
-
-## Lesson 08 - Batch in Python
-
-### What is added
-
-Let's create a batch:```python
-batch_inputs = []
-batch_targets = []
-```A batch is a group of examples.
-
-### Explanation
-
-So far we only had one example:```text
-input_tokens
-target_tokens
-```
 
 Now let's create more together:```text
 batch_inputs = [
@@ -1469,93 +817,9 @@ CONTEXT_SIZE = 32
 
 Let's create 4 examples, each 32 tokens long.
 
-### Complete code```python
-"""
-Differenza rispetto al file precedente:
-- Prima creavamo un singolo esempio casuale alla volta.
-- Qui raccogliamo più esempi insieme in un batch.
-
-Objective del file:
-- Introdurre l'idea di batch: un gruppo di esempi input/target usati insieme
-  durante il training.
-"""
-
-from pathlib import Path
-import random
-import sys
-
-
-PROJECT_DIR = Path(__file__).resolve().parents[2]
-DATASET_PATH = PROJECT_DIR / "data" / "raw" / "fineweb_edu_sample.txt"
-
-sys.path.append(str(PROJECT_DIR))
-
-from study.snapshots.lesson_08.tokenizer import create_vocabulary, encode, decode
-
-CONTEXT_SIZE = 32
-BATCH_SIZE = 4
-
-
-def create_example(data, context_size):
-    start_position = random.randint(0, len(data) - context_size - 1)
-
-    input_tokens = data[start_position:start_position + context_size]
-    target_tokens = data[start_position + 1:start_position + context_size + 1]
-
-    return input_tokens, target_tokens
-
-
-def create_batch(data, batch_size, context_size):
-    batch_inputs = []
-    batch_targets = []
-
-    for _ in range(batch_size):
-        input_tokens, target_tokens = create_example(data, context_size)
-
-        batch_inputs.append(input_tokens)
-        batch_targets.append(target_tokens)
-
-    return batch_inputs, batch_targets
-
-
-def main():
-    random.seed(42)
-
-    text = DATASET_PATH.read_text(encoding="utf-8")
-
-    char_to_id, id_to_char = create_vocabulary(text)
-
-    token_ids = encode(text, char_to_id)
-
-    split_index = int(len(token_ids) * 0.9)
-    training_data = token_ids[:split_index]
-
-    batch_inputs, batch_targets = create_batch(
-        data=training_data,
-        batch_size=BATCH_SIZE,
-        context_size=CONTEXT_SIZE,
-    )
-
-    print("Numero esempi nel batch:", len(batch_inputs))
-    print("Lunghezza di ogni esempio:", len(batch_inputs[0]))
-    print()
-
-    for indice in range(BATCH_SIZE):
-        print("Esempio", indice + 1)
-        print("Input:")
-        print(repr(decode(batch_inputs[indice], id_to_char)))
-        print("Target:")
-        print(repr(decode(batch_targets[indice], id_to_char)))
-        print()
-
-
-if __name__ == "__main__":
-    main()
-```---
-
 ## Lesson 09 - Batch in PyTorch
 
-### What is added
+### What changes and why
 
 Let's transform Python lists into tensors:```python
 input_tensor = torch.tensor(batch_inputs)
@@ -1574,311 +838,6 @@ torch.Size([4, 32])
 Meaning what:```text
 4 esempi
 32 token per esempio
-```### Complete code```python
-"""
-Differenza rispetto al file precedente:
-- Prima il batch era composto da liste Python.
-- Qui trasformiamo quelle liste in tensori PyTorch.
-
-Objective del file:
-- Preparare input e target nel formato che potrà essere usato da un modello
-  neurale.
-- Osservare la forma del batch: batch_size x context_size.
-"""
-
-from pathlib import Path
-import random
-import sys
-
-import torch
-
-
-PROJECT_DIR = Path(__file__).resolve().parents[2]
-DATASET_PATH = PROJECT_DIR / "data" / "raw" / "fineweb_edu_sample.txt"
-
-sys.path.append(str(PROJECT_DIR))
-
-from study.snapshots.lesson_09.tokenizer import create_vocabulary, encode, decode
-
-CONTEXT_SIZE = 32
-BATCH_SIZE = 4
-
-
-def create_example(data, context_size):
-    start_position = random.randint(0, len(data) - context_size - 1)
-
-    input_tokens = data[start_position:start_position + context_size]
-    target_tokens = data[start_position + 1:start_position + context_size + 1]
-
-    return input_tokens, target_tokens
-
-
-def create_batch(data, batch_size, context_size):
-    batch_inputs = []
-    batch_targets = []
-
-    for _ in range(batch_size):
-        input_tokens, target_tokens = create_example(data, context_size)
-
-        batch_inputs.append(input_tokens)
-        batch_targets.append(target_tokens)
-
-    input_tensor = torch.tensor(batch_inputs)
-    target_tensor = torch.tensor(batch_targets)
-
-    return input_tensor, target_tensor
-
-
-def main():
-    random.seed(42)
-
-    text = DATASET_PATH.read_text(encoding="utf-8")
-
-    char_to_id, id_to_char = create_vocabulary(text)
-
-    token_ids = encode(text, char_to_id)
-
-    split_index = int(len(token_ids) * 0.9)
-    training_data = token_ids[:split_index]
-
-    input_tensor, target_tensor = create_batch(
-        data=training_data,
-        batch_size=BATCH_SIZE,
-        context_size=CONTEXT_SIZE,
-    )
-
-    print("Input tensor:")
-    print(input_tensor)
-    print()
-
-    print("Target tensor:")
-    print(target_tensor)
-    print()
-
-    print("Forma input tensor:")
-    print(input_tensor.shape)
-    print()
-
-    print("Forma target tensor:")
-    print(target_tensor.shape)
-    print()
-
-    first_input = input_tensor[0].tolist()
-    first_target = target_tensor[0].tolist()
-
-    print("Primo input come testo:")
-    print(repr(decode(first_input, id_to_char)))
-    print()
-
-    print("Primo target come testo:")
-    print(repr(decode(first_target, id_to_char)))
-
-
-if __name__ == "__main__":
-    main()
-```---
-
-## Lesson 10 - Batching Module
-
-### What is added
-
-Let's move the batch logic to the final project and snapshot
-lesson:```text
-final_project/batching.py
-study/snapshots/lesson_10/batching.py
-```and we test the module with:```text
-study/lessons/10_test_batching.py
-```### Explanation
-
-As for the tokenizer, we separate:```text
-codice snapshot       -> study/snapshots/lesson_10/batching.py
-codice finale vivo    -> final_project/batching.py
-script di verifica    -> study/lessons/10_test_batching.py
-```### Code added: `study/snapshots/lesson_10/batching.py````python
-"""
-Differenza rispetto ai file precedenti:
-- Prima la creazione del batch era dentro `08_python_batch.py` e
-  `09_torch_batch.py`.
-- Qui spostiamo quella logica in un modulo riutilizzabile.
-
-Objective del file:
-- Creare batch di input e target in formato tensore PyTorch.
-- Preparare una funzione comune che potremo usare durante il training del
-  modello.
-"""
-
-import random
-
-import torch
-
-
-def create_example(data, context_size):
-    start_position = random.randint(0, len(data) - context_size - 1)
-
-    input_tokens = data[start_position:start_position + context_size]
-    target_tokens = data[start_position + 1:start_position + context_size + 1]
-
-    return input_tokens, target_tokens
-
-
-def create_batch(data, batch_size, context_size):
-    batch_inputs = []
-    batch_targets = []
-
-    for _ in range(batch_size):
-        input_tokens, target_tokens = create_example(data, context_size)
-
-        batch_inputs.append(input_tokens)
-        batch_targets.append(target_tokens)
-
-    input_tensor = torch.tensor(batch_inputs)
-    target_tensor = torch.tensor(batch_targets)
-
-    return input_tensor, target_tensor
-```### Complete code: `study/lessons/10_test_batching.py````python
-"""
-Changes compared with the previous file:
-- This lesson script uses the English project layout and imports lesson-specific
-  snapshot code.
-- It belongs to lesson 10 of the guided LearnGPT path.
-
-File purpose:
-- Run the lesson example in a reproducible way.
-- Print the relevant intermediate values, tensor shapes, losses, or generated
-  text for inspection.
-"""
-
-from pathlib import Path
-import random
-import sys
-
-
-PROJECT_DIR = Path(__file__).resolve().parents[2]
-DATASET_PATH = PROJECT_DIR / "data" / "raw" / "fineweb_edu_sample.txt"
-
-sys.path.append(str(PROJECT_DIR))
-
-from study.snapshots.lesson_10.tokenizer import create_vocabulary, encode, decode
-from study.snapshots.lesson_10.batching import create_batch
-
-CONTEXT_SIZE = 32
-BATCH_SIZE = 4
-
-
-def main():
-    random.seed(42)
-
-    text = DATASET_PATH.read_text(encoding="utf-8")
-
-    char_to_id, id_to_char = create_vocabulary(text)
-
-    token_ids = encode(text, char_to_id)
-
-    split_index = int(len(token_ids) * 0.9)
-    training_data = token_ids[:split_index]
-
-    input_tensor, target_tensor = create_batch(
-        data=training_data,
-        batch_size=BATCH_SIZE,
-        context_size=CONTEXT_SIZE,
-    )
-
-    print("Input form:")
-    print(input_tensor.shape)
-    print()
-
-    print("Target shape:")
-    print(target_tensor.shape)
-    print()
-
-    print("First input as text:")
-    print(repr(decode(input_tensor[0].tolist(), id_to_char)))
-    print()
-
-    print("First target as text:")
-    print(repr(decode(target_tensor[0].tolist(), id_to_char)))
-
-
-if __name__ == "__main__":
-    main()
-```---
-
-## Lesson 11 - Verify PyTorch
-
-### What is added
-
-Let's create:```text
-study/lessons/11_verify_pytorch.py
-final_project/requirements.txt
-```### Explanation
-
-From here on we use PyTorch. In your environment the correct command is:```bash
-python
-```because it points to the Python of pyenv 3.13, which has PyTorch installed.
-
-The `requirements.txt` file contains:```text
-torch
-```### Complete code```python
-"""
-Differenza rispetto al file precedente:
-- Prima usavamo PyTorch dentro il batch, ma senza fermarci a guardare cosa sia
-  un tensore.
-- Qui facciamo un controllo esplicito di PyTorch e osserviamo alcune operazioni
-  minime sui tensori.
-
-Objective del file:
-- Verificare che PyTorch sia installato.
-- Capire che un tensore è una tabella di numeri con una forma precisa.
-- Preparare il terreno per il primo modello neurale.
-"""
-
-import torch
-
-
-def main():
-    print("Versione PyTorch:")
-    print(torch.__version__)
-    print()
-
-    token_ids = [
-        [1, 2, 3, 4],
-        [5, 6, 7, 8],
-    ]
-
-    tensor = torch.tensor(token_ids)
-
-    print("Tensore:")
-    print(tensor)
-    print()
-
-    print("Forma del tensore:")
-    print(tensor.shape)
-    print()
-
-    print("Prima riga:")
-    print(tensor[0])
-    print()
-
-    print("Seconda colonna:")
-    print(tensor[:, 1])
-    print()
-
-    print("Tipo dei dati contenuti:")
-    print(tensor.dtype)
-
-
-if __name__ == "__main__":
-    main()
-```---
-
-## Lesson 12 - First Bigram Model
-
-### What is added
-
-Let's create the first model in the final project and lesson snapshot:```text
-final_project/model.py
-study/snapshots/lesson_12/model.py
-```
 
 The main class is:```python
 class LanguageModel(nn.Module):
@@ -1916,12 +875,12 @@ target: "u"
 The model is not yet reasoning through an entire sentence. He doesn't really see:```text
 Nel mezzo del cammin
 ```as a long context. For each position learn above all:```text
-questo carattere -> prossimo carattere probabile
+this character -> probable next character
 ```### Extra clarification: why we start from a bigram model
 
 We start from the bigram because it is the simplest neural model that allows us to
 see the entire fundamental cycle of a GPT:```text
-token -> logits -> loss -> backward -> aggiornamento pesi -> generazione
+token -> logits -> loss -> backward -> weight update -> generation
 ```
 
 With a bigram we can learn these concepts without introducing them right away
@@ -1997,8 +956,8 @@ significa:
 
 ```text
 esempio 0
-posizione 3
-tutti i 68 punteggi del prossimo carattere possibile
+position 3
+tutti i 68 punteggi del prossimo character possibile
 ```
 
 Mentre:
@@ -2010,135 +969,8 @@ logits[0, 3, 15]
 significa:
 
 ```text
-punteggio assegnato al carattere con ID 15
-per la posizione 3 dell'esempio 0
-```### Complete code: `study/snapshots/lesson_12/model.py````python
-"""
-Changes compared with the previous files:
-- This module is part of the project-code snapshot used by lesson 12.
-- It keeps the lesson independent from future changes in `final_project`.
-
-File purpose:
-- Provide the code needed by the matching lesson script.
-- Preserve a stable reference point for the course examples.
-"""
-
-from torch import nn
-
-
-class LanguageModel(nn.Module):
-    def __init__(self, vocabulary_size):
-        super().__init__()
-
-        self.token_embedding_table = nn.Embedding(
-            num_embeddings=vocabulary_size,
-            embedding_dim=vocabulary_size,
-        )
-
-    def forward(self, input_ids):
-        logits = self.token_embedding_table(input_ids)
-
-        return logits
-```### Complete code: `study/lessons/12_bigram_model.py````python
-"""
-Changes compared with the previous file:
-- This lesson script uses the English project layout and imports lesson-specific
-  snapshot code.
-- It belongs to lesson 12 of the guided LearnGPT path.
-
-File purpose:
-- Run the lesson example in a reproducible way.
-- Print the relevant intermediate values, tensor shapes, losses, or generated
-  text for inspection.
-"""
-
-from pathlib import Path
-import random
-import sys
-
-import torch
-
-
-PROJECT_DIR = Path(__file__).resolve().parents[2]
-DATASET_PATH = PROJECT_DIR / "data" / "raw" / "fineweb_edu_sample.txt"
-
-sys.path.append(str(PROJECT_DIR))
-
-from study.snapshots.lesson_12.batching import create_batch
-from study.snapshots.lesson_12.model import LanguageModel
-from study.snapshots.lesson_12.tokenizer import create_vocabulary, decode, encode
-
-CONTEXT_SIZE = 8
-BATCH_SIZE = 4
-
-
-def main():
-    random.seed(42)
-    torch.manual_seed(42)
-
-    text = DATASET_PATH.read_text(encoding="utf-8")
-
-    char_to_id, id_to_char = create_vocabulary(text)
-    vocabulary_size = len(char_to_id)
-
-    token_ids = encode(text, char_to_id)
-
-    split_index = int(len(token_ids) * 0.9)
-    training_data = token_ids[:split_index]
-
-    input_tensor, target_tensor = create_batch(
-        data=training_data,
-        batch_size=BATCH_SIZE,
-        context_size=CONTEXT_SIZE,
-    )
-
-    model = LanguageModel(vocabulary_size=vocabulary_size)
-
-    logits = model(input_tensor)
-
-    print("Input form:")
-    print(input_tensor.shape)
-    print()
-
-    print("Target shape:")
-    print(target_tensor.shape)
-    print()
-
-    print("Vocabulary size:")
-    print(vocabulary_size)
-    print()
-
-    print("Logits form:")
-    print(logits.shape)
-    print()
-
-    first_token = input_tensor[0, 0].item()
-    first_token_scores = logits[0, 0]
-    predicted_token = torch.argmax(first_token_scores).item()
-
-    print("First token of the first example:")
-    print(first_token, repr(decode([first_token], id_to_char)))
-    print()
-
-    print("Scores produced for that token:")
-    print(first_token_scores)
-    print()
-
-    print("Highest scoring token according to the untrained model:")
-    print(predicted_token, repr(decode([predicted_token], id_to_char)))
-
-
-if __name__ == "__main__":
-    main()
-```---
-
-## Lesson 13 - Bigram Model Loss
-
-### What is added
-
-Let's update `LanguageModel` to also accept targets:```python
-def forward(self, input_ids, target_ids=None):
-```
+punteggio assegnato al character con ID 15
+per la position 3 dell'esempio 0
 
 If `target_ids` is not passed, the pattern returns only `logits`.
 
@@ -2187,7 +1019,7 @@ We do not pass the `self` parameter. Python passes it automatically.
 When we write:```python
 model(input_tensor, target_tensor)
 ```the values ​​arrive inside `forward` like this:```text
-self       -> modello
+self       -> model
 input_ids  -> input_tensor
 target_ids -> target_tensor
 ```
@@ -2199,10 +1031,10 @@ def forward(self, input_ids, target_ids=None):
 vuol dire:
 
 ```text
-questo metodo appartiene al modello stesso;
+this method belongs to the model itself;
 riceve gli input;
-può ricevere anche i target;
-se riceve i target, può calcolare anche la loss.
+it can also receive targets;
+if it receives targets, it can also compute the loss.
 ```### Explanation
 
 The `loss` is a number that measures how wrong the model is.
@@ -2212,7 +1044,7 @@ loss = F.cross_entropy(logits_flat, target_ids_flat)
 ```
 
 Cross entropy compares:```text
-i punteggi prodotti dal modello
+the scores produced by the model
 con il token corretto da prevedere
 ```### Extra clarification: reshape for loss
 
@@ -2226,7 +1058,7 @@ Significa:
 ```text
 4 esempi
 8 posizioni per esempio
-68 punteggi per ogni posizione
+68 punteggi per ogni position
 ```
 
 Cross entropy instead wants:```text
@@ -2243,10 +1075,10 @@ Representation before:
 ```text
 [
   [  # esempio 0
-    [68 punteggi],  # posizione 0
-    [68 punteggi],  # posizione 1
+    [68 punteggi],  # position 0
+    [68 punteggi],  # position 1
     ...
-    [68 punteggi],  # posizione 7
+    [68 punteggi],  # position 7
   ],
 
   [  # esempio 1
@@ -2269,13 +1101,13 @@ After `reshape`:
 
 ```text
 [
-  [68 punteggi],  # previsione 0  = esempio 0, posizione 0
-  [68 punteggi],  # previsione 1  = esempio 0, posizione 1
+  [68 punteggi],  # previsione 0  = esempio 0, position 0
+  [68 punteggi],  # previsione 1  = esempio 0, position 1
   ...
-  [68 punteggi],  # previsione 7  = esempio 0, posizione 7
-  [68 punteggi],  # previsione 8  = esempio 1, posizione 0
+  [68 punteggi],  # previsione 7  = esempio 0, position 7
+  [68 punteggi],  # previsione 8  = esempio 1, position 0
   ...
-  [68 punteggi],  # previsione 31 = esempio 3, posizione 7
+  [68 punteggi],  # previsione 31 = esempio 3, position 7
 ]
 ```
 
@@ -2283,7 +1115,7 @@ The target does the same thing:```text
 target [4, 8] -> target_flat [32]
 ```
 
-Rappresentazione finale:
+Final representation:
 
 ```text
 previsione 0   -> 68 punteggi -> target corretto 0
@@ -2317,133 +1149,10 @@ vuol dire:
 ```text
 metti tutti i target corretti in una lista piatta,
 uno per ogni previsione
-```### Complete code```python
-"""
-Differenza rispetto al file precedente:
-- Prima il modello produceva solo `logits`, cioè punteggi per il prossimo token.
-- Qui confrontiamo quei punteggi con i target corretti e calcoliamo una `loss`.
-
-Objective del file:
-- Capire che la loss misura quanto il modello sta sbagliando.
-- Vedere perché dobbiamo trasformare `batch_size x context_size x vocabulary_size`
-  in una tabella piatta prima di usare la cross entropy.
-- Preparare il passo successivo: aggiornare i pesi del modello per ridurre la
-  loss.
-"""
-
-from pathlib import Path
-import random
-import sys
-
-import torch
-
-
-PROJECT_DIR = Path(__file__).resolve().parents[2]
-DATASET_PATH = PROJECT_DIR / "data" / "raw" / "fineweb_edu_sample.txt"
-
-sys.path.append(str(PROJECT_DIR))
-
-from study.snapshots.lesson_13.batching import create_batch
-from study.snapshots.lesson_13.model import LanguageModel
-from study.snapshots.lesson_13.tokenizer import create_vocabulary, decode, encode
-
-CONTEXT_SIZE = 8
-BATCH_SIZE = 4
-
-
-def main():
-    random.seed(42)
-    torch.manual_seed(42)
-
-    text = DATASET_PATH.read_text(encoding="utf-8")
-
-    char_to_id, id_to_char = create_vocabulary(text)
-    vocabulary_size = len(char_to_id)
-
-    token_ids = encode(text, char_to_id)
-
-    split_index = int(len(token_ids) * 0.9)
-    training_data = token_ids[:split_index]
-
-    input_tensor, target_tensor = create_batch(
-        data=training_data,
-        batch_size=BATCH_SIZE,
-        context_size=CONTEXT_SIZE,
-    )
-
-    model = LanguageModel(vocabulary_size=vocabulary_size)
-
-    logits, loss = model(input_tensor, target_tensor)
-
-    print("Forma logits originale:")
-    print(logits.shape)
-    print()
-
-    batch_size, context_size, vocabulary_size = logits.shape
-
-    logits_flat = logits.reshape(batch_size * context_size, vocabulary_size)
-    target_flat = target_tensor.reshape(batch_size * context_size)
-
-    print("Forma logits dopo reshape:")
-    print(logits_flat.shape)
-    print()
-
-    print("Forma target dopo reshape:")
-    print(target_flat.shape)
-    print()
-
-    print("Loss del modello non addestrato:")
-    print(loss.item())
-    print()
-
-    first_input = input_tensor[0, 0].item()
-    first_target = target_tensor[0, 0].item()
-    first_predicted_token = torch.argmax(logits[0, 0]).item()
-
-    print("Primo token letto dal modello:")
-    print(first_input, repr(decode([first_input], id_to_char)))
-    print()
-
-    print("Target corretto per quella posizione:")
-    print(first_target, repr(decode([first_target], id_to_char)))
-    print()
-
-    print("Token scelto dal modello non addestrato:")
-    print(first_predicted_token, repr(decode([first_predicted_token], id_to_char)))
-
-
-if __name__ == "__main__":
-    main()
-```
-
-### Comando
-
-```bash
-cd /Users/ferdinandobons/Desktop/MiniGPT
-python LearnGPT/study/lessons/13_bigram_loss.py
-```
-
-### Output osservato
-
-Nel run verificato:
-
-```text
-Forma logits originale:
-torch.Size([4, 8, 68])
-
-Forma logits dopo reshape:
-torch.Size([32, 68])
-
-Forma target dopo reshape:
-torch.Size([32])
-
-Loss del modello non addestrato:
-4.520828723907471
-```---
 
 ## Lesson 14 - First Bigram Training Loop
 
-### What is added
+### What changes and why
 
 Let's create:```text
 study/lessons/14_bigram_training.py
@@ -2465,16 +1174,16 @@ input -> logits -> loss
 Now we add the weight update:
 
 ```text
-input -> logits -> loss -> gradienti -> aggiornamento pesi
+input -> logits -> loss -> gradients -> weight update
 ```
 
 The complete sequence of each training step is:```text
 1. crea un batch
-2. fai il forward del modello
+2. run the model forward pass
 3. calcola la loss
-4. azzera i gradienti vecchi
-5. calcola i gradienti nuovi
-6. aggiorna i pesi
+4. clear the old gradients
+5. compute the new gradients
+6. update the weights
 ```
 
 In code:```python
@@ -2504,9 +1213,9 @@ optimizer.zero_grad()
 ```
 
 The correct sequence is:```text
-azzera gradienti vecchi
-calcola gradienti nuovi
-aggiorna pesi
+azzera gradients vecchi
+computes gradients nuovi
+aggiorna weights
 ```### Clarification: What `optimizer.step` does
 
 The command:```python
@@ -2559,11 +1268,11 @@ directly the parameters already present in the `model` object.
 
 So the flow is:```mermaid
 flowchart TD
-    A["Modello con pesi iniziali"]
+    A["Model with initial weights"]
     B["Forward: calcolo logits e loss"]
-    C["backward(): calcolo gradienti"]
-    D["optimizer.step(): modifica i pesi nello stesso modello"]
-    E["Modello con pesi aggiornati"]
+    C["backward(): gradient computation"]
+    D["optimizer.step(): changes the weights in the same model"]
+    E["Model with updated weights"]
 
     A --> B --> C --> D --> E
 ```
@@ -2590,7 +1299,7 @@ self.token_embedding_table = nn.Embedding(...)
 ```
 
 When we create the optimizer, we are telling it:```text
-questi sono i pesi che puoi aggiornare
+these are the weights you can update
 ```
 
 So the optimizer is not linked to the model by name. It is related to tensors
@@ -2603,21 +1312,21 @@ optimizer.zero_grad()
 loss.backward()
 optimizer.step()
 ```it works like this:```text
-1. modello(...) usa i pesi del modello e produce la loss
+1. model(...) uses the model weights and produces the loss
 2. loss.backward() segue il grafo dei calcoli all'indietro
-3. PyTorch scrive i gradienti dentro i parametri del modello
-4. optimizer.step() legge quei gradienti e aggiorna quegli stessi parametri
+3. PyTorch writes gradients into the model parameters
+4. optimizer.step() reads those gradients and updates those same parameters
 ```
 
-Diagramma del collegamento:
+Connection diagram:
 
 ```mermaid
 flowchart TD
-    A["modello"]
-    B["modello.parameters()"]
+    A["model"]
+    B["model.parameters()"]
     C["optimizer conosce questi parametri"]
-    D["Forward: input -> modello -> logits -> loss"]
-    E["loss.backward(): calcola gradienti sui parametri"]
+    D["Forward: input -> model -> logits -> loss"]
+    E["loss.backward(): computes gradients on the parameters"]
     F["optimizer.step(): aggiorna i parametri conosciuti"]
 
     A --> B --> C
@@ -2633,151 +1342,41 @@ optimizer.step() usa parametro.grad per modificare parametro
 In forma molto concreta:
 
 ```text
-modello.token_embedding_table.weight        # pesi
-modello.token_embedding_table.weight.grad   # gradienti calcolati da backward
+model.token_embedding_table.weight        # weights
+model.token_embedding_table.weight.grad   # gradients computed by backward
 ```
 
 L'optimizer aggiorna:
 
 ```text
-modello.token_embedding_table.weight
+model.token_embedding_table.weight
 ```
 
 usando:
 
 ```text
-modello.token_embedding_table.weight.grad
+model.token_embedding_table.weight.grad
 ```
 
-### Diagramma del training
+### Training diagram
 
 ```mermaid
 flowchart TD
     A["Batch di input"]
-    B["Modello bigram"]
+    B["Bigram model"]
     C["Logits"]
     D["Cross entropy"]
     E["Loss"]
     F["backward()"]
-    G["Gradienti"]
+    G["Gradients"]
     H["optimizer.step()"]
-    I["Pesi aggiornati"]
+    I["Updated weights"]
 
     A --> B --> C --> D --> E --> F --> G --> H --> I
-```### Complete code```python
-"""
-Differenza rispetto al file precedente:
-- Prima calcolavamo la loss, ma non cambiavamo i pesi del modello.
-- Qui usiamo la loss per aggiornare i pesi con un piccolo training loop.
-
-Objective del file:
-- Capire la sequenza base del training: forward, loss, zero_grad, backward,
-  step.
-- Verificare che la loss possa scendere dopo alcuni aggiornamenti.
-- Preparare il passo successivo: generare testo con il modello addestrato.
-"""
-
-from pathlib import Path
-import random
-import sys
-
-import torch
-
-
-PROJECT_DIR = Path(__file__).resolve().parents[2]
-DATASET_PATH = PROJECT_DIR / "data" / "raw" / "fineweb_edu_sample.txt"
-
-sys.path.append(str(PROJECT_DIR))
-
-from study.snapshots.lesson_14.batching import create_batch
-from study.snapshots.lesson_14.model import LanguageModel
-from study.snapshots.lesson_14.tokenizer import create_vocabulary, encode
-
-CONTEXT_SIZE = 8
-BATCH_SIZE = 32
-TRAINING_STEPS = 300
-LEARNING_RATE = 0.01
-
-
-def main():
-    random.seed(42)
-    torch.manual_seed(42)
-
-    text = DATASET_PATH.read_text(encoding="utf-8")
-
-    char_to_id, _ = create_vocabulary(text)
-    vocabulary_size = len(char_to_id)
-
-    token_ids = encode(text, char_to_id)
-
-    split_index = int(len(token_ids) * 0.9)
-    training_data = token_ids[:split_index]
-
-    model = LanguageModel(vocabulary_size=vocabulary_size)
-    optimizer = torch.optim.AdamW(model.parameters(), lr=LEARNING_RATE)
-
-    for step in range(TRAINING_STEPS):
-        input_tensor, target_tensor = create_batch(
-            data=training_data,
-            batch_size=BATCH_SIZE,
-            context_size=CONTEXT_SIZE,
-        )
-
-        logits, loss = model(input_tensor, target_tensor)
-
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
-
-        if step % 50 == 0:
-            print("Step:", step, "Loss:", loss.item())
-
-    print("Step:", TRAINING_STEPS, "Loss finale:", loss.item())
-
-
-if __name__ == "__main__":
-    main()
-```
-
-### Comando
-
-```bash
-cd /Users/ferdinandobons/Desktop/MiniGPT
-python LearnGPT/study/lessons/14_bigram_training.py
-```### Expected output
-
-The precise numbers may change slightly, but the trend should be:```text
-Step: 0 Loss: alta
-Step: 50 Loss: più bassa
-Step: 100 Loss: più bassa
-...
-Step: 300 Loss finale: più bassa della loss iniziale
-```
-
-The loss will not drop perfectly with each print, because each step uses a
-different random batch. But it should decline as a general trend.
-
-### Observed output
-
-In the verified run:```text
-Step: 0 Loss: 4.621947288513184
-Step: 50 Loss: 4.005977153778076
-Step: 100 Loss: 3.559231996536255
-Step: 150 Loss: 3.1726064682006836
-Step: 200 Loss: 2.9321155548095703
-Step: 250 Loss: 2.675344944000244
-Step: 300 Loss finale: 2.624622106552124
-```
-
-This confirms that the bigram model is learning something: not enough
-to generate good text, but enough to assign better probabilities to
-more plausible subsequent characters.
-
----
 
 ## Lesson 15 - Bigram Model Generation
 
-### What is added
+### What changes and why
 
 Let's update:```text
 final_project/model.py
@@ -2804,12 +1403,14 @@ characters.
 Until the previous lesson the model learned, but did not produce text.
 
 Now we want to do this:```text
-prompt iniziale -> modello -> prossimo carattere -> testo aggiornato
+initial prompt -> model -> prossimo character -> updated text
 ```
 
 By repeating the process many times we get a generated sequence.
 
-### Piece of code added to the template```python
+### Piece of code added to the template
+
+```python
 def generate(self, input_ids, max_new_tokens):
     generated_ids = input_ids
 
@@ -2828,7 +1429,7 @@ last_token_logits = logits[:, -1, :]
 ```takes the scores of the last position.
 
 The syntax uses three indices because `logits` has three dimensions:```text
-logits[batch, posizione, vocabolario]
+logits[batch, position, vocabulary]
 ```
 
 Quindi:
@@ -2837,8 +1438,8 @@ Quindi:
 logits[:, -1, :]
 ```it reads like this:```text
 :   -> prendi tutti gli esempi del batch
--1  -> prendi solo l'ultima posizione della sequenza
-:   -> prendi tutti i punteggi del vocabolario
+-1  -> prendi solo l'ultima position della sequenza
+:   -> take all vocabulary scores
 ```
 
 Se `logits` ha forma:
@@ -2857,8 +1458,8 @@ vuol dire:
 
 ```text
 per ogni esempio del batch,
-prendi l'ultima posizione del contesto,
-e tieni tutti i punteggi del vocabolario
+prendi l'ultima position del contesto,
+and keep all vocabulary scores
 ```
 
 Rappresentazione:
@@ -2866,15 +1467,15 @@ Rappresentazione:
 ```text
 generated_ids = [N, e, l]
 
-il modello produce:
+the model produces:
 
-posizione 0 -> punteggi per il carattere dopo N
-posizione 1 -> punteggi per il carattere dopo e
-posizione 2 -> punteggi per il carattere dopo l
+position 0 -> punteggi per il character dopo N
+position 1 -> punteggi per il character dopo e
+position 2 -> punteggi per il character dopo l
 
-per continuare il testo ci interessa solo:
+to continue the text, we only care about:
 
-posizione 2 -> prossimo carattere dopo "Nel"
+position 2 -> prossimo character dopo "Nel"
 ```
 
 More concrete representation with a small shape:```text
@@ -2882,7 +1483,7 @@ logits.shape = [2, 4, 5]
 
 2 esempi nel batch
 4 posizioni nel contesto
-5 punteggi per ogni posizione
+5 punteggi per ogni position
 ```
 
 Struttura:
@@ -2891,17 +1492,17 @@ Struttura:
 logits =
 [
   [  # esempio 0
-    [5 punteggi],  # posizione 0
-    [5 punteggi],  # posizione 1
-    [5 punteggi],  # posizione 2
-    [5 punteggi],  # posizione 3, ultima posizione
+    [5 punteggi],  # position 0
+    [5 punteggi],  # position 1
+    [5 punteggi],  # position 2
+    [5 punteggi],  # position 3, ultima position
   ],
 
   [  # esempio 1
-    [5 punteggi],  # posizione 0
-    [5 punteggi],  # posizione 1
-    [5 punteggi],  # posizione 2
-    [5 punteggi],  # posizione 3, ultima posizione
+    [5 punteggi],  # position 0
+    [5 punteggi],  # position 1
+    [5 punteggi],  # position 2
+    [5 punteggi],  # position 3, ultima position
   ],
 ]
 ```
@@ -2917,8 +1518,8 @@ otteniamo:
 ```text
 last_token_logits =
 [
-  [5 punteggi],  # ultima posizione dell'esempio 0
-  [5 punteggi],  # ultima posizione dell'esempio 1
+  [5 punteggi],  # ultima position dell'esempio 0
+  [5 punteggi],  # ultima position dell'esempio 1
 ]
 ```
 
@@ -2978,13 +1579,13 @@ dim=-1
 vuol dire:
 
 ```text
-trasforma i punteggi del vocabolario in probabilità
+turns vocabulary scores into probabilities
 ```
 
 Softmax takes any numbers and transforms them into values ​​that:```text
 sono tutti positivi
 sommano a 1
-possono essere interpretati come probabilità
+can be interpreted as probabilities
 ```
 
 Esempio piccolo:
@@ -3010,7 +1611,7 @@ Ora i valori:
 ```text
 sono positivi
 sommano a 1
-indicano quanto ogni token è probabile
+indicate how likely each token is
 ```
 
 The token with the highest score remains the most probable, but the other tokens do not
@@ -3024,7 +1625,7 @@ logits grezzi
 softmax(dim=-1)
       │
       ▼
-probabilità
+probabilities
 [0.665, 0.245, 0.090]
 ```
 
@@ -3037,8 +1638,8 @@ last_token_logits.shape = [2, 3]
 ]
 ````dim=-1` applies the softmax separately on each row:```text
 [
-  [probabilità per esempio 0],
-  [probabilità per esempio 1],
+  [probabilities for example 0],
+  [probabilities for example 1],
 ]
 ```
 
@@ -3103,7 +1704,9 @@ max_new_tokens = 300
 The `_` variable indicates that we are not interested in using the lap number. There
 all that matters is repeating the block.
 
-#### 1. Calculate logits```python
+#### 1. Calculate logits
+
+```python
 logits = self(generated_ids)
 ```
 
@@ -3116,12 +1719,12 @@ generated_ids = [N]
 After a few rounds we could have:```text
 generated_ids = [N, e, l]
 ```then the model produces scores for each position in the sequence:```text
-posizione 0 -> prossimo token dopo N
-posizione 1 -> prossimo token dopo e
-posizione 2 -> prossimo token dopo l
+position 0 -> prossimo token dopo N
+position 1 -> prossimo token dopo e
+position 2 -> prossimo token dopo l
 ```
 
-#### 2. Prendere solo l'ultima posizione
+#### 2. Prendere solo l'ultima position
 
 ```python
 last_token_logits = logits[:, -1, :]
@@ -3135,7 +1738,9 @@ If we have:```text
 
 For this we only take the last position of the logits.
 
-#### 3. Transform logits into probabilities```python
+#### 3. Transform logits into probabilities
+
+```python
 probabilities = F.softmax(last_token_logits, dim=-1)
 ```
 
@@ -3143,13 +1748,15 @@ Logits are raw scores. Softmax transforms them into probabilities.
 
 Example:```text
 logits:       [2.0, 1.0, 0.0]
-probabilità:  [0.665, 0.245, 0.090]
+probabilities:  [0.665, 0.245, 0.090]
 ```
 
 Now we can choose the next token using a distribution of
 probability.
 
-#### 4. Sample the next token```python
+#### 4. Sample the next token
+
+```python
 next_token_ids = torch.multinomial(probabilities, num_samples=1)
 ```
 
@@ -3166,14 +1773,16 @@ If:```text
 
 This makes generation less rigid.
 
-#### 5. Attach the new token to the sequence```python
+#### 5. Attach the new token to the sequence
+
+```python
 generated_ids = torch.cat((generated_ids, next_token_ids), dim=1)
 ```
 
 Here we add the new token to the sequence.
 
 Example:```text
-prima:
+before:
 [N, e, l]
 
 nuovo token:
@@ -3199,31 +1808,31 @@ The cycle restarts using the updated sequence.
 Diagram of the first laps:```mermaid
 flowchart TD
     A["Giro 0: [N]"]
-    B["Modello sceglie: e"]
+    B["Model chooses: e"]
     C["Sequenza: [N, e]"]
-    D["Modello sceglie: l"]
+    D["Model chooses: l"]
     E["Sequenza: [N, e, l]"]
-    F["Modello sceglie: spazio"]
-    G["Sequenza: [N, e, l, spazio]"]
+    F["Model chooses: space"]
+    G["Sequenza: [N, e, l, space]"]
 
     A --> B --> C --> D --> E --> F --> G
 ```
 
 This is the basic mechanism of autoregressive generation:```text
 ogni nuovo token viene aggiunto alla sequenza,
-poi la sequenza aggiornata viene usata per generare il token successivo
+then the updated sequence is used to generate the next token
 ```
 
-### Diagramma della generazione
+### Generation diagram
 
 ```mermaid
 flowchart TD
     A["Prompt iniziale"]
     B["Token iniziali"]
-    C["Modello"]
-    D["Logits dell'ultima posizione"]
+    C["Model"]
+    D["Logits dell'ultima position"]
     E["Softmax"]
-    F["Probabilità"]
+    F["Probabilities"]
     G["torch.multinomial"]
     H["Nuovo token"]
     I["Concatenazione alla sequenza"]
@@ -3231,193 +1840,9 @@ flowchart TD
 
     A --> B --> C --> D --> E --> F --> G --> H --> I --> J
     J --> C
-```### Complete code: `study/snapshots/lesson_15/model.py````python
-"""
-Changes compared with the previous files:
-- This module is part of the project-code snapshot used by lesson 15.
-- It keeps the lesson independent from future changes in `final_project`.
-
-File purpose:
-- Provide the code needed by the matching lesson script.
-- Preserve a stable reference point for the course examples.
-"""
-
-import torch
-import torch.nn.functional as F
-from torch import nn
-
-
-class LanguageModel(nn.Module):
-    def __init__(self, vocabulary_size):
-        super().__init__()
-
-        self.token_embedding_table = nn.Embedding(
-            num_embeddings=vocabulary_size,
-            embedding_dim=vocabulary_size,
-        )
-
-    def forward(self, input_ids, target_ids=None):
-        logits = self.token_embedding_table(input_ids)
-
-        if target_ids is None:
-            return logits
-
-        batch_size, context_size, vocabulary_size = logits.shape
-
-        logits_flat = logits.reshape(batch_size * context_size, vocabulary_size)
-        target_ids_flat = target_ids.reshape(batch_size * context_size)
-
-        loss = F.cross_entropy(logits_flat, target_ids_flat)
-
-        return logits, loss
-
-    def generate(self, input_ids, max_new_tokens):
-        generated_ids = input_ids
-
-        for _ in range(max_new_tokens):
-            logits = self(generated_ids)
-            last_token_logits = logits[:, -1, :]
-            probabilities = F.softmax(last_token_logits, dim=-1)
-            next_token_ids = torch.multinomial(probabilities, num_samples=1)
-            generated_ids = torch.cat((generated_ids, next_token_ids), dim=1)
-
-        return generated_ids
-```### Complete code: `study/lessons/15_bigram_generation.py````python
-"""
-Changes compared with the previous file:
-- This lesson script uses the English project layout and imports lesson-specific
-  snapshot code.
-- It belongs to lesson 15 of the guided LearnGPT path.
-
-File purpose:
-- Run the lesson example in a reproducible way.
-- Print the relevant intermediate values, tensor shapes, losses, or generated
-  text for inspection.
-"""
-
-from pathlib import Path
-import random
-import sys
-
-import torch
-
-
-PROJECT_DIR = Path(__file__).resolve().parents[2]
-DATASET_PATH = PROJECT_DIR / "data" / "raw" / "fineweb_edu_sample.txt"
-
-sys.path.append(str(PROJECT_DIR))
-
-from study.snapshots.lesson_15.batching import create_batch
-from study.snapshots.lesson_15.model import LanguageModel
-from study.snapshots.lesson_15.tokenizer import create_vocabulary, decode, encode
-
-CONTEXT_SIZE = 8
-BATCH_SIZE = 32
-TRAINING_STEPS = 500
-LEARNING_RATE = 0.01
-MAX_NEW_TOKENS = 300
-
-
-def main():
-    random.seed(42)
-    torch.manual_seed(42)
-
-    text = DATASET_PATH.read_text(encoding="utf-8")
-
-    char_to_id, id_to_char = create_vocabulary(text)
-    vocabulary_size = len(char_to_id)
-
-    token_ids = encode(text, char_to_id)
-
-    split_index = int(len(token_ids) * 0.9)
-    training_data = token_ids[:split_index]
-
-    model = LanguageModel(vocabulary_size=vocabulary_size)
-    optimizer = torch.optim.AdamW(model.parameters(), lr=LEARNING_RATE)
-
-    for step in range(TRAINING_STEPS):
-        input_tensor, target_tensor = create_batch(
-            data=training_data,
-            batch_size=BATCH_SIZE,
-            context_size=CONTEXT_SIZE,
-        )
-
-        logits, loss = model(input_tensor, target_tensor)
-
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
-
-        if step % 100 == 0:
-            print("Step:", step, "Loss:", loss.item())
-
-    print("Step:", TRAINING_STEPS, "Final loss:", loss.item())
-    print()
-
-    prompt = "N"
-    prompt_ids = encode(prompt, char_to_id)
-    input_ids = torch.tensor([prompt_ids])
-
-    generated_ids = model.generate(
-        input_ids=input_ids,
-        max_new_tokens=MAX_NEW_TOKENS,
-    )
-
-    generated_text = decode(generated_ids[0].tolist(), id_to_char)
-
-    print("Generated text:")
-    print(generated_text)
-
-
-if __name__ == "__main__":
-    main()
-```
-### Comando
-
-```bash
-cd /Users/ferdinandobons/Desktop/MiniGPT
-python LearnGPT/study/lessons/15_bigram_generation.py
-```### Expected output
-
-The loss should go down, then a generated text will be printed.
-
-The text still won't be good: the bigram model only knows relationships between a
-character and the next. But it should look more like Italian text
-compared to completely random characters.
-
-### Observed output
-
-In the verified run:```text
-Step: 0 Loss: 4.621947288513184
-Step: 100 Loss: 3.559231996536255
-Step: 200 Loss: 2.9321155548095703
-Step: 300 Loss: 2.615068197250366
-Step: 400 Loss: 2.4846675395965576
-Step: 500 Loss finale: 2.4645042419433594
-
-Testo generato:
-NQude""come pgiHmimol, lae ".
- potTri de,'a sé al QQuargltandi i po deranó'ègia; plò mara,
-ra,
- f'a CIpi, co,
-ra ia cai odi pi mes~Qu.
-scorte fr to,
-endi n tategmmia  l len n agn in que lasa d'u'al o qdea ta   stta, ,fehhe 'uèìCa,Q'èvgi cTuo spio on)ttT.
- rsse sehenoro.
- cano "jEmede pentr e '
-attr c
-```
-
-The result is not yet linguistically good, but it is not noise either
-uniform. You see spaces, vowels, commas, word-like fragments and some
-frequent sequences. This is consistent with a bigram model: just learn which
-character tends to follow another character.
-
----
-
 ## Lesson 16 - Bigram Model Limit
 
-### What is added
+### What changes and why
 
 Let's create:```text
 study/lessons/16_bigram_limit.py
@@ -3451,8 +1876,8 @@ last_token_logits = logits[:, -1, :]
 ```i.e. the scores of the last position.
 
 For bigram, the last position depends only on the last character. So:```text
-Nel -> ultimo carattere l
-sol -> ultimo carattere l
+Nel -> ultimo character l
+sol -> ultimo character l
 ```produce the same final scores.
 
 ### Because this is a limitation
@@ -3467,8 +1892,8 @@ sol
 Even though they both end with `l`, the context before the `l` is different.
 
 A more powerful model should be able to learn that:```text
-"Nel" può continuare in un certo modo
-"sol" può continuare in un altro modo
+"Nel" can continuare in un certo modo
+"sol" can continuare in un altro modo
 ```
 
 The bigram, however, cannot do this, because it does not really combine the information
@@ -3498,207 +1923,40 @@ Nel vs Nea -> False
 Why does `Nel` and `sol` end with the same character, while `Nea` ends with
 a different character.
 
-### Bigram limit diagram```mermaid
+### Bigram limit diagram
+
+```mermaid
 flowchart TD
     A["Prompt A: Nel"]
     B["Ultimo token: l"]
     C["Tabella bigram della lettera l"]
-    D["Punteggi per il prossimo carattere"]
+    D["Punteggi per il prossimo character"]
 
     E["Prompt B: sol"]
     F["Ultimo token: l"]
     G["Stessa tabella bigram della lettera l"]
-    H["Stessi punteggi per il prossimo carattere"]
+    H["Stessi punteggi per il prossimo character"]
 
     A --> B --> C --> D
     E --> F --> G --> H
-    C -. "stessi pesi" .- G
+    C -. "same weights" .- G
 ```
 
 The model doesn't really see:```text
 N e l
 ```as a sequence to interpret together. For the final forecast you only see:```text
 l
-```### Complete code```python
-"""
-Differenza rispetto al file precedente:
-- Prima generavamo testo con il modello bigram.
-- Qui mostriamo un limite importante: il bigram guarda solo l'ultimo token.
-
-Objective del file:
-- Dimostrare che due prompt diversi ma con lo stesso ultimo carattere producono
-  gli stessi punteggi per il prossimo carattere.
-- Capire perché il bigram non basta per costruire un GPT vero.
-- Preparare il passaggio a un modello che usa davvero il contesto.
-"""
-
-from pathlib import Path
-import random
-import sys
-
-import torch
-
-
-PROJECT_DIR = Path(__file__).resolve().parents[2]
-DATASET_PATH = PROJECT_DIR / "data" / "raw" / "fineweb_edu_sample.txt"
-
-sys.path.append(str(PROJECT_DIR))
-
-from study.snapshots.lesson_16.batching import create_batch
-from study.snapshots.lesson_16.model import LanguageModel
-from study.snapshots.lesson_16.tokenizer import create_vocabulary, decode, encode
-
-CONTEXT_SIZE = 8
-BATCH_SIZE = 32
-TRAINING_STEPS = 300
-LEARNING_RATE = 0.01
-
-
-def train_model(training_data, vocabulary_size):
-    model = LanguageModel(vocabulary_size=vocabulary_size)
-    optimizer = torch.optim.AdamW(model.parameters(), lr=LEARNING_RATE)
-
-    for step in range(TRAINING_STEPS):
-        input_tensor, target_tensor = create_batch(
-            data=training_data,
-            batch_size=BATCH_SIZE,
-            context_size=CONTEXT_SIZE,
-        )
-
-        _, loss = model(input_tensor, target_tensor)
-
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
-
-    return model, loss
-
-
-def show_prediction(model, prompt, char_to_id, id_to_char):
-    prompt_ids = encode(prompt, char_to_id)
-    input_ids = torch.tensor([prompt_ids])
-
-    logits = model(input_ids)
-    last_token_logits = logits[:, -1, :]
-    predicted_token_id = torch.argmax(last_token_logits, dim=-1).item()
-
-    print("Prompt:", repr(prompt))
-    print("Ultimo carattere:", repr(prompt[-1]))
-    print("Token previsto con punteggio massimo:", repr(decode([predicted_token_id], id_to_char)))
-    print()
-
-    return last_token_logits
-
-
-def main():
-    random.seed(42)
-    torch.manual_seed(42)
-
-    text = DATASET_PATH.read_text(encoding="utf-8")
-
-    char_to_id, id_to_char = create_vocabulary(text)
-    vocabulary_size = len(char_to_id)
-
-    token_ids = encode(text, char_to_id)
-
-    split_index = int(len(token_ids) * 0.9)
-    training_data = token_ids[:split_index]
-
-    model, loss = train_model(
-        training_data=training_data,
-        vocabulary_size=vocabulary_size,
-    )
-
-    print("Loss finale dopo breve training:", loss.item())
-    print()
-
-    logits_nel = show_prediction(
-        model=model,
-        prompt="Nel",
-        char_to_id=char_to_id,
-        id_to_char=id_to_char,
-    )
-
-    logits_sol = show_prediction(
-        model=model,
-        prompt="sol",
-        char_to_id=char_to_id,
-        id_to_char=id_to_char,
-    )
-
-    logits_nea = show_prediction(
-        model=model,
-        prompt="Nea",
-        char_to_id=char_to_id,
-        id_to_char=id_to_char,
-    )
-
-    print("`Nel` e `sol` finiscono entrambi con `l`.")
-    print("I loro punteggi finali sono uguali?")
-    print(torch.allclose(logits_nel, logits_sol))
-    print()
-
-    print("`Nel` e `Nea` finiscono con caratteri diversi.")
-    print("I loro punteggi finali sono uguali?")
-    print(torch.allclose(logits_nel, logits_nea))
-
-
-if __name__ == "__main__":
-    main()
-```
-
-### Comando
-
-```bash
-cd /Users/ferdinandobons/Desktop/MiniGPT
-python LearnGPT/study/lessons/16_bigram_limit.py
-```
-
-### Output osservato
-
-```text
-Loss finale dopo breve training: 2.624622106552124
-
-Prompt: 'Nel'
-Ultimo carattere: 'l'
-Token previsto con punteggio massimo: ' '
-
-Prompt: 'sol'
-Ultimo carattere: 'l'
-Token previsto con punteggio massimo: ' '
-
-Prompt: 'Nea'
-Ultimo carattere: 'a'
-Token previsto con punteggio massimo: ' '
-
-`Nel` e `sol` finiscono entrambi con `l`.
-I loro punteggi finali sono uguali?
-True
-
-`Nel` e `Nea` finiscono con caratteri diversi.
-I loro punteggi finali sono uguali?
-False
-```### Conclusion
-
-Bigram has learned something about character pairs, but it doesn't really use the
-long context.
-
-This is the reason why the next step will be to introduce a model that
-transforms tokens into richer vectors and also begins to represent the
-position of the tokens in the sequence.
-
----
 
 ## Lesson 17 - Token Embeddings
 
-### What is added
+### What changes and why
 
 Let's update:```text
 final_project/model.py
 study/snapshots/lesson_17/model.py
 ```
 
-aggiungendo una nuova classe:
+by adding a new class:
 
 ```python
 class LanguageModel(nn.Module):
@@ -3780,7 +2038,7 @@ nn.Embedding(
 ```
 
 With `vocabulary_size = 68`, each token immediately produced 68 values:```text
-PRIMA: modello bigram
+BEFORE: model bigram
 
 token ID
   |
@@ -3817,7 +2075,7 @@ nn.Embedding(
 ```
 
 With `embedding_size = 16`, each token first produces only 16 values:```text
-ADESSO: modello con token embeddings
+NOW: model con token embeddings
 
 token ID
   |
@@ -3869,7 +2127,7 @@ They serve to see the structure of values, not to interpret the meaning of
 every single number.
 
 Previously, in the bigram, the token ID `52` directly produced 68 logits:```text
-token ID 52, cioè 's'
+token ID 52, that is 's'
   |
   v
 bigram token_embedding_table
@@ -3893,7 +2151,7 @@ Correct reading of the first vector:```text
 ```
 
 Now, the token ID `52` first produces 16 embedding values:```text
-token ID 52, cioè 's'
+token ID 52, that is 's'
   |
   v
 token_embedding_table
@@ -3933,7 +2191,7 @@ output_head
 ]
 ```
 
-Lettura corretta del vettore finale:
+Correct reading of the final vector:
 
 ```text
  0.4328 -> logit per il prossimo token con ID 0
@@ -3962,7 +2220,7 @@ vocabulary_size = 68
 Quindi serve una trasformazione:
 
 ```text
-16 numeri -> 68 logits
+16 numbers -> 68 logits
 ```
 
 This transformation is done by:```python
@@ -3988,7 +2246,7 @@ vocabulary.
 
 Example of shape:```text
 un embedding per un token:
-[16 numeri]
+[16 numbers]
 
 dopo output_head:
 [68 logits]
@@ -4010,7 +2268,7 @@ probabilities = F.softmax(last_token_logits, dim=-1)
 ```
 
 The important point is this:```text
-embedding -> output_head -> logits -> softmax -> probabilità
+embedding -> output_head -> logits -> softmax -> probabilities
 ````output_head` does not directly choose the next character. Produces only i
 scores which will then be used by loss during training or by `softmax`
 during the generation.
@@ -4037,7 +2295,7 @@ bias.
 
 The same transformation is applied to all tokens in the batch. For this
 the shape changes only in the last dimension:```text
-prima di output_head:
+before output_head:
 [batch_size, context_size, embedding_size]
 [4,          8,            16]
 
@@ -4054,10 +2312,10 @@ The first two dimensions remain the same:```text
 Cambia solo l'ultima dimensione:
 
 ```text
-16 numeri interni del token -> 68 punteggi sul vocabolario
+16 numbers interni del token -> 68 punteggi sul vocabulary
 ```
 
-Diagramma del passaggio:
+Step diagram:
 
 ```mermaid
 flowchart LR
@@ -4102,7 +2360,7 @@ token_embeddings.shape = [4, 8, 16]
 Meaning what:```text
 4 esempi
 8 token
-16 numeri per rappresentare ogni token
+16 numbers per rappresentare ogni token
 ```
 
 After output head:```text
@@ -4112,16 +2370,16 @@ logits.shape = [4, 8, 68]
 Meaning what:```text
 4 esempi
 8 token
-68 punteggi per il prossimo carattere
+68 punteggi per il prossimo character
 ```
 
-Diagramma:
+Diagram:
 
 ```mermaid
 flowchart TD
     A["Token ID"]
     B["Embedding table"]
-    C["Vettore di 16 numeri"]
+    C["Vettore di 16 numbers"]
     D["Output head"]
     E["68 logits"]
 
@@ -4132,21 +2390,22 @@ The direct bigram immediately jumped from:```text
 token id -> 68 logits
 ```
 
-Ora abbiamo uno spazio intermedio:
+Ora abbiamo uno space intermedio:
 
 ```text
 token id -> embedding -> logits
 ```
 
-This is closer to a true GPT, because in Transformers tokens come first
-transformed into vectors. Then those vectors are processed by attention and others
+This is closer to a true GPT because, in Transformers, tokens are first
+transformed into vectors. Then those vectors are processed by attention and other
 blocks.
 
-The model for this lesson doesn't really use long context yet. But
-introduces vector representation, which is necessary for steps
-subsequent ones.
+The model for this lesson does not really use long context yet, but it
+introduces the vector representation that later steps need.
 
-### Code added to `study/snapshots/lesson_17/model.py````python
+### Code added to `study/snapshots/lesson_17/model.py`
+
+```python
 class LanguageModel(nn.Module):
     def __init__(self, vocabulary_size, embedding_size):
         super().__init__()
@@ -4187,170 +2446,16 @@ class LanguageModel(nn.Module):
             generated_ids = torch.cat((generated_ids, next_token_ids), dim=1)
 
         return generated_ids
-```### Complete code: `study/lessons/17_token_embeddings.py````python
-"""
-Changes compared with the previous file:
-- This lesson script uses the English project layout and imports lesson-specific
-  snapshot code.
-- It belongs to lesson 17 of the guided LearnGPT path.
-
-File purpose:
-- Run the lesson example in a reproducible way.
-- Print the relevant intermediate values, tensor shapes, losses, or generated
-  text for inspection.
-"""
-
-from pathlib import Path
-import random
-import sys
-
-import torch
-
-
-PROJECT_DIR = Path(__file__).resolve().parents[2]
-DATASET_PATH = PROJECT_DIR / "data" / "raw" / "fineweb_edu_sample.txt"
-
-sys.path.append(str(PROJECT_DIR))
-
-from study.snapshots.lesson_17.batching import create_batch
-from study.snapshots.lesson_17.model import LanguageModel
-from study.snapshots.lesson_17.tokenizer import create_vocabulary, decode, encode
-
-CONTEXT_SIZE = 8
-BATCH_SIZE = 4
-EMBEDDING_SIZE = 16
-
-
-def main():
-    random.seed(42)
-    torch.manual_seed(42)
-
-    text = DATASET_PATH.read_text(encoding="utf-8")
-
-    char_to_id, id_to_char = create_vocabulary(text)
-    vocabulary_size = len(char_to_id)
-
-    token_ids = encode(text, char_to_id)
-
-    split_index = int(len(token_ids) * 0.9)
-    training_data = token_ids[:split_index]
-
-    input_tensor, target_tensor = create_batch(
-        data=training_data,
-        batch_size=BATCH_SIZE,
-        context_size=CONTEXT_SIZE,
-    )
-
-    model = LanguageModel(
-        vocabulary_size=vocabulary_size,
-        embedding_size=EMBEDDING_SIZE,
-    )
-
-    token_embeddings = model.token_embedding_table(input_tensor)
-    logits, loss = model(input_tensor, target_tensor)
-
-    print("Input form:")
-    print(input_tensor.shape)
-    print()
-
-    print("First example as text:")
-    print(repr(decode(input_tensor[0].tolist(), id_to_char)))
-    print()
-
-    print("Vocabulary size:")
-    print(vocabulary_size)
-    print()
-
-    print("Embedding size:")
-    print(EMBEDDING_SIZE)
-    print()
-
-    print("Token embeddings form:")
-    print(token_embeddings.shape)
-    print()
-
-    print("Logits form:")
-    print(logits.shape)
-    print()
-
-    print("Initial loss:")
-    print(loss.item())
-    print()
-
-    first_token_id = input_tensor[0, 0].item()
-    first_token_embedding = token_embeddings[0, 0]
-
-    print("First token:")
-    print(first_token_id, repr(decode([first_token_id], id_to_char)))
-    print()
-
-    print("Embedding of the first token:")
-    print(first_token_embedding)
-
-
-if __name__ == "__main__":
-    main()
-```
-### Comando
-
-```bash
-cd /Users/ferdinandobons/Desktop/MiniGPT
-python LearnGPT/study/lessons/17_token_embeddings.py
-```
-
-### Output osservato
-
-```text
-Forma input:
-torch.Size([4, 8])
-
-Primo esempio come testo:
-'spargo\nr'
-
-Grandezza vocabolario:
-68
-
-Embedding size:
-16
-
-Forma token embeddings:
-torch.Size([4, 8, 16])
-
-Forma logits:
-torch.Size([4, 8, 68])
-
-Loss iniziale:
-4.4104204177856445
-
-Primo token:
-52 's'
-
-Embedding del primo token:
-tensor([-0.2206,  0.7118,  0.3416,  1.5886, -0.3489, -0.4579, -1.2322, -0.5981,
-        -0.2815,  0.0528,  0.4250,  0.4826,  0.4881,  1.0082, -0.5950,  0.3926],
-       grad_fn=<SelectBackward0>)
-```### Conclusion
-
-We have introduced embeddings:```text
-token id -> vettore
-```
-
-The next step will be to add position embeddings, because a GPT doesn't
-it needs to know only which token it is reading, but also where that token is located
-in the sequence.
-
----
-
 ## Lesson 18 - Position Embeddings
 
-### What is added
+### What changes and why
 
 Let's update:```text
 final_project/model.py
 study/snapshots/lesson_18/model.py
 ```
 
-aggiungendo una nuova classe:
+by adding a new class:
 
 ```python
 class LanguageModel(nn.Module):
@@ -4363,7 +2468,7 @@ study/lessons/18_position_embeddings.py
 ```
 
 This lesson introduces the step:```text
-token embedding + position embedding -> embedding usato dal modello
+token embedding + position embedding -> embedding used by the model
 ```### Difference from lesson 17
 
 In lesson 17 we had:```text
@@ -4375,13 +2480,13 @@ dedicated to the token's position in the context.
 
 In lesson 18 we have:```text
 token ID -> token embedding
-posizione -> position embedding
+position -> position embedding
 token embedding + position embedding -> logits
 ```
 
 So each token is represented using two pieces of information:```text
-1. quale token è
-2. in quale posizione del contesto si trova
+1. which token it is
+2. in quale position del contesto si trova
 ```### Clarification: what context means
 
 In our design, the context is a short sequence of consecutive tokens that
@@ -4397,7 +2502,7 @@ CONTEXT_SIZE = 8
 stiamo dicendo:
 
 ```text
-ogni esempio dato al modello contiene 8 token di input
+each example given to the model contains 8 token di input
 ```
 
 In the batch code this happens:```python
@@ -4538,8 +2643,8 @@ EMBEDDING_SIZE = 16
 significa:
 
 ```text
-ogni token embedding contiene 16 numeri
-ogni position embedding contiene 16 numeri
+ogni token embedding contiene 16 numbers
+ogni position embedding contiene 16 numbers
 ```
 
 Esempio:
@@ -4548,7 +2653,7 @@ Esempio:
 token ID 52
   |
   v
-token embedding lungo 16 numeri
+token embedding lungo 16 numbers
 ```
 
 After the `token_embedding_table`, the form becomes:```text
@@ -4560,7 +2665,7 @@ token_embeddings.shape = [4, 8, 16]
 This form should be read as a three-level structure:```text
 [4, 8, 16]
  |  |   |
- |  |   +-- ogni token è rappresentato da 16 numeri
+ |  |   +-- each token is represented by 16 numbers
  |  +------ ogni esempio contiene 8 token
  +--------- il batch contiene 4 esempi
 ```
@@ -4577,7 +2682,7 @@ abbiamo:
 ```text
 4 esempi
 8 token per esempio
-16 numeri per token
+16 numbers per token
 ```
 
 So the tensor contains:```text
@@ -4585,7 +2690,7 @@ So the tensor contains:```text
 ```
 
 Each embedding token is long:```text
-16 numeri
+16 numbers
 ```
 
 Example of reading with indexes:
@@ -4600,7 +2705,7 @@ Example of reading with indexes:
 Textual representation:```text
 token_embeddings[0]              -> primo esempio, forma [8, 16]
 token_embeddings[0][0]           -> primo token del primo esempio, forma [16]
-token_embeddings[0][0][0]        -> primo numero del vettore, forma singola
+token_embeddings[0][0][0]        -> primo number del vettore, forma singola
 ```
 
 Quindi quando diciamo:
@@ -4636,7 +2741,7 @@ vocabulary_size = 68
 significa:
 
 ```text
-il vocabolario contiene 68 token possibili
+the vocabulary contains 68 token possibili
 ```
 
 This number serves in two important points.
@@ -4666,7 +2771,7 @@ logits.shape = [4, 8, 68]
 ```
 
 Common mistake: confusing `vocabulary_size` with `embedding_size`.```text
-embedding_size = 16  -> quanti numeri rappresentano un token
+embedding_size = 16  -> quanti numbers rappresentano un token
 vocabulary_size = 68 -> quanti token possibili possono essere previsti
 ```#### Compact summary
 
@@ -4695,14 +2800,14 @@ logits:
 [4,          8,            68]
 ```
 
-Diagramma:
+Diagram:
 
 ```mermaid
 flowchart TD
-    A["testo completo"]
+    A["full text"]
     B["finestra di 8 token"]
     C["input_tensor<br/>[batch_size, context_size]"]
-    D["modello"]
+    D["model"]
     E["previsione del token successivo"]
 
     A --> B --> C --> D --> E
@@ -4721,11 +2826,11 @@ token ID 52 -> vettore del token 's'
 ```A position embedding instead depends on the position within the context.
 
 Example with `context_size = 8`:```text
-posizione 0 -> vettore della posizione 0
-posizione 1 -> vettore della posizione 1
-posizione 2 -> vettore della posizione 2
+position 0 -> vettore della position 0
+position 1 -> vettore della position 1
+position 2 -> vettore della position 2
 ...
-posizione 7 -> vettore della posizione 7
+position 7 -> vettore della position 7
 ```
 
 To create these location IDs we use:```python
@@ -4780,7 +2885,7 @@ input_ids:
 [52, 49, 32, 50, 38, 47,  1, 50]
 
 significato:
-ID dei caratteri/token presenti nel testo
+IDs of the characters/tokens present in the text
 ```
 
 In the second case, the indices are location IDs:```text
@@ -4819,14 +2924,14 @@ Direct comparison:
 
 The reason both tables produce long `16` vectors is practical:
 we want to add them.```text
-token embedding della posizione 0:
-[16 numeri]
+token embedding della position 0:
+[16 numbers]
 
-position embedding della posizione 0:
-[16 numeri]
+position embedding della position 0:
+[16 numbers]
 
 somma:
-[16 numeri]
+[16 numbers]
 ```
 
 If one table produced long vectors `16` and the other produced vectors
@@ -4834,13 +2939,13 @@ long `12`, the element-by-element sum would not make sense in our model.
 
 The most important difference is this:```text
 token_embedding_table:
-serve a dire quale simbolo c'è
+says which symbol is present
 
 position_embedding_table:
 serve a dire dove si trova quel simbolo
 ```
 
-Diagramma:
+Diagram:
 
 ```mermaid
 flowchart TD
@@ -4849,8 +2954,8 @@ flowchart TD
     C["token embeddings<br/>contenuto"]
     D["positions<br/>ID delle posizioni"]
     E["position_embedding_table<br/>nn.Embedding(context_size, embedding_size)"]
-    F["position embeddings<br/>posizione"]
-    G["somma<br/>contenuto + posizione"]
+    F["position embeddings<br/>position"]
+    G["somma<br/>contenuto + position"]
 
     A --> B --> C --> G
     D --> E --> F --> G
@@ -4908,15 +3013,15 @@ In our real code, the vectors are 16 long:```text
 token embedding del primo token:
 [-0.2206,  0.7118,  0.3416,  1.5886, ...,  0.3926]
 
-position embedding della posizione 0:
+position embedding della position 0:
 [ 0.2348,  0.0886, -0.3477,  0.8491, ..., -0.0406]
 
-somma usata dal modello:
+sum used by the model:
 [ 0.0143,  0.8004, -0.0061,  2.4377, ...,  0.3521]
 ```
 
 The first position of the sum, for example, is:```text
--0.2206 + 0.2348 = 0.0142 circa
+-0.2206 + 0.2348 = 0.0142 about
 ```
 
 The sum does not yet produce logits. It still produces a 16. I long embedding
@@ -4924,7 +3029,7 @@ logits come later:```python
 logits = self.output_head(embeddings)
 ```
 
-### Diagramma
+### Diagram
 
 ```mermaid
 flowchart TD
@@ -4932,7 +3037,7 @@ flowchart TD
     B["token_embedding_table<br/>token -> vettore"]
     C["token_embeddings<br/>[4, 8, 16]"]
     D["positions<br/>[0, 1, ..., 7]"]
-    E["position_embedding_table<br/>posizione -> vettore"]
+    E["position_embedding_table<br/>position -> vettore"]
     F["position_embeddings<br/>[8, 16]"]
     G["somma<br/>[4, 8, 16]"]
     H["output_head<br/>Linear(16, 68)"]
@@ -4966,7 +3071,7 @@ class LanguageModel(nn.Module):
         if current_context_size > self.context_size:
             raise ValueError(
                 f"Il contesto ricevuto contiene {current_context_size} token, "
-                f"ma il modello supporta al massimo {self.context_size} token."
+                f"ma il model supporta al massimo {self.context_size} token."
             )
 
         positions = torch.arange(current_context_size, device=input_ids.device)
@@ -5002,7 +3107,7 @@ class LanguageModel(nn.Module):
         return generated_ids
 ```
 
-### Spiegazione delle righe importanti
+### Explanation of the important lines
 
 ```python
 self.position_embedding_table = nn.Embedding(
@@ -5035,199 +3140,10 @@ During generation, the generated text becomes increasingly longer. The model,
 however, it has position embeddings only up to `context_size`. For this we only use
 the last `context_size` tokens when we ask the model for the next token.
 
-### Complete code: `study/lessons/18_position_embeddings.py````python
-"""
-Changes compared with the previous file:
-- This lesson script uses the English project layout and imports lesson-specific
-  snapshot code.
-- It belongs to lesson 18 of the guided LearnGPT path.
-
-File purpose:
-- Run the lesson example in a reproducible way.
-- Print the relevant intermediate values, tensor shapes, losses, or generated
-  text for inspection.
-"""
-
-from pathlib import Path
-import random
-import sys
-
-import torch
-
-
-PROJECT_DIR = Path(__file__).resolve().parents[2]
-DATASET_PATH = PROJECT_DIR / "data" / "raw" / "fineweb_edu_sample.txt"
-
-sys.path.append(str(PROJECT_DIR))
-
-from study.snapshots.lesson_18.batching import create_batch
-from study.snapshots.lesson_18.model import LanguageModel
-from study.snapshots.lesson_18.tokenizer import create_vocabulary, decode, encode
-
-CONTEXT_SIZE = 8
-BATCH_SIZE = 4
-EMBEDDING_SIZE = 16
-
-
-def main():
-    random.seed(42)
-    torch.manual_seed(42)
-
-    text = DATASET_PATH.read_text(encoding="utf-8")
-
-    char_to_id, id_to_char = create_vocabulary(text)
-    vocabulary_size = len(char_to_id)
-
-    token_ids = encode(text, char_to_id)
-
-    split_index = int(len(token_ids) * 0.9)
-    training_data = token_ids[:split_index]
-
-    input_tensor, target_tensor = create_batch(
-        data=training_data,
-        batch_size=BATCH_SIZE,
-        context_size=CONTEXT_SIZE,
-    )
-
-    model = LanguageModel(
-        vocabulary_size=vocabulary_size,
-        context_size=CONTEXT_SIZE,
-        embedding_size=EMBEDDING_SIZE,
-    )
-
-    positions = torch.arange(CONTEXT_SIZE)
-    token_embeddings = model.token_embedding_table(input_tensor)
-    position_embeddings = model.position_embedding_table(positions)
-    embeddings = token_embeddings + position_embeddings
-    logits, loss = model(input_tensor, target_tensor)
-
-    print("Input form:")
-    print(input_tensor.shape)
-    print()
-
-    print("First example as text:")
-    print(repr(decode(input_tensor[0].tolist(), id_to_char)))
-    print()
-
-    print("Position IDs:")
-    print(positions)
-    print()
-
-    print("Token embeddings form:")
-    print(token_embeddings.shape)
-    print()
-
-    print("Form position embeddings:")
-    print(position_embeddings.shape)
-    print()
-
-    print("Form summed embeddings:")
-    print(embeddings.shape)
-    print()
-
-    print("Logits form:")
-    print(logits.shape)
-    print()
-
-    print("Initial loss:")
-    print(loss.item())
-    print()
-
-    first_token_id = input_tensor[0, 0].item()
-    first_token_embedding = token_embeddings[0, 0]
-    prima_position_embedding = position_embeddings[0]
-    first_summed_embedding = embeddings[0, 0]
-
-    print("First token:")
-    print(first_token_id, repr(decode([first_token_id], id_to_char)))
-    print()
-
-    print("Token embedding of the first token:")
-    print(first_token_embedding)
-    print()
-
-    print("Position embedding at position 0:")
-    print(prima_position_embedding)
-    print()
-
-    print("Amount used by the model for the first token:")
-    print(first_summed_embedding)
-
-
-if __name__ == "__main__":
-    main()
-```
-### Comando
-
-```bash
-cd /Users/ferdinandobons/Desktop/MiniGPT
-python LearnGPT/study/lessons/18_position_embeddings.py
-```
-
-### Output osservato
-
-```text
-Forma input:
-torch.Size([4, 8])
-
-Primo esempio come testo:
-'spargo\nr'
-
-Position IDs:
-tensor([0, 1, 2, 3, 4, 5, 6, 7])
-
-Forma token embeddings:
-torch.Size([4, 8, 16])
-
-Forma position embeddings:
-torch.Size([8, 16])
-
-Forma embeddings sommati:
-torch.Size([4, 8, 16])
-
-Forma logits:
-torch.Size([4, 8, 68])
-
-Loss iniziale:
-4.675732135772705
-
-Primo token:
-52 's'
-
-Token embedding del primo token:
-tensor([-0.2206,  0.7118,  0.3416,  1.5886, -0.3489, -0.4579, -1.2322, -0.5981,
-        -0.2815,  0.0528,  0.4250,  0.4826,  0.4881,  1.0082, -0.5950,  0.3926],
-       grad_fn=<SelectBackward0>)
-
-Position embedding della posizione 0:
-tensor([ 0.2348,  0.0886, -0.3477,  0.8491,  0.2015,  0.3840,  1.2310,  1.2287,
-         0.7042, -0.0563, -1.4897, -1.5195,  0.3258, -1.4584,  1.8989, -0.0406],
-       grad_fn=<SelectBackward0>)
-
-Somma usata dal modello per il primo token:
-tensor([ 1.4275e-02,  8.0043e-01, -6.0995e-03,  2.4377e+00, -1.4741e-01,
-        -7.3941e-02, -1.2436e-03,  6.3059e-01,  4.2266e-01, -3.4657e-03,
-        -1.0647e+00, -1.0369e+00,  8.1394e-01, -4.5019e-01,  1.3039e+00,
-         3.5207e-01], grad_fn=<SelectBackward0>)
-```### Technical sources consulted
-
-- [PyTorch `nn.Embedding`](https://docs.pytorch.org/docs/2.12/generated/torch.nn.Embedding.html):
-  supports the shape of the embedding table and the relationship between indexes in
-  input and output vectors.
-- [PyTorch `torch.arange`](https://docs.pytorch.org/docs/2.12/generated/torch.arange.html):
-  supports using `torch.arange(context_size)` to create location IDs.
-- [PyTorch broadcasting semantics](https://docs.pytorch.org/docs/2.12/notes/broadcasting.html):
-  supports summation between compatible tensors such as `[4, 8, 16]` and `[8, 16]`.
-- [Attention Is All You Need](https://arxiv.org/abs/1706.03762):
-  in the section on positional encodings explains why a Transformer must
-  add positional information to embeddings and why so
-  information must have the same size as the embeddings in order to be
-  added.
-
 ### Conclusion
 
 We added the second type of embedding:```text
-token embedding    -> quale token è
+token embedding    -> which token it is
 position embedding -> dove si trova nel contesto
 ```
 
@@ -5242,7 +3158,7 @@ at that point we will introduce the first concept of attention.
 
 ## Lesson 19 - A Single Causal Self-Attention Head
 
-### What is added
+### What changes and why
 
 Let's update:```text
 final_project/model.py
@@ -5284,7 +3200,7 @@ previous ones and the current token. Cannot use future tokens.
 ### Why this lesson is important
 
 Until lesson 18, embeddings contained:```text
-quale token è
+which token it is
 dove si trova
 ```
 
@@ -5300,7 +3216,7 @@ connection and without layer normalization.
 ### Extra clarification: Lesson 19 step by step
 
 Lesson 19 has two levels:```text
-1. il file di studio `study/lessons/19_self_attention_head.py`
+1. the study file `study/lessons/19_self_attention_head.py`
 2. il codice riutilizzabile in `model.py`
 ```
 
@@ -5309,9 +3225,9 @@ The `model.py` file instead contains the classes that we will use in the final p
 
 The complete flow is this:```mermaid
 flowchart TD
-    A["testo del campione FineWeb-Edu"]
+    A["FineWeb-Edu sample text"]
     B["create_vocabulary"]
-    C["encode<br/>testo -> token IDs"]
+    C["encode<br/>text -> token IDs"]
     D["create_batch<br/>input_tensor e target_tensor"]
     E["LanguageModel"]
     F["token embeddings"]
@@ -5355,7 +3271,7 @@ These numbers determine the main shapes:
 
 In this lesson `HEAD_SIZE` is the same as `EMBEDDING_SIZE`. This keeps the
 simple shapes:```text
-embeddings prima della attention: [4, 8, 16]
+embeddings before attention: [4, 8, 16]
 embeddings dopo la attention:    [4, 8, 16]
 ```
 
@@ -5373,11 +3289,11 @@ token_ids = encode(text, char_to_id)
 ```
 
 The result is:```text
-testo                      -> stringa lunga
-char_to_id             -> dizionario carattere -> ID
-id_to_char             -> dizionario ID -> carattere
+text                      -> long string
+char_to_id             -> dizionario character -> ID
+id_to_char             -> dizionario ID -> character
 vocabulary_size            -> 68
-numeri                     -> lista di token IDs
+numbers                     -> lista di token IDs
 ```
 
 Self-attention does not yet work on readable text. Work on tensors
@@ -5402,7 +3318,7 @@ target_tensor.shape = [4, 8]
 moved forward one token.
 
 Observed example:```text
-Primo esempio come testo:
+First example as text:
 'spargo\nr'
 ```
 
@@ -5458,7 +3374,7 @@ Significa:
 ```text
 4 esempi
 8 token per esempio
-16 numeri per token
+16 numbers per token
 ```#### Step 6: Let's add the position embeddings
 
 These lines create the positions and position vectors:```python
@@ -5487,8 +3403,8 @@ embeddings.shape = [4, 8, 16]
 ```
 
 Now each token has a representation that contains:```text
-quale token è
-in quale posizione si trova
+which token it is
+in quale position si trova
 ```#### Step 7: We create keys, queries and values
 
 These lines enter the very first attention pass:```python
@@ -5522,8 +3438,8 @@ For this reason the output maintains the same `[4, 8, 16]` structure, but the nu
 inside the tensors change.
 
 So:```text
-stessa forma        -> stessa organizzazione: 4 esempi, 8 token, 16 numeri
-trasformazione diversa -> pesi diversi, numeri prodotti diversi
+stessa forma        -> stessa organizzazione: 4 esempi, 8 token, 16 numbers
+different transformation -> different weights, different produced numbers
 ```
 
 This is necessary because in self-attention the three tensors have different roles:
@@ -5551,7 +3467,7 @@ keys.transpose(-2, -1).shape = [4, 16, 8]
 In our case:```text
 keys.shape = [4, 8, 16]
               |  |  |
-              |  |  +-- dimensione -1: i 16 numeri di ogni key
+              |  |  +-- dimensione -1: i 16 numbers di ogni key
               |  +----- dimensione -2: gli 8 token del contesto
               +-------- dimensione 0: i 4 esempi del batch
 ```
@@ -5578,8 +3494,8 @@ risultato:
 The first dimension, i.e. `4`, does not change. The number of examples in the batch remains.
 
 What changes is how the last two axes are oriented:```text
-prima:
-per ogni esempio abbiamo 8 token, ognuno con 16 numeri
+before:
+per ogni esempio abbiamo 8 token, ognuno con 16 numbers
 
 dopo:
 per ogni esempio abbiamo 16 righe numeriche, ognuna lunga 8 posizioni
@@ -5598,12 +3514,12 @@ The internal `16` disappears because it is the size used to make the product bet
 vectors. This leaves a `8 x 8` array for each example.
 
 Reading `attention_scores[0]`:```text
-prima dimensione: esempio 0 del batch
+first dimension: example 0 of the batch
 righe: token che sta cercando informazione
-colonne: token da cui può prendere informazione
+columns: token it can take information from
 ```
 
-#### Passo 9: scaliamo i punteggi
+#### Step 9: scale the scores
 
 Immediately after that we do:
 
@@ -5639,7 +3555,7 @@ Example without scaling:```text
 punteggi:
 [1, 2, 12]
 
-softmax circa:
+softmax about:
 [0.000, 0.000, 1.000]
 ```
 
@@ -5650,7 +3566,7 @@ Example with reduced scores:```text
 punteggi:
 [0.25, 0.50, 3.00]
 
-softmax circa:
+softmax about:
 [0.055, 0.070, 0.875]
 ```
 
@@ -5671,7 +3587,7 @@ more stable during training.
 The point to remember is:```text
 queries @ keys.T        -> produce punteggi grezzi
 / sqrt(head_size)       -> riduce la scala dei punteggi
-softmax                 -> trasforma i punteggi in pesi
+softmax                 -> turns scores into weights
 ```#### Step 10: We apply the causal mask
 
 The causal mask is saved in the template:```python
@@ -5728,8 +3644,8 @@ riga 3:
 Significa:
 
 ```text
-la posizione 3 usa le posizioni 0, 1, 2, 3
-la posizione 3 non usa le posizioni 4, 5, 6, 7
+la position 3 usa le posizioni 0, 1, 2, 3
+la position 3 non usa le posizioni 4, 5, 6, 7
 ```
 
 The file also prints:```text
@@ -5828,7 +3744,7 @@ totale = 4 * 8 = 32 posizioni da prevedere
 ```
 
 For each of these 32 positions, the model produces a vector along `68`:```text
-una posizione -> 68 logits
+una position -> 68 logits
 ```
 
 Each logit is a raw score for a vocabulary token.
@@ -5838,15 +3754,15 @@ logits.shape = [4, 8, 68]
 
 [
   esempio 0 [
-    posizione 0 -> 68 logits,
-    posizione 1 -> 68 logits,
+    position 0 -> 68 logits,
+    position 1 -> 68 logits,
     ...
-    posizione 7 -> 68 logits
+    position 7 -> 68 logits
   ],
   esempio 1 [
-    posizione 0 -> 68 logits,
+    position 0 -> 68 logits,
     ...
-    posizione 7 -> 68 logits
+    position 7 -> 68 logits
   ],
   ...
 ]
@@ -5864,11 +3780,11 @@ target_tensor.shape = [4, 8]
 ```
 
 So the real comparison is:```text
-68 logits della posizione 0  -> target corretto della posizione 0
-68 logits della posizione 1  -> target corretto della posizione 1
-68 logits della posizione 2  -> target corretto della posizione 2
+68 logits della position 0  -> target corretto della position 0
+68 logits della position 1  -> target corretto della position 1
+68 logits della position 2  -> target corretto della position 2
 ...
-68 logits della posizione 31 -> target corretto della posizione 31
+68 logits della position 31 -> target corretto della position 31
 ````F.cross_entropy` wants to receive this data in a more direct way:```text
 logits_flat.shape = [32, 68]
 target_flat.shape = [32]
@@ -5951,9 +3867,9 @@ The most important transformation to understand is this:```text
 Significa:
 
 ```text
-1. partiamo da un vettore da 16 numeri per ogni token;
+1. partiamo da un vettore da 16 numbers per ogni token;
 2. creiamo una matrice 8 x 8 che dice quali posizioni usare;
-3. usiamo quella matrice per ricostruire un nuovo vettore da 16 numeri per ogni token.
+3. usiamo quella matrice per ricostruire un nuovo vettore da 16 numbers per ogni token.
 ```
 
 So self-attention doesn't change the number of tokens in the batch. Change the
@@ -5979,8 +3895,8 @@ This means that part of the calculation is explicitly shown in the
 script, but the model redos it inside `forward`.
 
 We do this for educational purposes:```text
-script di studio -> mostra le forme intermedie
-model.forward    -> contiene il flusso reale del modello
+study script -> shows the intermediate shapes
+model.forward    -> contains the real model flow
 ```
 
 Later, when the mechanism is clear, we will mainly use the e model
@@ -6098,7 +4014,7 @@ una riga di queries[0] lunga 16
 @
 una colonna di keys_transposed[0] lunga 16
 =
-un singolo numero dentro attention_scores[0]
+un singolo number dentro attention_scores[0]
 ```
 
 Repeating this comparison for all 8 lines of `queries[0]` and all 8
@@ -6121,8 +4037,8 @@ attention_scores[0].shape = [8, 8]
 Riga e colonna hanno significati diversi:
 
 ```text
-riga    -> posizione che sta producendo il nuovo embedding
-colonna -> posizione che può essere usata come informazione
+riga    -> position che sta producendo il nuovo embedding
+column -> position that can be used as information
 ```
 
 With `context_size = 8`, the array has this structure:```text
@@ -6254,7 +4170,7 @@ So the final step would be:```text
 This passage means:```text
 4  esempi nel batch
 8  posizioni per ogni esempio
-8  numeri interni per ogni posizione
+8  numbers interni per ogni position
 ````output_head` does not change the first two dimensions. Work on the last one
 size. For each position it takes the long vector `8` and transforms it into a
 long vector `68`.
@@ -6273,13 +4189,13 @@ Quindi:
 ```text
 [4, 8, 8]
      |
-     +-- questa ultima dimensione entra in output_head
+     +-- this last dimension goes into output_head
 
 output_head: Linear(8 -> 68)
 
 [4, 8, 68]
       |
-      +-- questa ultima dimensione contiene i logits sul vocabolario
+      +-- this last dimension contains vocabulary logits
 ```
 
 Internamente `output_head` avrebbe:
@@ -6291,13 +4207,13 @@ output_head.bias.shape   = [68]
 
 For each position, the long vector `8` is compared to 68 rows of weights.
 Each row produces a logit:```text
-vettore_interno = [8 numeri]
+vettore_interno = [8 numbers]
 
-logit_token_0  = somma pesata degli 8 numeri + bias_0
-logit_token_1  = somma pesata degli 8 numeri + bias_1
-logit_token_2  = somma pesata degli 8 numeri + bias_2
+logit_token_0  = somma pesata degli 8 numbers + bias_0
+logit_token_1  = somma pesata degli 8 numbers + bias_1
+logit_token_2  = somma pesata degli 8 numbers + bias_2
 ...
-logit_token_67 = somma pesata degli 8 numeri + bias_67
+logit_token_67 = somma pesata degli 8 numbers + bias_67
 ```
 
 Alla fine otteniamo:
@@ -6323,7 +4239,7 @@ embedding_size = 16
 num_heads      = 4
 head_size      = 4
 
-4 head * 4 numeri = 16 numeri finali
+4 head * 4 numbers = 16 numbers finali
 ```
 
 The future flow will therefore be:```text
@@ -6350,7 +4266,9 @@ So:
   be careful to get the output back to the right size, because a sum between
   tensors requires compatible shapes.
 
-### Diagram```mermaid
+### Diagram
+
+```mermaid
 flowchart TD
     A["embeddings<br/>[4, 8, 16]"]
     B["query linear<br/>[4, 8, 16]"]
@@ -6437,7 +4355,7 @@ class LanguageModel(nn.Module):
         if current_context_size > self.context_size:
             raise ValueError(
                 f"Il contesto ricevuto contiene {current_context_size} token, "
-                f"ma il modello supporta al massimo {self.context_size} token."
+                f"ma il model supporta al massimo {self.context_size} token."
             )
 
         positions = torch.arange(current_context_size, device=input_ids.device)
@@ -6474,7 +4392,7 @@ class LanguageModel(nn.Module):
         return generated_ids
 ```
 
-### Spiegazione delle righe importanti
+### Explanation of the important lines
 
 ```python
 self.register_buffer(
@@ -6512,239 +4430,6 @@ attended_embeddings = attention_weights @ values
 ```
 
 Combine the value vectors using the weights calculated by attention.
-
-### Complete code: `study/lessons/19_self_attention_head.py````python
-"""
-Changes compared with the previous file:
-- This lesson script uses the English project layout and imports lesson-specific
-  snapshot code.
-- It belongs to lesson 19 of the guided LearnGPT path.
-
-File purpose:
-- Run the lesson example in a reproducible way.
-- Print the relevant intermediate values, tensor shapes, losses, or generated
-  text for inspection.
-"""
-
-from pathlib import Path
-import random
-import sys
-
-import torch
-import torch.nn.functional as F
-
-
-PROJECT_DIR = Path(__file__).resolve().parents[2]
-DATASET_PATH = PROJECT_DIR / "data" / "raw" / "fineweb_edu_sample.txt"
-
-sys.path.append(str(PROJECT_DIR))
-
-from study.snapshots.lesson_19.batching import create_batch
-from study.snapshots.lesson_19.model import LanguageModel
-from study.snapshots.lesson_19.tokenizer import create_vocabulary, decode, encode
-
-
-CONTEXT_SIZE = 8
-BATCH_SIZE = 4
-EMBEDDING_SIZE = 16
-HEAD_SIZE = 16
-
-
-def main():
-    random.seed(42)
-    torch.manual_seed(42)
-    torch.set_printoptions(precision=3, sci_mode=False)
-
-    text = DATASET_PATH.read_text(encoding="utf-8")
-
-    char_to_id, id_to_char = create_vocabulary(text)
-    vocabulary_size = len(char_to_id)
-
-    token_ids = encode(text, char_to_id)
-
-    split_index = int(len(token_ids) * 0.9)
-    training_data = token_ids[:split_index]
-
-    input_tensor, target_tensor = create_batch(
-        data=training_data,
-        batch_size=BATCH_SIZE,
-        context_size=CONTEXT_SIZE,
-    )
-
-    model = LanguageModel(
-        vocabulary_size=vocabulary_size,
-        context_size=CONTEXT_SIZE,
-        embedding_size=EMBEDDING_SIZE,
-        head_size=HEAD_SIZE,
-    )
-
-    positions = torch.arange(CONTEXT_SIZE)
-    token_embeddings = model.token_embedding_table(input_tensor)
-    position_embeddings = model.position_embedding_table(positions)
-    embeddings = token_embeddings + position_embeddings
-
-    keys = model.attention_head.key(embeddings)
-    queries = model.attention_head.query(embeddings)
-    values = model.attention_head.value(embeddings)
-
-    attention_scores = queries @ keys.transpose(-2, -1)
-    attention_scores = attention_scores / (HEAD_SIZE ** 0.5)
-
-    causal_mask = model.attention_head.causal_mask[:CONTEXT_SIZE, :CONTEXT_SIZE]
-    masked_attention_scores = attention_scores.masked_fill(
-        causal_mask == 0,
-        float("-inf"),
-    )
-    attention_weights = F.softmax(masked_attention_scores, dim=-1)
-    attended_embeddings = attention_weights @ values
-
-    logits, loss = model(input_tensor, target_tensor)
-
-    print("Input form:")
-    print(input_tensor.shape)
-    print()
-
-    print("First example as text:")
-    print(repr(decode(input_tensor[0].tolist(), id_to_char)))
-    print()
-
-    print("Form embeddings before attention:")
-    print(embeddings.shape)
-    print()
-
-    print("Key form:")
-    print(keys.shape)
-    print()
-
-    print("Form queries:")
-    print(queries.shape)
-    print()
-
-    print("Form values:")
-    print(values.shape)
-    print()
-
-    print("Attention scores form:")
-    print(attention_scores.shape)
-    print()
-
-    print("Maschera causale:")
-    print(causal_mask)
-    print()
-
-    print("Attention weights form:")
-    print(attention_weights.shape)
-    print()
-
-    print("Attention weights of the first example:")
-    print(attention_weights[0])
-    print()
-
-    print("Sum of each attention-weight row for the first example:")
-    print(attention_weights[0].sum(dim=-1))
-    print()
-
-    print("Form embeddings after attention:")
-    print(attended_embeddings.shape)
-    print()
-
-    print("Logits form:")
-    print(logits.shape)
-    print()
-
-    print("Initial loss:")
-    print(loss.item())
-
-
-if __name__ == "__main__":
-    main()
-```
-### Comando
-
-```bash
-cd /Users/ferdinandobons/Desktop/MiniGPT
-python LearnGPT/study/lessons/19_self_attention_head.py
-```
-
-### Output osservato
-
-```text
-Forma input:
-torch.Size([4, 8])
-
-Primo esempio come testo:
-'spargo\nr'
-
-Forma embeddings prima della attention:
-torch.Size([4, 8, 16])
-
-Forma keys:
-torch.Size([4, 8, 16])
-
-Forma queries:
-torch.Size([4, 8, 16])
-
-Forma values:
-torch.Size([4, 8, 16])
-
-Forma attention scores:
-torch.Size([4, 8, 8])
-
-Maschera causale:
-tensor([[1., 0., 0., 0., 0., 0., 0., 0.],
-        [1., 1., 0., 0., 0., 0., 0., 0.],
-        [1., 1., 1., 0., 0., 0., 0., 0.],
-        [1., 1., 1., 1., 0., 0., 0., 0.],
-        [1., 1., 1., 1., 1., 0., 0., 0.],
-        [1., 1., 1., 1., 1., 1., 0., 0.],
-        [1., 1., 1., 1., 1., 1., 1., 0.],
-        [1., 1., 1., 1., 1., 1., 1., 1.]])
-
-Forma attention weights:
-torch.Size([4, 8, 8])
-
-Attention weights del primo esempio:
-tensor([[1.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000],
-        [0.530, 0.470, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000],
-        [0.334, 0.400, 0.266, 0.000, 0.000, 0.000, 0.000, 0.000],
-        [0.204, 0.217, 0.313, 0.266, 0.000, 0.000, 0.000, 0.000],
-        [0.141, 0.205, 0.190, 0.187, 0.277, 0.000, 0.000, 0.000],
-        [0.135, 0.071, 0.146, 0.136, 0.400, 0.111, 0.000, 0.000],
-        [0.110, 0.225, 0.233, 0.018, 0.091, 0.181, 0.142, 0.000],
-        [0.129, 0.192, 0.057, 0.132, 0.071, 0.110, 0.184, 0.125]],
-       grad_fn=<SelectBackward0>)
-
-Somma di ogni riga degli attention weights del primo esempio:
-tensor([1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000],
-       grad_fn=<SumBackward1>)
-
-Forma embeddings dopo la attention:
-torch.Size([4, 8, 16])
-
-Forma logits:
-torch.Size([4, 8, 68])
-
-Loss iniziale:
-4.279053211212158
-```### Technical sources consulted
-
-- `nanoGPT/model.py` in local repository: Show the actual structure of
-  `CausalSelfAttention`, with query, key, value, causal mask, softmax and
-  product with values.
-- [Attention Is All You Need](https://arxiv.org/abs/1706.03762):
-  supports the scaled dot-product attention formula
-  `softmax(QK^T / sqrt(d_k))V`.
-- [PyTorch `torch.tril`](https://docs.pytorch.org/docs/2.12/generated/torch.tril.html):
-  supports the creation of the lower triangular part of the mask.
-- [PyTorch `Tensor.masked_fill`](https://docs.pytorch.org/docs/2.12/generated/torch.Tensor.masked_fill.html):
-  supports substitution of forbidden values before softmax.
-- [PyTorch `torch.nn.functional.softmax`](https://docs.pytorch.org/docs/2.12/generated/torch.nn.functional.softmax.html):
-  supports transforming scores into values between `0` and `1` that sum to
-  `1` along the chosen dimension.
-- [PyTorch `nn.Linear`](https://docs.pytorch.org/docs/2.12/generated/torch.nn.Linear.html):
-  supports the behavior of `output_head`, where all dimensions first
-  of the last one remain the same and the last one goes from `in_features` to
-  `out_features`.
 
 ### Conclusion
 
@@ -6856,7 +4541,7 @@ NUM_HEADS * HEAD_SIZE = EMBEDDING_SIZE
 ```
 
 In this educational version we impose this relationship to obtain:```text
-4 head da 4 numeri = 16 numeri finali
+4 head da 4 numbers = 16 numbers finali
 ```### New piece 1: `MultiHeadAttention`
 
 In the `final_project/model.py` file we add this class:```python
@@ -7018,7 +4703,7 @@ class LanguageModel(nn.Module):
 
         if num_heads * head_size != embedding_size:
             raise ValueError(
-                "In questa versione didattica, num_heads * head_size deve "
+                "In this didactic version, num_heads * head_size deve "
                 "essere uguale a embedding_size."
             )
 
@@ -7080,7 +4765,7 @@ In lesson 19:```text
 ```
 
 In lesson 20:```text
-[4, 8, 16] = concatenazione di 4 head da 4 numeri
+[4, 8, 16] = concatenazione di 4 head da 4 numbers
 ```### Lesson 20 diagram```mermaid
 flowchart TD
     A["input_tensor<br/>[4, 8]"]
@@ -7102,11 +4787,6 @@ flowchart TD
     B --> C2 --> D
     B --> C3 --> D
     D --> E --> F --> G
-```### Complete study script code
-
-Files:```text
-LearnGPT/study/lessons/20_multi_head_attention.py
-```
 
 Code:```python
 """
@@ -7243,87 +4923,6 @@ def main():
 if __name__ == "__main__":
     main()
 ```
-### Comando
-
-Da root del progetto:
-
-```bash
-cd /Users/ferdinandobons/Desktop/MiniGPT
-python LearnGPT/study/lessons/20_multi_head_attention.py
-```
-
-### Output osservato
-
-```text
-Forma input:
-torch.Size([4, 8])
-
-Primo esempio come testo:
-'spargo\nr'
-
-Numero di head:
-4
-
-Head size:
-4
-
-Forma embeddings prima della multi-head attention:
-torch.Size([4, 8, 16])
-
-Forma output di ogni head:
-head 0: torch.Size([4, 8, 4])
-head 1: torch.Size([4, 8, 4])
-head 2: torch.Size([4, 8, 4])
-head 3: torch.Size([4, 8, 4])
-
-Forma attention weights di ogni head:
-head 0: torch.Size([4, 8, 8])
-head 1: torch.Size([4, 8, 8])
-head 2: torch.Size([4, 8, 8])
-head 3: torch.Size([4, 8, 8])
-
-Forma dopo concatenazione delle head:
-torch.Size([4, 8, 16])
-
-Forma logits:
-torch.Size([4, 8, 68])
-
-Loss iniziale:
-4.213913917541504
-```
-
-### Cosa devi controllare manualmente
-
-Controlla soprattutto queste righe:
-
-```text
-head 0: torch.Size([4, 8, 4])
-head 1: torch.Size([4, 8, 4])
-head 2: torch.Size([4, 8, 4])
-head 3: torch.Size([4, 8, 4])
-```
-
-e poi:
-
-```text
-Forma dopo concatenazione delle head:
-torch.Size([4, 8, 16])
-```
-
-These lines confirm the central point of the lesson:```text
-4 head * 4 numeri = 16 numeri
-```
-
-Poi controlla:
-
-```text
-Forma logits:
-torch.Size([4, 8, 68])
-```
-
-This confirms that `output_head` has transformed every long internal vector
-`16` in `68` logits on the vocabulary.
-
 ### Common errors
 
 Mistake 1: Thinking that `num_heads = 4` adds a final new dimension to the
@@ -7631,7 +5230,7 @@ The first two dimensions remain the same:```text
 L'ultima dimensione viene trasformata da `nn.Linear`:
 
 ```text
-16 numeri in ingresso -> 16 numeri in uscita
+16 numbers in ingresso -> 16 numbers in uscita
 ```
 
 The 16 outgoing numbers are not a copy of the 16 incoming numbers. They are new
@@ -7648,9 +5247,9 @@ concatenated_token = [
 ]
 ```
 
-Questi 16 numeri arrivano dalle 4 head concatenate.
+Questi 16 numbers arrivano dalle 4 head concatenate.
 
-`output_projection` prende questi 16 numeri e produce altri 16 numeri:
+`output_projection` prende questi 16 numbers e produce altri 16 numbers:
 
 ```text
 projected_token = [
@@ -7705,11 +5304,6 @@ flowchart TD
     A --> H2 --> C
     A --> H3 --> C
     C --> P --> O --> L
-```### Complete study script code
-
-Files:```text
-LearnGPT/study/lessons/21_attention_projection.py
-```
 
 Code:```python
 """
@@ -7846,84 +5440,6 @@ def main():
 if __name__ == "__main__":
     main()
 ```
-### Comando
-
-Da root del progetto:
-
-```bash
-cd /Users/ferdinandobons/Desktop/MiniGPT
-python LearnGPT/study/lessons/21_attention_projection.py
-```
-
-### Output osservato
-
-```text
-Forma input:
-torch.Size([4, 8])
-
-Primo esempio come testo:
-'spargo\nr'
-
-Forma embeddings prima della multi-head attention:
-torch.Size([4, 8, 16])
-
-Forma output di ogni head:
-head 0: torch.Size([4, 8, 4])
-head 1: torch.Size([4, 8, 4])
-head 2: torch.Size([4, 8, 4])
-head 3: torch.Size([4, 8, 4])
-
-Forma dopo concatenazione delle head:
-torch.Size([4, 8, 16])
-
-Forma dopo output_projection:
-torch.Size([4, 8, 16])
-
-Forma logits dopo output_head:
-torch.Size([4, 8, 68])
-
-Differenza massima tra calcolo manuale e forward del modulo:
-0.0
-
-Loss iniziale:
-4.263152599334717
-```
-
-### Cosa devi controllare manualmente
-
-Controlla queste righe:
-
-```text
-Forma dopo concatenazione delle head:
-torch.Size([4, 8, 16])
-
-Forma dopo output_projection:
-torch.Size([4, 8, 16])
-```
-
-The shape remains the same.
-
-Then look at the two printed vectors:```text
-Primo token dopo concatenazione:
-...
-
-Primo token dopo output_projection:
-...
-```
-
-The two vectors both have 16 numbers, but the values ​​are different.
-
-This confirms that `output_projection` does not change the size, but changes the
-representation.
-
-Finally check:```text
-Forma logits dopo output_head:
-torch.Size([4, 8, 68])
-```
-
-This confirms that `output_head` remains the step that produces the logits on
-vocabulary.
-
 ### Common errors
 
 Mistake 1: Thinking that `Linear(16 -> 16)` does nothing.
@@ -8056,9 +5572,9 @@ We are only introducing the first piece:```text
 x = x + attention(x)
 ```
 
-LayerNorm e MLP arriveranno nelle prossime lezioni.
+LayerNorm and MLP arrive in the next lessons.
 
-### File modificati o creati
+### Modified or Created Files
 
 File modificati:
 
@@ -8090,7 +5606,7 @@ class LanguageModel(nn.Module):
 
         if num_heads * head_size != embedding_size:
             raise ValueError(
-                "In questa versione didattica, num_heads * head_size deve "
+                "In this didactic version, num_heads * head_size deve "
                 "essere uguale a embedding_size."
             )
 
@@ -8173,11 +5689,6 @@ flowchart TD
     B --> C
     B --> D
     C --> D --> E --> F --> G --> H
-```### Complete study script code
-
-Files:```text
-LearnGPT/study/lessons/22_residual_connection.py
-```
 
 Code:```python
 """
@@ -8305,68 +5816,6 @@ def main():
 if __name__ == "__main__":
     main()
 ```
-### Comando
-
-Da root del progetto:
-
-```bash
-cd /Users/ferdinandobons/Desktop/MiniGPT
-python LearnGPT/study/lessons/22_residual_connection.py
-```
-
-### Output osservato
-
-```text
-Forma input:
-torch.Size([4, 8])
-
-Primo esempio come testo:
-'spargo\nr'
-
-Forma embeddings:
-torch.Size([4, 8, 16])
-
-Forma attention_output:
-torch.Size([4, 8, 16])
-
-Forma dopo residual connection:
-torch.Size([4, 8, 16])
-
-Forma logits:
-torch.Size([4, 8, 68])
-
-Differenza massima tra calcolo manuale e forward del modello:
-0.0
-
-Loss iniziale:
-4.394140720367432
-```
-
-### Cosa devi controllare manualmente
-
-First check these three lines:
-
-```text
-Forma embeddings:
-torch.Size([4, 8, 16])
-
-Forma attention_output:
-torch.Size([4, 8, 16])
-
-Forma dopo residual connection:
-torch.Size([4, 8, 16])
-```
-
-They confirm that the sum is possible.
-
-Then look:```text
-Differenza massima tra calcolo manuale e forward del modello:
-0.0
-```
-
-This confirms that the manual calculation in the script matches the `forward`
-of the model.
-
 ### Common errors
 
 Mistake 1: thinking that the residual connection concatenates the tensors.
@@ -8421,7 +5870,7 @@ The new piece is called:```python
 self.attention_layer_norm = nn.LayerNorm(normalized_shape=embedding_size)
 ```
 
-Nel `forward` viene usato qui:
+In `forward`, it is used here:
 
 ```python
 normalized_embeddings = self.attention_layer_norm(embeddings)
@@ -8470,8 +5919,8 @@ For each example and for each position, there is an internal vector 16 numbers l
 `LayerNorm(16)` works on these 16 numbers.
 
 For each token normalizes its internal representation:```text
-un token prima di LayerNorm  -> 16 numeri
-un token dopo LayerNorm      -> 16 numeri
+one token before LayerNorm  -> 16 numbers
+un token dopo LayerNorm      -> 16 numbers
 ```
 
 The length remains 16. The values ​​change.
@@ -8549,7 +5998,7 @@ class LanguageModel(nn.Module):
 
         if num_heads * head_size != embedding_size:
             raise ValueError(
-                "In questa versione didattica, num_heads * head_size deve "
+                "In this didactic version, num_heads * head_size deve "
                 "essere uguale a embedding_size."
             )
 
@@ -8599,14 +6048,16 @@ embeddings.shape = [4, 8, 16]
 
 So `LayerNorm(16)` works on the 16 internal numbers of each token.
 
-### Full forward of the new class```python
+### Full forward of the new class
+
+```python
 def forward(self, input_ids, target_ids=None):
     current_context_size = input_ids.shape[1]
 
     if current_context_size > self.context_size:
         raise ValueError(
             f"Il contesto ricevuto contiene {current_context_size} token, "
-            f"ma il modello supporta al massimo {self.context_size} token."
+            f"ma il model supporta al massimo {self.context_size} token."
         )
 
     positions = torch.arange(current_context_size, device=input_ids.device)
@@ -8722,192 +6173,6 @@ embeddings -> residual connection
 This shows that the attention receives normalized values, while the sum
 residual preserves the original branch.
 
-### Complete study script code
-
-Files:```text
-LearnGPT/study/lessons/23_layer_norm_attention.py
-```
-
-Code:```python
-"""
-Changes compared with the previous file:
-- This lesson script uses the English project layout and imports lesson-specific
-  snapshot code.
-- It belongs to lesson 23 of the guided LearnGPT path.
-
-File purpose:
-- Run the lesson example in a reproducible way.
-- Print the relevant intermediate values, tensor shapes, losses, or generated
-  text for inspection.
-"""
-
-from pathlib import Path
-import random
-import sys
-
-import torch
-
-
-PROJECT_DIR = Path(__file__).resolve().parents[2]
-DATASET_PATH = PROJECT_DIR / "data" / "raw" / "fineweb_edu_sample.txt"
-
-sys.path.append(str(PROJECT_DIR))
-
-from study.snapshots.lesson_23.batching import create_batch
-from study.snapshots.lesson_23.model import LanguageModel
-from study.snapshots.lesson_23.tokenizer import create_vocabulary, decode, encode
-
-
-CONTEXT_SIZE = 8
-BATCH_SIZE = 4
-EMBEDDING_SIZE = 16
-NUM_HEADS = 4
-HEAD_SIZE = EMBEDDING_SIZE // NUM_HEADS
-
-
-def main():
-    random.seed(42)
-    torch.manual_seed(42)
-    torch.set_printoptions(precision=3, sci_mode=False)
-
-    text = DATASET_PATH.read_text(encoding="utf-8")
-
-    char_to_id, id_to_char = create_vocabulary(text)
-    vocabulary_size = len(char_to_id)
-
-    token_ids = encode(text, char_to_id)
-
-    split_index = int(len(token_ids) * 0.9)
-    training_data = token_ids[:split_index]
-
-    input_tensor, target_tensor = create_batch(
-        data=training_data,
-        batch_size=BATCH_SIZE,
-        context_size=CONTEXT_SIZE,
-    )
-
-    model = LanguageModel(
-        vocabulary_size=vocabulary_size,
-        context_size=CONTEXT_SIZE,
-        embedding_size=EMBEDDING_SIZE,
-        head_size=HEAD_SIZE,
-        num_heads=NUM_HEADS,
-    )
-
-    positions = torch.arange(input_tensor.shape[1])
-    token_embeddings = model.token_embedding_table(input_tensor)
-    position_embeddings = model.position_embedding_table(positions)
-    embeddings = token_embeddings + position_embeddings
-
-    normalized_embeddings = model.attention_layer_norm(embeddings)
-    attention_output, _ = model.multi_head_attention(normalized_embeddings)
-    residual_embeddings = embeddings + attention_output
-
-    manual_logits = model.output_head(residual_embeddings)
-    logits, loss = model(input_tensor, target_tensor)
-
-    max_difference = (manual_logits - logits).abs().max()
-
-    first_token_before = embeddings[0, 0]
-    first_token_after = normalized_embeddings[0, 0]
-
-    print("Input form:")
-    print(input_tensor.shape)
-    print()
-
-    print("First example as text:")
-    print(repr(decode(input_tensor[0].tolist(), id_to_char)))
-    print()
-
-    print("Form embeddings before LayerNorm:")
-    print(embeddings.shape)
-    print()
-
-    print("Form embeddings after LayerNorm:")
-    print(normalized_embeddings.shape)
-    print()
-
-    print("First token before LayerNorm:")
-    print(first_token_before)
-    print()
-
-    print("First token after LayerNorm:")
-    print(first_token_after)
-    print()
-
-    print("Mean of the first token before and after LayerNorm:")
-    print(first_token_before.mean().item())
-    print(first_token_after.mean().item())
-    print()
-
-    print("Standard deviation of the first token before and after LayerNorm:")
-    print(first_token_before.std(unbiased=False).item())
-    print(first_token_after.std(unbiased=False).item())
-    print()
-
-    print("attention_output form:")
-    print(attention_output.shape)
-    print()
-
-    print("Form after residual connection:")
-    print(residual_embeddings.shape)
-    print()
-
-    print("Logits form:")
-    print(logits.shape)
-    print()
-
-    print("Maximum difference between manual and forward model calculation:")
-    print(max_difference.item())
-    print()
-
-    print("Initial loss:")
-    print(loss.item())
-
-
-if __name__ == "__main__":
-    main()
-```
-### Comando
-
-Da root del progetto:
-
-```bash
-cd /Users/ferdinandobons/Desktop/MiniGPT
-python LearnGPT/study/lessons/23_layer_norm_attention.py
-```### Output to check
-
-The most important lines are these:```text
-Forma embeddings prima di LayerNorm:
-torch.Size([4, 8, 16])
-
-Forma embeddings dopo LayerNorm:
-torch.Size([4, 8, 16])
-```
-
-These lines confirm that the shape does not change.
-
-Then check the mean and standard deviation of the first token:```text
-Media del primo token prima e dopo LayerNorm:
-...
-...
-
-Deviazione standard del primo token prima e dopo LayerNorm:
-...
-...
-```
-
-After `LayerNorm`, the token average will be very close to `0` and the deviation
-standard will be very close to `1`.
-
-Finally check:```text
-Differenza massima tra calcolo manuale e forward del modello:
-0.0
-```
-
-This confirms that the manual calculation in the script matches the `forward`
-of the model.
-
 ### Common errors
 
 Mistake 1: Thinking that `LayerNorm` changes `[4, 8, 16]` to `[4, 8]`.
@@ -8985,7 +6250,7 @@ Linear(16 -> 64)
 -> Linear(64 -> 16)
 ```
 
-Quindi in queste lezioni:
+So in these lessons:
 
 ```text
 MLP = feed-forward network del Transformer
@@ -9003,7 +6268,7 @@ residual_after_feed_forward = residual_after_attention + feed_forward_output
 
 The important point is this:```text
 la attention mescola informazioni tra posizioni diverse;
-il feed-forward trasforma ogni posizione lungo la dimensione embedding.
+il feed-forward trasforma ogni position lungo la dimensione embedding.
 ```
 
 Nel nostro caso:
@@ -9350,11 +6615,6 @@ flowchart TD
 The diagram shows two residual sums:```text
 embeddings + attention_output
 residual_after_attention + feed_forward_output
-```### Complete study script code
-
-Files:```text
-LearnGPT/study/lessons/24_feed_forward.py
-```
 
 Code:```python
 """
@@ -9509,49 +6769,6 @@ def main():
 if __name__ == "__main__":
     main()
 ```
-### Comando
-
-Da root del progetto:
-
-```bash
-cd /Users/ferdinandobons/Desktop/MiniGPT
-python LearnGPT/study/lessons/24_feed_forward.py
-```### Output to check
-
-The main lines are:```text
-Forma dopo attention residuale:
-torch.Size([4, 8, 16])
-
-Forma input del feed-forward:
-torch.Size([4, 8, 16])
-
-Forma dopo prima Linear del feed-forward:
-torch.Size([4, 8, 64])
-
-Forma dopo GELU:
-torch.Size([4, 8, 64])
-
-Forma output del feed-forward:
-torch.Size([4, 8, 16])
-
-Forma dopo residual connection del feed-forward:
-torch.Size([4, 8, 16])
-
-Forma logits:
-torch.Size([4, 8, 68])
-```
-
-These lines show that the feed-forward temporarily expands the
-internal representation, then returns to `embedding_size`.
-
-Then check:```text
-Differenza massima tra calcolo manuale e forward del modello:
-0.0
-```
-
-This confirms that the manual calculation in the script matches the `forward`
-of the model.
-
 ### Common errors
 
 Mistake 1: Thinking that feed-forward changes the number of tokens in the context.
@@ -9628,8 +6845,8 @@ residual connection
 ```
 
 The important point is this:```text
-TransformerBlock non aggiunge una nuova operazione matematica.
-TransformerBlock organizza operazioni che abbiamo già scritto.
+TransformerBlock does not add a new mathematical operation.
+TransformerBlock organizes operations we have already written.
 ```
 
 The incoming and outgoing shape remains the same:```text
@@ -9703,7 +6920,7 @@ LearnGPT/study/snapshots/lesson_25/
 LearnGPT/study/lessons/25_transformer_block.py
 ```
 
-### Nuova classe `TransformerBlock`
+### New class `TransformerBlock`
 
 Nel file `model.py` aggiungiamo:
 
@@ -9734,8 +6951,8 @@ Qui non compare `output_head`.
 Motivo:
 
 ```text
-TransformerBlock lavora nello spazio interno del modello: [4, 8, 16]
-output_head trasforma lo spazio interno in vocabolario: [4, 8, 68]
+TransformerBlock works in the internal model space: [4, 8, 16]
+output_head turns the internal space into vocabulary scores: [4, 8, 68]
 ```
 
 So `output_head` stays in the language model, outside the block.
@@ -9756,10 +6973,10 @@ def forward(self, embeddings):
 ```
 
 The sequence is:```text
-1. normalizza gli embeddings prima della attention
+1. normalizes embeddings before attention
 2. calcola la multi-head attention
 3. somma input originale e output della attention
-4. normalizza il risultato prima del feed-forward
+4. normalizes the result before the feed-forward layer
 5. calcola il feed-forward
 6. somma input del feed-forward e output del feed-forward
 7. restituisce il risultato del blocco
@@ -9848,188 +7065,6 @@ flowchart TD
 
 The diagram shows that `TransformerBlock` takes `embeddings` and returns
 again an internal representation with the same shape.
-
-### Complete study script code
-
-Files:```text
-LearnGPT/study/lessons/25_transformer_block.py
-```
-
-Code:```python
-"""
-Changes compared with the previous file:
-- This lesson script uses the English project layout and imports lesson-specific
-  snapshot code.
-- It belongs to lesson 25 of the guided LearnGPT path.
-
-File purpose:
-- Run the lesson example in a reproducible way.
-- Print the relevant intermediate values, tensor shapes, losses, or generated
-  text for inspection.
-"""
-
-from pathlib import Path
-import random
-import sys
-
-import torch
-
-
-PROJECT_DIR = Path(__file__).resolve().parents[2]
-DATASET_PATH = PROJECT_DIR / "data" / "raw" / "fineweb_edu_sample.txt"
-
-sys.path.append(str(PROJECT_DIR))
-
-from study.snapshots.lesson_25.batching import create_batch
-from study.snapshots.lesson_25.model import LanguageModel
-from study.snapshots.lesson_25.tokenizer import create_vocabulary, decode, encode
-
-
-CONTEXT_SIZE = 8
-BATCH_SIZE = 4
-EMBEDDING_SIZE = 16
-NUM_HEADS = 4
-HEAD_SIZE = EMBEDDING_SIZE // NUM_HEADS
-
-
-def main():
-    random.seed(42)
-    torch.manual_seed(42)
-    torch.set_printoptions(precision=3, sci_mode=False)
-
-    text = DATASET_PATH.read_text(encoding="utf-8")
-
-    char_to_id, id_to_char = create_vocabulary(text)
-    vocabulary_size = len(char_to_id)
-
-    token_ids = encode(text, char_to_id)
-
-    split_index = int(len(token_ids) * 0.9)
-    training_data = token_ids[:split_index]
-
-    input_tensor, target_tensor = create_batch(
-        data=training_data,
-        batch_size=BATCH_SIZE,
-        context_size=CONTEXT_SIZE,
-    )
-
-    model = LanguageModel(
-        vocabulary_size=vocabulary_size,
-        context_size=CONTEXT_SIZE,
-        embedding_size=EMBEDDING_SIZE,
-        head_size=HEAD_SIZE,
-        num_heads=NUM_HEADS,
-    )
-
-    positions = torch.arange(input_tensor.shape[1])
-    token_embeddings = model.token_embedding_table(input_tensor)
-    position_embeddings = model.position_embedding_table(positions)
-    embeddings = token_embeddings + position_embeddings
-
-    block = model.transformer_block
-
-    attention_input = block.attention_layer_norm(embeddings)
-    attention_output, _ = block.multi_head_attention(attention_input)
-    residual_after_attention = embeddings + attention_output
-
-    feed_forward_input = block.feed_forward_layer_norm(residual_after_attention)
-    feed_forward_output = block.feed_forward(feed_forward_input)
-    manual_block_output = residual_after_attention + feed_forward_output
-
-    block_output = block(embeddings)
-    manual_logits = model.output_head(manual_block_output)
-    logits, loss = model(input_tensor, target_tensor)
-
-    block_difference = (manual_block_output - block_output).abs().max()
-    logits_difference = (manual_logits - logits).abs().max()
-
-    print("Input form:")
-    print(input_tensor.shape)
-    print()
-
-    print("First example as text:")
-    print(repr(decode(input_tensor[0].tolist(), id_to_char)))
-    print()
-
-    print("Form embeddings as input to the TransformerBlock:")
-    print(embeddings.shape)
-    print()
-
-    print("attention_input form:")
-    print(attention_input.shape)
-    print()
-
-    print("attention_output form:")
-    print(attention_output.shape)
-    print()
-
-    print("Form after residual attention:")
-    print(residual_after_attention.shape)
-    print()
-
-    print("feed_forward_input form:")
-    print(feed_forward_input.shape)
-    print()
-
-    print("feed_forward_output form:")
-    print(feed_forward_output.shape)
-    print()
-
-    print("Output form of the TransformerBlock:")
-    print(block_output.shape)
-    print()
-
-    print("Logits form:")
-    print(logits.shape)
-    print()
-
-    print("Maximum difference between manual calculation and TransformerBlock:")
-    print(block_difference.item())
-    print()
-
-    print("Maximum difference between manual and forward logits of the model:")
-    print(logits_difference.item())
-    print()
-
-    print("Initial loss:")
-    print(loss.item())
-
-
-if __name__ == "__main__":
-    main()
-```
-### Comando
-
-Da root del progetto:
-
-```bash
-cd /Users/ferdinandobons/Desktop/MiniGPT
-python LearnGPT/study/lessons/25_transformer_block.py
-```### Output to check
-
-The main lines are:```text
-Forma embeddings in ingresso al TransformerBlock:
-torch.Size([4, 8, 16])
-
-Forma output del TransformerBlock:
-torch.Size([4, 8, 16])
-
-Forma logits:
-torch.Size([4, 8, 68])
-```
-
-Poi controlla:
-
-```text
-Differenza massima tra calcolo manuale e TransformerBlock:
-0.0
-
-Differenza massima tra logits manuali e forward del modello:
-0.0
-```
-
-These lines confirm that the block executes the same steps reconstructed a
-hand in the script.
 
 ### Common errors
 
@@ -10271,7 +7306,7 @@ class LanguageModel(nn.Module):
 
         if num_heads * head_size != embedding_size:
             raise ValueError(
-                "In questa versione didattica, num_heads * head_size deve "
+                "In this didactic version, num_heads * head_size deve "
                 "essere uguale a embedding_size."
             )
 
@@ -10319,7 +7354,7 @@ def forward(self, input_ids, target_ids=None):
     if current_context_size > self.context_size:
         raise ValueError(
             f"Il contesto ricevuto contiene {current_context_size} token, "
-            f"ma il modello supporta al massimo {self.context_size} token."
+            f"ma il model supporta al massimo {self.context_size} token."
         )
 
     positions = torch.arange(current_context_size, device=input_ids.device)
@@ -10427,175 +7462,6 @@ flowchart TD
 The diagram shows that `output_head` stays out of blocks. The blocks
 they work in the internal space of the model, i.e. on the shape `[4, 8, 16]`.
 
-### Complete study script code
-
-Files:```text
-LearnGPT/study/lessons/26_more_transformer_blocks.py
-```
-
-Code:```python
-"""
-Changes compared with the previous file:
-- This lesson script uses the English project layout and imports lesson-specific
-  snapshot code.
-- It belongs to lesson 26 of the guided LearnGPT path.
-
-File purpose:
-- Run the lesson example in a reproducible way.
-- Print the relevant intermediate values, tensor shapes, losses, or generated
-  text for inspection.
-"""
-
-from pathlib import Path
-import random
-import sys
-
-import torch
-
-
-PROJECT_DIR = Path(__file__).resolve().parents[2]
-DATASET_PATH = PROJECT_DIR / "data" / "raw" / "fineweb_edu_sample.txt"
-
-sys.path.append(str(PROJECT_DIR))
-
-from study.snapshots.lesson_26.batching import create_batch
-from study.snapshots.lesson_26.model import LanguageModel
-from study.snapshots.lesson_26.tokenizer import create_vocabulary, decode, encode
-
-
-CONTEXT_SIZE = 8
-BATCH_SIZE = 4
-EMBEDDING_SIZE = 16
-NUM_HEADS = 4
-HEAD_SIZE = EMBEDDING_SIZE // NUM_HEADS
-NUM_TRANSFORMER_BLOCKS = 3
-
-
-def main():
-    random.seed(42)
-    torch.manual_seed(42)
-    torch.set_printoptions(precision=3, sci_mode=False)
-
-    text = DATASET_PATH.read_text(encoding="utf-8")
-
-    char_to_id, id_to_char = create_vocabulary(text)
-    vocabulary_size = len(char_to_id)
-
-    token_ids = encode(text, char_to_id)
-
-    split_index = int(len(token_ids) * 0.9)
-    training_data = token_ids[:split_index]
-
-    input_tensor, target_tensor = create_batch(
-        data=training_data,
-        batch_size=BATCH_SIZE,
-        context_size=CONTEXT_SIZE,
-    )
-
-    model = LanguageModel(
-        vocabulary_size=vocabulary_size,
-        context_size=CONTEXT_SIZE,
-        embedding_size=EMBEDDING_SIZE,
-        head_size=HEAD_SIZE,
-        num_heads=NUM_HEADS,
-        num_transformer_blocks=NUM_TRANSFORMER_BLOCKS,
-    )
-
-    positions = torch.arange(input_tensor.shape[1], device=input_tensor.device)
-    token_embeddings = model.token_embedding_table(input_tensor)
-    position_embeddings = model.position_embedding_table(positions)
-    embeddings = token_embeddings + position_embeddings
-
-    block_output = embeddings
-    block_outputs = []
-
-    for block_index, transformer_block in enumerate(
-        model.transformer_blocks,
-        start=1,
-    ):
-        block_output = transformer_block(block_output)
-        block_outputs.append((block_index, block_output))
-
-    manual_logits = model.output_head(block_output)
-    logits, loss = model(input_tensor, target_tensor)
-
-    logits_difference = (manual_logits - logits).abs().max()
-
-    print("Input shape:")
-    print(input_tensor.shape)
-    print()
-
-    print("First example as text:")
-    print(repr(decode(input_tensor[0].tolist(), id_to_char)))
-    print()
-
-    print("Initial embeddings shape:")
-    print(embeddings.shape)
-    print()
-
-    print("Number of TransformerBlocks in the model:")
-    print(len(model.transformer_blocks))
-    print()
-
-    for block_index, current_block_output in block_outputs:
-        print(f"Output shape after TransformerBlock {block_index}:")
-        print(current_block_output.shape)
-        print()
-
-    print("Logits shape:")
-    print(logits.shape)
-    print()
-
-    print("Maximum difference between manual logits and model forward:")
-    print(logits_difference.item())
-    print()
-
-    print("Initial loss:")
-    print(loss.item())
-
-
-if __name__ == "__main__":
-    main()
-```
-### Comando
-
-Da root del progetto:
-
-```bash
-cd /Users/ferdinandobons/Desktop/MiniGPT
-python LearnGPT/study/lessons/26_more_transformer_blocks.py
-```### Output to check
-
-The main lines must show:```text
-Forma embeddings iniziali:
-torch.Size([4, 8, 16])
-
-Numero di TransformerBlock nel modello:
-3
-
-Forma output dopo TransformerBlock 1:
-torch.Size([4, 8, 16])
-
-Forma output dopo TransformerBlock 2:
-torch.Size([4, 8, 16])
-
-Forma output dopo TransformerBlock 3:
-torch.Size([4, 8, 16])
-
-Forma logits:
-torch.Size([4, 8, 68])
-```
-
-Poi controlla:
-
-```text
-Differenza massima tra logits manuali e forward del modello:
-0.0
-```
-
-This line confirms that manually looping through the blocks produces the same logits
-of the model's `forward`.
-
 ### Common errors
 
 Mistake 1: Thinking that `num_transformer_blocks = 3` multiplies the length of the context.
@@ -10696,7 +7562,7 @@ logits = self.output_head(normalized_output)
 ```
 
 So the difference is:```text
-prima:
+before:
 ultimo TransformerBlock -> output_head
 
 adesso:
@@ -10705,8 +7571,8 @@ ultimo TransformerBlock -> final_layer_norm -> output_head
 
 During previous lessons we have already used `LayerNorm` inside each
 `TransformerBlock`:```text
-LayerNorm prima della attention
-LayerNorm prima del feed-forward
+LayerNorm before attention
+LayerNorm before the feed-forward layer
 ```
 
 Those normalizations prepare the input of the internal subblocks.
@@ -10793,7 +7659,7 @@ class LanguageModel(nn.Module):
 
         if num_heads * head_size != embedding_size:
             raise ValueError(
-                "In questa versione didattica, num_heads * head_size deve "
+                "In this didactic version, num_heads * head_size deve "
                 "essere uguale a embedding_size."
             )
 
@@ -10840,10 +7706,10 @@ represent each token.
 With:```text
 block_output.shape = [4, 8, 16]
 ```the final LayerNorm works separately on each 16-long vector:```text
-esempio 1, token 1 -> 16 numeri -> normalizzazione
-esempio 1, token 2 -> 16 numeri -> normalizzazione
+esempio 1, token 1 -> 16 numbers -> normalizzazione
+esempio 1, token 2 -> 16 numbers -> normalizzazione
 ...
-esempio 4, token 8 -> 16 numeri -> normalizzazione
+esempio 4, token 8 -> 16 numbers -> normalizzazione
 ```
 
 It does not mix different examples and it does not mix different positions of the context.
@@ -10857,7 +7723,7 @@ def forward(self, input_ids, target_ids=None):
     if current_context_size > self.context_size:
         raise ValueError(
             f"Il contesto ricevuto contiene {current_context_size} token, "
-            f"ma il modello supporta al massimo {self.context_size} token."
+            f"ma il model supporta al massimo {self.context_size} token."
         )
 
     positions = torch.arange(current_context_size, device=input_ids.device)
@@ -10943,8 +7809,8 @@ After `final_layer_norm`, the same token still has 16 values:```text
 
 These numbers are only a facsimile. The point to note is that the quantity of
 values remains the same:```text
-16 numeri prima
-16 numeri dopo
+16 numbers before
+16 numbers dopo
 ```### Lesson 27 diagram```mermaid
 flowchart TD
     A["input_tensor<br/>[4, 8]"]
@@ -10967,179 +7833,6 @@ different:
 | --- | --- | --- |
 | `final_layer_norm` | `[4, 8, 16]` | `[4, 8, 16]` |
 | `output_head` | `[4, 8, 16]` | `[4, 8, 68]` |
-
-### Complete study script code
-
-Files:```text
-LearnGPT/study/lessons/27_final_layer_norm.py
-```
-
-Code:```python
-"""
-Changes compared with the previous file:
-- This lesson script uses the English project layout and imports lesson-specific
-  snapshot code.
-- It belongs to lesson 27 of the guided LearnGPT path.
-
-File purpose:
-- Run the lesson example in a reproducible way.
-- Print the relevant intermediate values, tensor shapes, losses, or generated
-  text for inspection.
-"""
-
-from pathlib import Path
-import random
-import sys
-
-import torch
-
-
-PROJECT_DIR = Path(__file__).resolve().parents[2]
-DATASET_PATH = PROJECT_DIR / "data" / "raw" / "fineweb_edu_sample.txt"
-
-sys.path.append(str(PROJECT_DIR))
-
-from study.snapshots.lesson_27.batching import create_batch
-from study.snapshots.lesson_27.model import LanguageModel
-from study.snapshots.lesson_27.tokenizer import create_vocabulary, decode, encode
-
-
-CONTEXT_SIZE = 8
-BATCH_SIZE = 4
-EMBEDDING_SIZE = 16
-NUM_HEADS = 4
-HEAD_SIZE = EMBEDDING_SIZE // NUM_HEADS
-NUM_TRANSFORMER_BLOCKS = 3
-
-
-def main():
-    random.seed(42)
-    torch.manual_seed(42)
-    torch.set_printoptions(precision=3, sci_mode=False)
-
-    text = DATASET_PATH.read_text(encoding="utf-8")
-
-    char_to_id, id_to_char = create_vocabulary(text)
-    vocabulary_size = len(char_to_id)
-
-    token_ids = encode(text, char_to_id)
-
-    split_index = int(len(token_ids) * 0.9)
-    training_data = token_ids[:split_index]
-
-    input_tensor, target_tensor = create_batch(
-        data=training_data,
-        batch_size=BATCH_SIZE,
-        context_size=CONTEXT_SIZE,
-    )
-
-    model = LanguageModel(
-        vocabulary_size=vocabulary_size,
-        context_size=CONTEXT_SIZE,
-        embedding_size=EMBEDDING_SIZE,
-        head_size=HEAD_SIZE,
-        num_heads=NUM_HEADS,
-        num_transformer_blocks=NUM_TRANSFORMER_BLOCKS,
-    )
-
-    positions = torch.arange(input_tensor.shape[1], device=input_tensor.device)
-    token_embeddings = model.token_embedding_table(input_tensor)
-    position_embeddings = model.position_embedding_table(positions)
-    embeddings = token_embeddings + position_embeddings
-
-    block_output = embeddings
-
-    for transformer_block in model.transformer_blocks:
-        block_output = transformer_block(block_output)
-
-    normalized_output = model.final_layer_norm(block_output)
-    manual_logits = model.output_head(normalized_output)
-    logits, loss = model(input_tensor, target_tensor)
-
-    logits_difference = (manual_logits - logits).abs().max()
-
-    first_token_before_norm = block_output[0, 0]
-    first_token_after_norm = normalized_output[0, 0]
-
-    print("Input shape:")
-    print(input_tensor.shape)
-    print()
-
-    print("First example as text:")
-    print(repr(decode(input_tensor[0].tolist(), id_to_char)))
-    print()
-
-    print("Initial embeddings shape:")
-    print(embeddings.shape)
-    print()
-
-    print("Output shape after all TransformerBlocks:")
-    print(block_output.shape)
-    print()
-
-    print("Output shape after final_layer_norm:")
-    print(normalized_output.shape)
-    print()
-
-    print("Mean of the first token before and after final_layer_norm:")
-    print(first_token_before_norm.mean().item())
-    print(first_token_after_norm.mean().item())
-    print()
-
-    print("Standard deviation of the first token before and after final_layer_norm:")
-    print(first_token_before_norm.std(unbiased=False).item())
-    print(first_token_after_norm.std(unbiased=False).item())
-    print()
-
-    print("Logits shape:")
-    print(logits.shape)
-    print()
-
-    print("Maximum difference between manual logits and model forward:")
-    print(logits_difference.item())
-    print()
-
-    print("Initial loss:")
-    print(loss.item())
-
-
-if __name__ == "__main__":
-    main()
-```
-### Comando
-
-Da root del progetto:
-
-```bash
-cd /Users/ferdinandobons/Desktop/MiniGPT
-python LearnGPT/study/lessons/27_final_layer_norm.py
-```### Output to check
-
-The main lines must show:```text
-Forma output dopo tutti i TransformerBlock:
-torch.Size([4, 8, 16])
-
-Forma output dopo final_layer_norm:
-torch.Size([4, 8, 16])
-
-Forma logits:
-torch.Size([4, 8, 68])
-```
-
-Poi controlla:
-
-```text
-Differenza massima tra logits manuali e forward del modello:
-0.0
-```
-
-This line confirms that the manual calculation:```text
-blocchi -> final_layer_norm -> output_head
-```produces the same logits as the model's `forward`.
-
-The script also prints the mean and standard deviation of the first token before and after
-the final LayerNorm. This is to note that normalization changes i
-numerical values of the vector, maintaining the same shape.
 
 ### Common errors
 
@@ -11292,7 +7985,7 @@ So far we have done two separate things:
 - we built a more complete Transformer model.
 
 Now let's combine these two paths:```text
-TransformerLanguageModel + training loop -> pesi aggiornati
+TransformerLanguageModel + training loop -> updated weights
 ```
 
 In the code the model is always called `LanguageModel`, because the path of the
@@ -11300,7 +7993,7 @@ snapshot indicates the version:```python
 from study.snapshots.lesson_28.model import LanguageModel
 ```
 
-### Cosa viene aggiunto
+### What changes and why
 
 Creiamo questi file:
 
@@ -11368,7 +8061,9 @@ The meaning is:
 | `loss.backward()` | calculate new gradients |
 | `optimizer.step()` | update the weights using those gradients |
 
-### Lesson 28 diagram```mermaid
+### Lesson 28 diagram
+
+```mermaid
 flowchart TD
     A["training_data<br/>token IDs del campione FineWeb-Edu"]
     B["create_batch(...)"]
@@ -11376,10 +8071,10 @@ flowchart TD
     D["target_tensor<br/>[4, 8]"]
     E["LanguageModel<br/>Transformer della lesson 28"]
     F["logits<br/>[4, 8, 68]"]
-    G["loss<br/>singolo numero"]
+    G["loss<br/>singolo number"]
     H["optimizer.zero_grad()"]
-    I["loss.backward()<br/>calcola gradienti"]
-    J["optimizer.step()<br/>aggiorna i pesi"]
+    I["loss.backward()<br/>computes gradients"]
+    J["optimizer.step()<br/>update the weights"]
     K["ripeti per 30 step"]
 
     A --> B
@@ -11415,12 +8110,7 @@ parameter_difference = (first_parameter_after - first_parameter_before).abs().ma
 If this difference is greater than `0`, at least that parameter has changed.
 
 This check is useful because it shows that:```text
-loss.backward() + optimizer.step() -> modifica effettiva dei pesi
-```### Complete study script code
-
-Files:```text
-LearnGPT/study/lessons/28_transformer_training.py
-```
+loss.backward() + optimizer.step() -> actual weight update
 
 Code:```python
 """
@@ -11545,38 +8235,6 @@ def main():
 if __name__ == "__main__":
     main()
 ```
-### Comando
-
-Da root del progetto:
-
-```bash
-cd /Users/ferdinandobons/Desktop/MiniGPT
-python LearnGPT/study/lessons/28_transformer_training.py
-```### Output to check
-
-The script must show:```text
-Loss sul batch di controllo prima del training:
-...
-
-Step 01 - loss batch corrente: ...
-Step 10 - loss batch corrente: ...
-Step 20 - loss batch corrente: ...
-Step 30 - loss batch corrente: ...
-
-Loss sullo stesso batch di controllo dopo il training:
-...
-
-Differenza massima nel primo parametro dopo il training:
-...
-```
-
-The most important line is:```text
-Differenza massima nel primo parametro dopo il training:
-```
-
-The value must be greater than `0`. This confirms that the training loop has
-modified at least one model parameter.
-
 ### Common errors
 
 Mistake 1: Thinking that printing the loss trains the model.
@@ -11613,7 +8271,7 @@ Now the Transformer model is no longer just run forward. It comes too
 trained for some steps.
 
 The added flow is:```text
-batch -> modello -> loss -> backward -> optimizer.step -> pesi aggiornati
+batch -> model -> loss -> backward -> optimizer.step -> weights aggiornati
 ```
 
 The next natural lesson will be to better separate training and validation loss,
@@ -11644,11 +8302,11 @@ Now let's separate two concepts:
 | loss estimation | measure the loss without updating the weights |
 
 So the new rule is:```text
-training loop -> aggiorna i pesi
-estimate_loss -> misura la qualità del modello
+training loop -> update the weights
+estimate_loss -> measures model quality
 ```
 
-### Cosa viene aggiunto
+### What changes and why
 
 Creiamo questi file:
 
@@ -11685,7 +8343,7 @@ this the loss of a single batch can increase even if the model, on average,
 it's getting better.
 
 To have a more readable number we measure multiple batches and take the average:```text
-loss media = somma delle loss / numero di batch valutati
+loss media = somma delle loss / number di batch valutati
 ```
 
 In lesson 29 we use:```python
@@ -11712,21 +8370,23 @@ The difference is this:
 Validation loss is not needed to call `optimizer.step`.
 
 It helps to answer this question:```text
-Il modello sta migliorando solo sui dati di training o anche su dati separati?
+Is the model improving only on training data, or also on separate data?
 ```
 
 At this stage the training is still very short, so we are not looking for a
 perfect result. We are interested in introducing the structure correctly.
 
-### Lesson 29 diagram```mermaid
+### Lesson 29 diagram
+
+```mermaid
 flowchart TD
-    A["token_ids<br/>tutto il testo codificato"]
+    A["token_ids<br/>all encoded text"]
     B["split 90/10"]
     C["training_data"]
     D["validation_data"]
     E["training step<br/>usa solo training_data"]
     F["loss.backward()"]
-    G["optimizer.step()<br/>aggiorna i pesi"]
+    G["optimizer.step()<br/>update the weights"]
     H["estimate_loss"]
     I["5 batch da training_data"]
     J["5 batch da validation_data"]
@@ -11783,7 +8443,7 @@ because then `loss.backward()` has to calculate the gradients.
 This is not necessary during the evaluation.
 
 `@torch.no_grad()` tells PyTorch:```text
-per questa funzione non costruire il grafo dei gradienti
+do not build the gradient graph for this function
 ```
 
 This is correct because `estimate_loss` doesn't call:```python
@@ -11816,251 +8476,6 @@ if was_training:
 This puts the model back into training mode only if it was in training mode before
 training.
 
-### Complete code: `study/snapshots/lesson_29/training.py````python
-"""
-Changes compared with the previous files:
-- This module is part of the project-code snapshot used by lesson 29.
-- It keeps the lesson independent from future changes in `final_project`.
-
-File purpose:
-- Provide the code needed by the matching lesson script.
-- Preserve a stable reference point for the course examples.
-"""
-
-import torch
-
-from .batching import create_batch
-
-
-@torch.no_grad()
-def estimate_loss(
-    model,
-    training_data,
-    validation_data,
-    batch_size,
-    context_size,
-    eval_batches,
-):
-    was_training = model.training
-    model.eval()
-
-    losses_by_split = {}
-    data_by_split = {
-        "training": training_data,
-        "validation": validation_data,
-    }
-
-    for split_name, split_data in data_by_split.items():
-        split_losses = []
-
-        for _ in range(eval_batches):
-            input_tensor, target_tensor = create_batch(
-                data=split_data,
-                batch_size=batch_size,
-                context_size=context_size,
-            )
-            _, loss = model(input_tensor, target_tensor)
-            split_losses.append(loss.item())
-
-        losses_by_split[split_name] = sum(split_losses) / len(split_losses)
-
-    if was_training:
-        model.train()
-
-    return losses_by_split
-```### How it is used in the script
-
-Before training we measure the initial loss:```python
-initial_losses = estimate_loss(
-    model=model,
-    training_data=training_data,
-    validation_data=validation_data,
-    batch_size=BATCH_SIZE,
-    context_size=CONTEXT_SIZE,
-    eval_batches=EVAL_BATCHES,
-)
-```
-
-Then, during training, every now and then we remeasure:```python
-if step == 1 or step % PRINT_EVERY == 0:
-    losses = estimate_loss(...)
-```
-
-This produces a more useful printout than just the loss of the current batch:```text
-training loss:   ...
-validation loss: ...
-```### Complete study script code
-
-Files:```text
-LearnGPT/study/lessons/29_loss_estimation.py
-```
-
-Code:```python
-"""
-Changes compared with the previous file:
-- This lesson script uses the English project layout and imports lesson-specific
-  snapshot code.
-- It belongs to lesson 29 of the guided LearnGPT path.
-
-File purpose:
-- Run the lesson example in a reproducible way.
-- Print the relevant intermediate values, tensor shapes, losses, or generated
-  text for inspection.
-"""
-
-from pathlib import Path
-import random
-import sys
-
-import torch
-
-
-PROJECT_DIR = Path(__file__).resolve().parents[2]
-DATASET_PATH = PROJECT_DIR / "data" / "raw" / "fineweb_edu_sample.txt"
-
-sys.path.append(str(PROJECT_DIR))
-
-from study.snapshots.lesson_29.batching import create_batch
-from study.snapshots.lesson_29.model import LanguageModel
-from study.snapshots.lesson_29.tokenizer import create_vocabulary, decode, encode
-from study.snapshots.lesson_29.training import estimate_loss
-
-
-CONTEXT_SIZE = 8
-BATCH_SIZE = 4
-EMBEDDING_SIZE = 16
-NUM_HEADS = 4
-HEAD_SIZE = EMBEDDING_SIZE // NUM_HEADS
-NUM_TRANSFORMER_BLOCKS = 3
-LEARNING_RATE = 0.003
-TRAINING_STEPS = 40
-PRINT_EVERY = 10
-EVAL_BATCHES = 5
-GENERATED_TOKENS = 80
-
-
-def print_losses(label, losses):
-    print(label)
-    print(f"training loss:   {losses['training']:.4f}")
-    print(f"validation loss: {losses['validation']:.4f}")
-    print()
-
-
-def main():
-    random.seed(42)
-    torch.manual_seed(42)
-
-    text = DATASET_PATH.read_text(encoding="utf-8")
-
-    char_to_id, id_to_char = create_vocabulary(text)
-    vocabulary_size = len(char_to_id)
-
-    token_ids = encode(text, char_to_id)
-
-    split_index = int(len(token_ids) * 0.9)
-    training_data = token_ids[:split_index]
-    validation_data = token_ids[split_index:]
-
-    model = LanguageModel(
-        vocabulary_size=vocabulary_size,
-        context_size=CONTEXT_SIZE,
-        embedding_size=EMBEDDING_SIZE,
-        head_size=HEAD_SIZE,
-        num_heads=NUM_HEADS,
-        num_transformer_blocks=NUM_TRANSFORMER_BLOCKS,
-    )
-
-    optimizer = torch.optim.AdamW(
-        model.parameters(),
-        lr=LEARNING_RATE,
-    )
-
-    initial_losses = estimate_loss(
-        model=model,
-        training_data=training_data,
-        validation_data=validation_data,
-        batch_size=BATCH_SIZE,
-        context_size=CONTEXT_SIZE,
-        eval_batches=EVAL_BATCHES,
-    )
-    print_losses("Estimated losses before training:", initial_losses)
-
-    for step in range(1, TRAINING_STEPS + 1):
-        input_tensor, target_tensor = create_batch(
-            data=training_data,
-            batch_size=BATCH_SIZE,
-            context_size=CONTEXT_SIZE,
-        )
-
-        _, loss = model(input_tensor, target_tensor)
-
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
-
-        if step == 1 or step % PRINT_EVERY == 0:
-            losses = estimate_loss(
-                model=model,
-                training_data=training_data,
-                validation_data=validation_data,
-                batch_size=BATCH_SIZE,
-                context_size=CONTEXT_SIZE,
-                eval_batches=EVAL_BATCHES,
-            )
-            print_losses(f"Estimated losses after step {step:02d}:", losses)
-
-    prompt_ids = torch.zeros((1, 1), dtype=torch.long)
-    generated_ids = model.generate(prompt_ids, max_new_tokens=GENERATED_TOKENS)
-    generated_text = decode(generated_ids[0].tolist(), id_to_char)
-
-    print("Generated text after training:")
-    print(repr(generated_text))
-
-
-if __name__ == "__main__":
-    main()
-```
-### Comando
-
-Da root del progetto:
-
-```bash
-cd /Users/ferdinandobons/Desktop/MiniGPT
-python LearnGPT/study/lessons/29_loss_estimation.py
-```### Output to check
-
-The script should print multiple blocks of this type:```text
-Loss stimate prima del training:
-training loss:   ...
-validation loss: ...
-
-Loss stimate dopo step 01:
-training loss:   ...
-validation loss: ...
-```
-
-The numbers can fluctuate. In this lesson we are not demanding a curve
-perfect, because the model is small and the training is very short.
-
-The important check is another:```text
-training loss e validation loss vengono misurate separatamente
-```### Common errors
-
-Mistake 1: Thinking that `estimate_loss` trains the model.
-
-It doesn't. `estimate_loss` does not call `loss.backward()` and does not call
-`optimizer.step()`.
-
-Mistake 2: Thinking that validation loss should be used to update weights.
-
-In this path the validation loss is only used for evaluation. The burdens come
-updated using batches taken from `training_data`.
-
-Error 3: reading only one loss as the definitive result.
-
-A single loss depends on the batch chosen. For this we use multiple batches and
-let's calculate an average.
-
 ### Connection with nanoGPT
 
 In `nanoGPT/train.py` there is a `estimate_loss` function with the same idea
@@ -12084,7 +8499,7 @@ Our version is more explicit:
 | compact code | more verbose code to follow each step |
 
 The teaching mechanism remains the same:```text
-valutare più batch -> fare la media -> stampare train loss e validation loss
+evaluate multiple batches -> average them -> print train loss and validation loss
 ```### Technical sources consulted
 
 - `nanoGPT/train.py`: local reference for the `estimate_loss` function, with
@@ -12117,14 +8532,14 @@ A checkpoint is a file that contains the state necessary to reuse a model
 trained after the Python process is finished.
 
 Until now, training only changed model weights in memory:```text
-training -> pesi aggiornati in RAM -> fine processo -> pesi persi
+training -> weights aggiornati in RAM -> end of process -> lost weights
 ```
 
 With a checkpoint the flow becomes:```text
-training -> pesi aggiornati -> checkpoint su disco -> modello ricaricato
+training -> weights aggiornati -> checkpoint on disk -> reloaded model
 ```
 
-### Cosa viene aggiunto
+### What changes and why
 
 Creiamo questi file:
 
@@ -12171,9 +8586,11 @@ configuration had been built:```python
 If we recreate a model with different dimensions, the saved weights do not enter the
 new structure.
 
-### Lesson 30 diagram```mermaid
+### Lesson 30 diagram
+
+```mermaid
 flowchart TD
-    A["training loop<br/>aggiorna i pesi"]
+    A["training loop<br/>update the weights"]
     B["model.state_dict()"]
     C["optimizer.state_dict()"]
     D["model_config"]
@@ -12184,8 +8601,8 @@ flowchart TD
     I["torch.load(..., weights_only=True)"]
     J["model.load_state_dict(...)"]
     K["optimizer.load_state_dict(...)"]
-    L["modello ricaricato"]
-    M["confronto logits<br/>differenza massima"]
+    L["reloaded model"]
+    M["logits comparison<br/>maximum difference"]
 
     A --> B
     A --> C
@@ -12267,277 +8684,6 @@ weights_only=True
 ```because the file contains weights, optimizer state and simple metadata. Not
 we need to load arbitrary Python objects.
 
-### Complete code: `study/snapshots/lesson_30/checkpoint.py````python
-"""
-Changes compared with the previous files:
-- This module is part of the project-code snapshot used by lesson 30.
-- It keeps the lesson independent from future changes in `final_project`.
-
-File purpose:
-- Provide the code needed by the matching lesson script.
-- Preserve a stable reference point for the course examples.
-"""
-
-from pathlib import Path
-
-import torch
-
-
-def save_checkpoint(
-    checkpoint_path,
-    model,
-    optimizer,
-    model_config,
-    step,
-    losses,
-    char_to_id,
-    id_to_char,
-):
-    checkpoint_path = Path(checkpoint_path)
-    checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
-
-    checkpoint = {
-        "model_state_dict": model.state_dict(),
-        "optimizer_state_dict": optimizer.state_dict(),
-        "model_config": model_config,
-        "step": step,
-        "losses": losses,
-        "char_to_id": char_to_id,
-        "id_to_char": id_to_char,
-    }
-
-    torch.save(checkpoint, checkpoint_path)
-
-    return checkpoint_path
-
-
-def load_checkpoint(checkpoint_path, model, optimizer=None):
-    checkpoint = torch.load(checkpoint_path, weights_only=True)
-
-    model.load_state_dict(checkpoint["model_state_dict"])
-
-    if optimizer is not None:
-        optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
-
-    return checkpoint
-```### How the script checks the checkpoint
-
-The script does this:
-
-1. train the model for a few steps;
-2. calculate some losses;
-3. takes a batch of control;
-4. calculate the logits of the original model;
-5. save the checkpoint;
-6. create a new `LanguageModel`;
-7. load the checkpoint into the new model;
-8. calculate the logits of the reloaded model on the same batch;
-9. measures the maximum difference between the two results.
-
-The central control is:```python
-max_logit_difference = (loaded_logits - original_logits).abs().max()
-```
-
-If the value is `0.0`, the reloaded model produces the same logits as
-saved model.
-
-### Complete study script code
-
-Files:```text
-LearnGPT/study/lessons/30_checkpoint.py
-```
-
-Code:```python
-"""
-Changes compared with the previous file:
-- This lesson script uses the English project layout and imports lesson-specific
-  snapshot code.
-- It belongs to lesson 30 of the guided LearnGPT path.
-
-File purpose:
-- Run the lesson example in a reproducible way.
-- Print the relevant intermediate values, tensor shapes, losses, or generated
-  text for inspection.
-"""
-
-from pathlib import Path
-import random
-import sys
-
-import torch
-
-
-PROJECT_DIR = Path(__file__).resolve().parents[2]
-DATASET_PATH = PROJECT_DIR / "data" / "raw" / "fineweb_edu_sample.txt"
-CHECKPOINT_PATH = Path("/private/tmp/learngpt_lesson_30/checkpoint.pt")
-
-sys.path.append(str(PROJECT_DIR))
-
-from study.snapshots.lesson_30.batching import create_batch
-from study.snapshots.lesson_30.checkpoint import load_checkpoint, save_checkpoint
-from study.snapshots.lesson_30.model import LanguageModel
-from study.snapshots.lesson_30.tokenizer import create_vocabulary, decode, encode
-from study.snapshots.lesson_30.training import estimate_loss
-
-
-CONTEXT_SIZE = 8
-BATCH_SIZE = 4
-EMBEDDING_SIZE = 16
-NUM_HEADS = 4
-HEAD_SIZE = EMBEDDING_SIZE // NUM_HEADS
-NUM_TRANSFORMER_BLOCKS = 3
-LEARNING_RATE = 0.003
-TRAINING_STEPS = 20
-EVAL_BATCHES = 3
-GENERATED_TOKENS = 80
-
-
-def create_model_config(vocabulary_size):
-    return {
-        "vocabulary_size": vocabulary_size,
-        "context_size": CONTEXT_SIZE,
-        "embedding_size": EMBEDDING_SIZE,
-        "head_size": HEAD_SIZE,
-        "num_heads": NUM_HEADS,
-        "num_transformer_blocks": NUM_TRANSFORMER_BLOCKS,
-    }
-
-
-def train_for_few_steps(model, optimizer, training_data):
-    for _ in range(TRAINING_STEPS):
-        input_tensor, target_tensor = create_batch(
-            data=training_data,
-            batch_size=BATCH_SIZE,
-            context_size=CONTEXT_SIZE,
-        )
-
-        _, loss = model(input_tensor, target_tensor)
-
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
-
-
-def main():
-    random.seed(42)
-    torch.manual_seed(42)
-
-    text = DATASET_PATH.read_text(encoding="utf-8")
-
-    char_to_id, id_to_char = create_vocabulary(text)
-    vocabulary_size = len(char_to_id)
-    token_ids = encode(text, char_to_id)
-
-    split_index = int(len(token_ids) * 0.9)
-    training_data = token_ids[:split_index]
-    validation_data = token_ids[split_index:]
-
-    model_config = create_model_config(vocabulary_size)
-    model = LanguageModel(**model_config)
-    optimizer = torch.optim.AdamW(
-        model.parameters(),
-        lr=LEARNING_RATE,
-    )
-
-    train_for_few_steps(model, optimizer, training_data)
-
-    losses = estimate_loss(
-        model=model,
-        training_data=training_data,
-        validation_data=validation_data,
-        batch_size=BATCH_SIZE,
-        context_size=CONTEXT_SIZE,
-        eval_batches=EVAL_BATCHES,
-    )
-
-    check_input, _ = create_batch(
-        data=validation_data,
-        batch_size=BATCH_SIZE,
-        context_size=CONTEXT_SIZE,
-    )
-    original_logits = model(check_input).detach()
-
-    saved_path = save_checkpoint(
-        checkpoint_path=CHECKPOINT_PATH,
-        model=model,
-        optimizer=optimizer,
-        model_config=model_config,
-        step=TRAINING_STEPS,
-        losses=losses,
-        char_to_id=char_to_id,
-        id_to_char=id_to_char,
-    )
-
-    loaded_model = LanguageModel(**model_config)
-    loaded_optimizer = torch.optim.AdamW(
-        loaded_model.parameters(),
-        lr=LEARNING_RATE,
-    )
-    checkpoint = load_checkpoint(
-        checkpoint_path=saved_path,
-        model=loaded_model,
-        optimizer=loaded_optimizer,
-    )
-
-    loaded_logits = loaded_model(check_input).detach()
-    max_logit_difference = (loaded_logits - original_logits).abs().max()
-
-    prompt_ids = torch.zeros((1, 1), dtype=torch.long)
-    generated_ids = loaded_model.generate(prompt_ids, max_new_tokens=GENERATED_TOKENS)
-    generated_text = decode(generated_ids[0].tolist(), checkpoint["id_to_char"])
-
-    print("Checkpoint salvato in:")
-    print(saved_path)
-    print()
-
-    print("Step saved in the checkpoint:")
-    print(checkpoint["step"])
-    print()
-
-    print("Losses saved in the checkpoint:")
-    print(checkpoint["losses"])
-    print()
-
-    print("Maximum difference between original and reloaded logits:")
-    print(max_logit_difference.item())
-    print()
-
-    print("Generated text from the reloaded model:")
-    print(repr(generated_text))
-
-
-if __name__ == "__main__":
-    main()
-```
-### Comando
-
-Da root del progetto:
-
-```bash
-cd /Users/ferdinandobons/Desktop/MiniGPT
-python LearnGPT/study/lessons/30_checkpoint.py
-```### Output to check
-
-The script should print:```text
-Checkpoint salvato in:
-/private/tmp/learngpt_lesson_30/checkpoint.pt
-
-Step salvato nel checkpoint:
-20
-
-Loss salvate nel checkpoint:
-...
-
-Differenza massima tra logits originali e logits ricaricati:
-0.0
-```
-
-The most important line is:```text
-Differenza massima tra logits originali e logits ricaricati:
-```
-
-The expected value is `0.0`.
-
 ### Common errors
 
 Mistake 1: Only save logits.
@@ -12608,7 +8754,7 @@ optimizer status and information needed to recreate the model.
 Now the training no longer remains only in the memory of the Python process.
 
 We have this new step:```text
-modello addestrato -> checkpoint.pt -> modello ricaricato
+trained model -> checkpoint.pt -> reloaded model
 ```
 
 The next natural step will be to use checkpointing to better separate two
@@ -12632,10 +8778,10 @@ In lesson 30 we already reloaded a checkpoint, but we did it for
 verify that the logits were identical.
 
 Now let's use checkpointing for the main practical reason:```text
-checkpoint salvato -> modello ricaricato -> testo generato
+checkpoint salvato -> reloaded model -> generated text
 ```
 
-### Cosa viene aggiunto
+### What changes and why
 
 Creiamo questi file:
 
@@ -12680,7 +8826,9 @@ This separation is the same general direction as nanoGPT:
 In our teaching project, lesson 31 introduces the same boundary in a way
 smaller.
 
-### Lesson 31 diagram```mermaid
+### Lesson 31 diagram
+
+```mermaid
 flowchart TD
     A["fase dimostrativa<br/>crea checkpoint"]
     B["checkpoint.pt"]
@@ -12741,58 +8889,6 @@ doesn't know how to convert it to ID.
 
 In that case we raise an explicit error:```python
 raise ValueError(...)
-```### Complete code: `study/snapshots/lesson_31/generate.py````python
-"""
-Changes compared with the previous files:
-- This module is part of the project-code snapshot used by lesson 31.
-- It keeps the lesson independent from future changes in `final_project`.
-
-File purpose:
-- Provide the code needed by the matching lesson script.
-- Preserve a stable reference point for the course examples.
-"""
-
-import torch
-
-from .model import LanguageModel
-from .tokenizer import decode, encode
-
-
-def load_model_from_checkpoint(checkpoint_path):
-    checkpoint = torch.load(checkpoint_path, weights_only=True)
-
-    model = LanguageModel(**checkpoint["model_config"])
-    model.load_state_dict(checkpoint["model_state_dict"])
-    model.eval()
-
-    return model, checkpoint
-
-
-def generate_text_from_checkpoint(checkpoint_path, prompt_text, max_new_tokens):
-    model, checkpoint = load_model_from_checkpoint(checkpoint_path)
-    char_to_id = checkpoint["char_to_id"]
-    id_to_char = checkpoint["id_to_char"]
-
-    unknown_chars = sorted(set(prompt_text) - set(char_to_id))
-    if unknown_chars:
-        raise ValueError(f"The prompt contains characters outside the vocabulary: {unknown_chars}")
-
-    prompt_ids = encode(prompt_text, char_to_id)
-    input_ids = torch.tensor([prompt_ids], dtype=torch.long)
-
-    with torch.no_grad():
-        generated_ids = model.generate(input_ids, max_new_tokens=max_new_tokens)
-
-    generated_text = decode(generated_ids[0].tolist(), id_to_char)
-
-    return generated_text, checkpoint
-```### Study scripts
-
-The script does two things.
-
-First create a demonstration checkpoint:```python
-checkpoint_path = create_demo_checkpoint()
-```
 
 Then just use the generate function:```python
 generated_text, checkpoint = generate_text_from_checkpoint(...)
@@ -12800,181 +8896,6 @@ generated_text, checkpoint = generate_text_from_checkpoint(...)
 
 Creating the checkpoint is just to make the lesson executable on its own.
 The conceptual part of the lesson is checkpoint generation.
-
-### Complete study script code
-
-Files:```text
-LearnGPT/study/lessons/31_generate.py
-```
-
-Code:```python
-"""
-Changes compared with the previous file:
-- This lesson script uses the English project layout and imports lesson-specific
-  snapshot code.
-- It belongs to lesson 31 of the guided LearnGPT path.
-
-File purpose:
-- Run the lesson example in a reproducible way.
-- Print the relevant intermediate values, tensor shapes, losses, or generated
-  text for inspection.
-"""
-
-from pathlib import Path
-import random
-import sys
-
-import torch
-
-
-PROJECT_DIR = Path(__file__).resolve().parents[2]
-DATASET_PATH = PROJECT_DIR / "data" / "raw" / "fineweb_edu_sample.txt"
-CHECKPOINT_PATH = Path("/private/tmp/learngpt_lesson_31/checkpoint.pt")
-
-sys.path.append(str(PROJECT_DIR))
-
-from study.snapshots.lesson_31.batching import create_batch
-from study.snapshots.lesson_31.checkpoint import save_checkpoint
-from study.snapshots.lesson_31.generate import generate_text_from_checkpoint
-from study.snapshots.lesson_31.model import LanguageModel
-from study.snapshots.lesson_31.tokenizer import create_vocabulary, encode
-from study.snapshots.lesson_31.training import estimate_loss
-
-
-CONTEXT_SIZE = 8
-BATCH_SIZE = 4
-EMBEDDING_SIZE = 16
-NUM_HEADS = 4
-HEAD_SIZE = EMBEDDING_SIZE // NUM_HEADS
-NUM_TRANSFORMER_BLOCKS = 3
-LEARNING_RATE = 0.003
-TRAINING_STEPS = 20
-EVAL_BATCHES = 3
-PROMPT_TEXT = "\n"
-GENERATED_TOKENS = 120
-
-
-def create_model_config(vocabulary_size):
-    return {
-        "vocabulary_size": vocabulary_size,
-        "context_size": CONTEXT_SIZE,
-        "embedding_size": EMBEDDING_SIZE,
-        "head_size": HEAD_SIZE,
-        "num_heads": NUM_HEADS,
-        "num_transformer_blocks": NUM_TRANSFORMER_BLOCKS,
-    }
-
-
-def create_demo_checkpoint():
-    text = DATASET_PATH.read_text(encoding="utf-8")
-
-    char_to_id, id_to_char = create_vocabulary(text)
-    vocabulary_size = len(char_to_id)
-    token_ids = encode(text, char_to_id)
-
-    split_index = int(len(token_ids) * 0.9)
-    training_data = token_ids[:split_index]
-    validation_data = token_ids[split_index:]
-
-    model_config = create_model_config(vocabulary_size)
-    model = LanguageModel(**model_config)
-    optimizer = torch.optim.AdamW(
-        model.parameters(),
-        lr=LEARNING_RATE,
-    )
-
-    for _ in range(TRAINING_STEPS):
-        input_tensor, target_tensor = create_batch(
-            data=training_data,
-            batch_size=BATCH_SIZE,
-            context_size=CONTEXT_SIZE,
-        )
-        _, loss = model(input_tensor, target_tensor)
-
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
-
-    losses = estimate_loss(
-        model=model,
-        training_data=training_data,
-        validation_data=validation_data,
-        batch_size=BATCH_SIZE,
-        context_size=CONTEXT_SIZE,
-        eval_batches=EVAL_BATCHES,
-    )
-
-    return save_checkpoint(
-        checkpoint_path=CHECKPOINT_PATH,
-        model=model,
-        optimizer=optimizer,
-        model_config=model_config,
-        step=TRAINING_STEPS,
-        losses=losses,
-        char_to_id=char_to_id,
-        id_to_char=id_to_char,
-    )
-
-
-def main():
-    random.seed(42)
-    torch.manual_seed(42)
-
-    checkpoint_path = create_demo_checkpoint()
-
-    torch.manual_seed(123)
-    generated_text, checkpoint = generate_text_from_checkpoint(
-        checkpoint_path=checkpoint_path,
-        prompt_text=PROMPT_TEXT,
-        max_new_tokens=GENERATED_TOKENS,
-    )
-
-    print("Checkpoint usato per generare:")
-    print(checkpoint_path)
-    print()
-
-    print("Step saved in the checkpoint:")
-    print(checkpoint["step"])
-    print()
-
-    print("Prompt:")
-    print(repr(PROMPT_TEXT))
-    print()
-
-    print("Generated text from checkpoint:")
-    print(repr(generated_text))
-
-
-if __name__ == "__main__":
-    main()
-```
-### Comando
-
-Da root del progetto:
-
-```bash
-cd /Users/ferdinandobons/Desktop/MiniGPT
-python LearnGPT/study/lessons/31_generate.py
-```### Output to check
-
-The script should print:```text
-Checkpoint usato per generare:
-/private/tmp/learngpt_lesson_31/checkpoint.pt
-
-Step salvato nel checkpoint:
-20
-
-Prompt:
-'\n'
-
-Testo generato dal checkpoint:
-...
-```
-
-The text still won't be good. The model is small and is trained to
-a few steps. The important check is that generation occurs by loading the
-checkpoint and not directly using the `model` object created in the phase
-training.
 
 ### Common errors
 
@@ -13030,7 +8951,7 @@ Our lesson does the same sequence in reduced form:
 
 We have now separated the path into two phases:```text
 training -> checkpoint
-checkpoint -> generazione
+checkpoint -> generation
 ```
 
 The next natural step will be to improve how we sample the token
@@ -13055,7 +8976,9 @@ three checks:
 The model does not learn anything new. It just changes the way we use i
 logits during generation.
 
-### Files modified```text
+### Files modified
+
+```text
 LearnGPT/study/snapshots/lesson_32/model.py
 LearnGPT/study/snapshots/lesson_32/generate.py
 LearnGPT/study/lessons/32_sampling_controls.py
@@ -13092,8 +9015,8 @@ def generate(self, input_ids, max_new_tokens, temperature=1.0, top_k=None):
 `temperature` divides the logits before softmax:
 
 ```text
-temperature bassa -> differenze più forti -> scelta più concentrata
-temperature alta  -> differenze più morbide -> scelta più casuale
+low temperature -> stronger differences -> more concentrated choice
+high temperature  -> softer differences -> more random choice
 ```
 
 `top_k` invece taglia via i candidati fuori dai primi `k`:
@@ -13106,21 +9029,21 @@ top_k = 3
   [2.1, -inf, 3.0, -inf, 1.7]
 
 softmax
-  probabilità solo sui 3 candidati rimasti
+  probabilities only over the 3 remaining candidates
 ```### Lesson 32 diagram```mermaid
 flowchart TD
     A["logits<br/>shape [batch_size, context_size, vocabulary_size]"]
     B["last_token_logits<br/>logits[:, -1, :]"]
     C["temperature<br/>divide i logits"]
     D["top_k<br/>maschera i candidati peggiori"]
-    E["softmax<br/>probabilità"]
+    E["softmax<br/>probabilities"]
     F["multinomial<br/>next_token_id"]
     G["cat<br/>aggiunge il token generato"]
 
     A --> B --> C --> D --> E --> F --> G
 ```
 
-### Generazione multipla
+### Multiple generation
 
 Nel modulo `generate.py` aggiungiamo:
 
@@ -13152,16 +9075,6 @@ def generate_samples_from_checkpoint(
 This function does not train the model. Reload the checkpoint and generate more
 texts using the same weights.
 
-### Command```bash
-python LearnGPT/study/lessons/32_sampling_controls.py
-```### What to check
-
-The script should print:```text
-Parametri di sampling:
-temperature: 0.8
-top_k: 20
-num_samples: 3
-```
 
 Then it must show three samples. They don't have to be the same: sampling is
 stochastic.
@@ -13186,7 +9099,9 @@ train_model(...)
 The function trains, evaluates training loss and validation loss every now and then, and saves
 the checkpoint only when the validation loss improves.
 
-### Files modified```text
+### Files modified
+
+```text
 LearnGPT/study/snapshots/lesson_33/training.py
 LearnGPT/study/lessons/33_best_checkpoint_training.py
 ```### Why save the best checkpoint
@@ -13207,7 +9122,9 @@ if losses["validation"] < best_validation_loss:
 The metric used is validation loss because it measures the model on data that does not
 are in the current training batch.
 
-### Structure of the new training```python
+### Structure of the new training
+
+```python
 for step in range(1, training_steps + 1):
     input_tensor, target_tensor = create_batch(...)
     _, loss = model(input_tensor, target_tensor)
@@ -13228,8 +9145,8 @@ for step in range(1, training_steps + 1):
 
 The connection between optimizer and model remains this:```text
 model.parameters() -> optimizer
-loss.backward()    -> scrive i gradienti nei parametri del modello
-optimizer.step()   -> legge quei gradienti e aggiorna gli stessi parametri
+loss.backward()    -> writes gradients into model parameters
+optimizer.step()   -> reads those gradients and updates the same parameters
 ```### Lesson 33 diagram```mermaid
 flowchart TD
     A["train_model(...)"]
@@ -13246,27 +9163,9 @@ flowchart TD
 
     A --> B --> C --> D --> E --> F --> G
     G --> H --> I
-    I -->|sì| J
+    I -->|yes| J
     I -->|sempre| K
 ```
-
-### Comando
-
-```bash
-python LearnGPT/study/lessons/33_best_checkpoint_training.py
-```### What to check
-
-The script should print a similar story:```text
-Valutazioni durante il training:
-step=1 training=... validation=...
-step=10 training=... validation=...
-step=20 training=... validation=...
-step=30 training=... validation=...
-```
-
-Then it needs to print the path to the best checkpoint and generate text from that file.
-
----
 
 ## Lesson 34 - Optimizer, Scheduler, and Gradient Clipping
 
@@ -13282,7 +9181,9 @@ In this lesson we condense three practical optimizations:
 
 The model does not change. Change the quality of the training cycle.
 
-### Files modified```text
+### Files modified
+
+```text
 LearnGPT/study/snapshots/lesson_34/training.py
 LearnGPT/study/lessons/34_optimizer_scheduler.py
 ```### Optimizer
@@ -13327,7 +9228,7 @@ def get_learning_rate(
 The idea is:```text
 inizio training -> warmup graduale
 parte centrale  -> learning rate alto ma controllato
-parte finale    -> decay verso min_learning_rate
+final part    -> decay toward min_learning_rate
 ```### Gradient clipping
 
 After `loss.backward()` the gradients are already in the model parameters. Before
@@ -13339,7 +9240,9 @@ if gradient_clip is not None:
 This is for when an update would be too large. Does not change the loss,
 but it changes how much the optimizer can move the weights in the current step.
 
-### Lesson 34 diagram```mermaid
+### Lesson 34 diagram
+
+```mermaid
 flowchart TD
     A["step"]
     B["get_learning_rate"]
@@ -13353,25 +9256,6 @@ flowchart TD
 
     A --> B --> C --> D --> E --> F --> G --> H --> I
 ```
-
-### Comando
-
-```bash
-python LearnGPT/study/lessons/34_optimizer_scheduler.py
-```
-
-### Cosa controllare
-
-Nell'output, ogni valutazione deve mostrare anche `lr`:
-
-```text
-step=1 lr=...
-step=10 lr=...
-step=20 lr=...
-step=30 lr=...
-```
-
-If `lr` changes, it means the scheduler is applied.
 
 ### Connection with nanoGPT
 
@@ -13394,7 +9278,9 @@ In this lesson we add two pattern pieces:
 
 This is the last major internal change to the model.
 
-### Files modified```text
+### Files modified
+
+```text
 LearnGPT/study/snapshots/lesson_35/model.py
 LearnGPT/study/lessons/35_dropout_weight_tying.py
 ```### Dropouts
@@ -13449,11 +9335,11 @@ So the two names point to the same `Parameter` object.
 
 The reason this is possible is that the shapes match:```text
 token_embedding_table:
-  token ID -> vettore interno
+  token ID -> internal vector
   weight shape [68, 16]
 
 output_head:
-  vettore interno -> logits sul vocabolario
+  internal vector -> logits sul vocabulary
   weight shape [68, 16]
 ```
 
@@ -13461,13 +9347,15 @@ Conceptually the model uses the same weight map to read tokens into
 input and to compare the final representation with the possible tokens in
 exit.
 
-### Lesson 35 diagram```mermaid
+### Lesson 35 diagram
+
+```mermaid
 flowchart TD
     A["input_ids"]
     B["token_embedding_table.weight"]
     C["token_embeddings"]
     D["Transformer con dropout"]
-    E["rappresentazione finale"]
+    E["final representation"]
     F["output_head.weight"]
     G["logits"]
 
@@ -13490,23 +9378,6 @@ eval mode     -> due forward uguali con gli stessi input
 
 This happens because dropout is only active in training mode.
 
-### Command```bash
-python LearnGPT/study/lessons/35_dropout_weight_tying.py
-```
-
-### Cosa controllare
-
-L'output deve mostrare:
-
-```text
-Weight tying attivo:
-True
-```
-
-The difference in training mode must be greater than zero. The difference in
-eval mode must be zero or practically zero.
-
----
 
 ## Lesson 36 - Optimizer Groups
 
@@ -13531,7 +9402,9 @@ The new form separates:
 This is the same idea used by nanoGPT: regularize the master matrices,
 but not biases and normalizations.
 
-### Lesson file```text
+### Lesson file
+
+```text
 LearnGPT/study/lessons/36_optimizer_groups.py
 ```
 
@@ -13578,28 +9451,12 @@ high=max_start_position + 1
 This didn't change anything on FineWeb-Edu, because the dataset is huge, but it works
 the correct helper even on minimal datasets.
 
-### Command```bash
-python LearnGPT/study/lessons/36_optimizer_groups.py
-```---
-
-## Lesson 37 - Gradient Accumulation
-
-### Objective
-
-In this lesson we add `gradient_accumulation_steps`.
-
-The problem is practical: sometimes we would like a larger actual batch, but not
-we have enough memory to load it all in a single forward pass.
-
-The solution is to divide the actual batch into micro-batches:```text
-micro-batch 1 -> loss / accumulation_steps -> backward
-micro-batch 2 -> loss / accumulation_steps -> backward
-optimizer.step()
-```
 
 The gradients are added before the weights are updated.
 
-### Lesson file```text
+### Lesson file
+
+```text
 LearnGPT/study/lessons/37_gradient_accumulation.py
 ```
 
@@ -13620,22 +9477,6 @@ optimizer.step()
 Dividing the loss is important: without this division, the gradients sum
 it would be bigger just because we accumulated more micro-batches.
 
-### Command```bash
-python LearnGPT/study/lessons/37_gradient_accumulation.py
-```---
-
-## Lesson 38 - Training Config and Resume
-
-### Objective
-
-In this lesson we do two things:
-
-1. we move the main parameters into configuration dataclass;
-2. let's make the checkpoint suitable for the training resume.
-
-The new file is:```text
-config.py
-```
 
 Contiene:
 
@@ -13685,19 +9526,15 @@ start_step = int(checkpoint.get("step", 0)) + 1
 
 So the training starts from the next step, not from scratch.
 
-### Lesson file```text
+### Lesson file
+
+```text
 LearnGPT/study/lessons/38_resume_config.py
 ```
 
 The snapshot is:```text
 LearnGPT/study/snapshots/lesson_38/
 ```
-
-### Comando
-
-```bash
-python LearnGPT/study/lessons/38_resume_config.py
-```---
 
 ## Lesson 39 - Output Head Only on the Last Token
 
@@ -13716,7 +9553,9 @@ last_token_logits = logits[:, -1, :]
 So we can avoid applying `output_head` to the entire context when
 we don't pass `target_ids`.
 
-### Central code```python
+### Central code
+
+```python
 if target_ids is None:
     block_output = self.final_layer_norm(block_output[:, [-1], :])
     logits = self.output_head(block_output)
@@ -13725,25 +9564,21 @@ if target_ids is None:
 
 The shape changes like this:```text
 training:    [4, 32, 50257]
-generazione: [4, 1, 50257]
+generation: [4, 1, 50257]
 ```
 
 The Transformer still reads the context. Optimization is all about
 final projection on the vocabulary.
 
-### Lesson file```text
+### Lesson file
+
+```text
 LearnGPT/study/lessons/39_last_token_output_head.py
 ```
 
 The snapshot is:```text
 LearnGPT/study/snapshots/lesson_39/
 ```
-
-### Comando
-
-```bash
-python LearnGPT/study/lessons/39_last_token_output_head.py
-```---
 
 ## Lesson 40 - Optional Scaled Dot-Product Attention
 
@@ -13754,7 +9589,7 @@ queries @ keys.transpose(-2, -1)
 -> scala
 -> maschera causale
 -> softmax
--> pesi @ values
+-> weights @ values
 ```
 
 But PyTorch also offers:```python
@@ -13782,12 +9617,6 @@ LearnGPT/study/lessons/40_scaled_dot_product_attention.py
 The snapshot is:```text
 LearnGPT/study/snapshots/lesson_40/
 ```
-
-### Comando
-
-```bash
-python LearnGPT/study/lessons/40_scaled_dot_product_attention.py
-```---
 
 ## Lesson 41 - Performance Flags and DDP
 
@@ -13854,7 +9683,7 @@ usable. Typical causes are:```text
 Python non nativo arm64
 wheel PyTorch non adatta
 macOS o runtime non compatibile
-processo avviato in un ambiente che non espone MPS
+process avviato in un ambiente che non espone MPS
 ```
 
 The check to perform is:```bash
@@ -13863,19 +9692,15 @@ python -c "import torch; print(torch.backends.mps.is_built()); print(torch.backe
 
 If the second value remains `False`, training automatically switches back to CPU.
 
-### Lesson file```text
+### Lesson file
+
+```text
 LearnGPT/study/lessons/41_performance_flags_and_ddp.py
 ```
 
 The snapshot is:```text
 LearnGPT/study/snapshots/lesson_41/
 ```
-
-### Comando
-
-```bash
-python LearnGPT/study/lessons/41_performance_flags_and_ddp.py
-```---
 
 ## Lesson 42 - Final Project
 
@@ -13919,10 +9744,10 @@ config.py
 -> train_model
 -> checkpoint completo
 -> generate_text_from_checkpoint
--> testo generato
+-> generated text
 ```
 
-### Diagramma finale
+### Final diagram
 
 ```mermaid
 flowchart TD
@@ -13932,7 +9757,7 @@ flowchart TD
     C["train.bin / val.bin"]
     D["memmap"]
     E["batch input/target"]
-    F["LanguageModel finale"]
+    F["Final LanguageModel"]
     G["device CPU/CUDA/MPS"]
     H["train_model"]
     I["best checkpoint completo"]
@@ -14015,41 +9840,21 @@ because an invalid configuration fails.
 The main points are:```text
 batch_size e context_size devono essere almeno 1
 eval_interval ed eval_batches devono essere almeno 1
-warmup_steps non può essere negativo
+warmup_steps cannot be negative
 decay_steps deve essere maggiore di warmup_steps
 embedding_size deve essere divisibile per num_heads
 prompt_text deve produrre almeno un token
-max_new_tokens non può essere negativo
+max_new_tokens cannot be negative
 num_samples deve essere almeno 1
-torch.compile viene usato solo se disponibile nel runtime PyTorch
+torch.compile is used only if available in the PyTorch runtime
 ```
 
 The reason is educational and practical: if a value is wrong, we prefer an error
 clear near the configuration instead of a more confusing error inside PyTorch
 or within a multiplication of tensors.
 
-### Command```bash
-python LearnGPT/study/lessons/42_final_project.py
-```### What to check
-
-The script should print:```text
-Device usato:
-cpu/cuda/mps
-
-Token disponibili:
-training: ...
-validation: ...
-
-Moduli finali verificati:
-config.py, prepare_data.py, tokenizer.py, batching.py, device.py, model.py, training.py, checkpoint.py, generate.py
-```
 
 Then it must show the checkpoint, a validation loss and a generated text.
-
-### What we don't do here
-
-We do not generate the PDF in this lesson. PDF generation will be covered
-separately, when the Markdown document is considered ready.
 
 ### Final state of the Python path
 
@@ -14058,7 +9863,7 @@ FineWeb-Edu processato
 tokenizer BPE GPT-2
 batching da memmap
 gestione device CPU/CUDA/MPS
-config.py per modello, training and generation
+config.py for model, training and generation
 Transformer decoder-only didattico
 self-attention causale multi-head
 scaled_dot_product_attention opzionale
@@ -14074,8 +9879,8 @@ resume da checkpoint
 learning rate schedule
 gradient clipping
 checkpoint completo
-generazione da checkpoint
-output_head solo sull'ultimo token in generazione
+checkpoint-based generation
+output_head only on the last token during generation
 temperature e top_k
 torch.compile opzionale
 mixed precision opzionale
@@ -14114,7 +9919,7 @@ LearnGPT/
         val.bin
         meta.json
   study/
-    lezioni/
+    lessons/
       01_read_text.py
       ...
     snapshot/
@@ -14145,7 +9950,7 @@ tokens in `train.bin` and `val.bin`. The `raw/` folder remains useful only for
 debug or to maintain a human readable sample.
 
 Refactor updated together:```text
-DATASET_PATH negli script di studio
+DATASET_PATH in study scripts
 course_en.md
 course_it.md
 tools/validate_learngpt.py
@@ -14217,7 +10022,7 @@ subword: word chunks, frequent words, spaces and punctuation encoded in
 larger units.
 
 The new direction must be:```text
-testo -> tokenizer BPE stile GPT-2 -> token IDs -> train.bin / val.bin
+text -> GPT-2-style BPE tokenizer -> token IDs -> train.bin / val.bin
 ```
 
 With `tiktoken` the concept becomes:```python
@@ -14244,8 +10049,8 @@ With the character tokenizer we had a small vocabulary, for example approximatel
 dozens of characters. With GPT-2 BPE the vocabulary is much larger, approx
 50k tokens. Consequentially:```text
 output_head
-prima: Linear(embedding_size -> circa 68)
-dopo:  Linear(embedding_size -> circa 50k)
+before: Linear(embedding_size -> about 68)
+dopo:  Linear(embedding_size -> about 50k)
 ```
 
 This is more realistic, but also more expensive. This is why we need to increase the
@@ -14260,8 +10065,8 @@ The final structure separates:```text
 tokenizer.py      -> wrapper didattico attorno a tiktoken
 prepare_data.py   -> streaming FineWeb-Edu + tokenizzazione + train.bin/val.bin
 batching.py       -> legge token da file binario/memmap invece che da lista Python
-training.py       -> usa train.bin/val.bin già pronti
-generate.py       -> decodifica token BPE in testo
+training.py       -> uses already prepared train.bin/val.bin
+generate.py       -> decodes BPE tokens into text
 ```
 
 This is an important transition: the character tokenizer remains useful in the
@@ -14323,7 +10128,7 @@ hundreds of millions of ID tokens. For a small teaching model, this is already a
 
 For this reason the most prudent choice is:```text
 demo iniziale: 50 MB
-prima versione utile: 500 MB
+first useful version: 500 MB
 default del progetto: 1 GB
 opzione esplicita: 5 GB
 ```
@@ -14382,10 +10187,10 @@ This is correct because the locations are created on the same device as
 
 Management covers:```text
 scegliere cuda / mps / cpu
-spostare il modello sul device
+move the model to the device
 creare o spostare input_tensor e target_tensor sul device
 caricare checkpoint con map_location
-creare il prompt tensor sul device durante la generazione
+create the prompt tensor on the device during generation
 ```
 
 The shared function is:```python
@@ -14432,7 +10237,7 @@ only in the final phase:```text
 Lesson 02 - rough character tokenizer
 Lesson 03/04 - tokenizer BPE con tiktoken
 Lesson 05/06 - dataset FineWeb-Edu processato e memmap
-Lezioni successive - batching, model and Transformer collegati alla pipeline reale
+Later lessons - batching, model and Transformer connected to the real pipeline
 Lesson 42 - Final Project consolidato
 ```
 
@@ -14465,210 +10270,6 @@ real small training project.
 - Official PyTorch documentation on MPS backend: reference to check
   `torch.backends.mps.is_built()`, `torch.backends.mps.is_available()` and lo
   moving tensors/models to `torch.device("mps")`.
-
----
-
-## Insight - Directory structure and validator
-
-### Decision applied
-
-The structure now separates four things:```text
-data/
-study/lessons/
-study/snapshots/
-final_project/
-```
-
-The important point is that all educational material lives under `study/`,
-while the final project lives in a separate folder.```text
-LearnGPT/
-  data/
-  study/
-    lezioni/
-    snapshot/
-  final_project/
-```### Structure chosen
-
-The chosen structure is:```text
-LearnGPT/
-  course_it.md
-  course_en.md
-
-  data/
-    processed/
-      fineweb_edu/
-        train.bin
-        val.bin
-        meta.json
-
-  study/
-    lezioni/
-      01_read_text.py
-      02_character_tokenizer.py
-      ...
-      42_final_project.py
-
-    snapshot/
-      lesson_01/
-        ...
-      lesson_02/
-        ...
-      lesson_42/
-        config.py
-        tokenizer.py
-        batching.py
-        device.py
-        model.py
-        training.py
-        checkpoint.py
-        generate.py
-
-  final_project/
-    config.py
-    tokenizer.py
-    prepare_data.py
-    batching.py
-    device.py
-    model.py
-    training.py
-    checkpoint.py
-    generate.py
-    requirements.txt
-
-  tools/
-    validate_learngpt.py
-```
-
-In this form the reading is clearer:
-
-| Folder | Role |
-| --- | --- |
-| `data/` | shared datasets and large processed files |
-| `study/lessons/` | numbered educational scripts to be performed in order |
-| `study/snapshots/` | frozen code versions for each lesson |
-| `final_project/` | latest clean version of the project |
-| `tools/` | control and maintenance tools |
-
-### Why not put the dataset inside studio
-
-The dataset is not study material and is not code for the final project. It's one
-shared resource.
-
-For this reason it must remain outside of both `study/` and `final_project/`:```text
-LearnGPT/data/
-```
-
-In particular, FineWeb-Edu weighs 5 GiB in the processed version. It doesn't have to
-be duplicated in snapshots and does not need to be copied into each lesson.
-
-### Why keep snapshots in the studio
-
-Snapshots are for studying, not for executing the final project.
-
-For example:```text
-study/snapshots/lesson_20/model.py
-```
-
-significa:
-
-```text
-versione del modello usata per capire la lesson 20
-```
-
-mentre:
-
-```text
-final_project/model.py
-```
-
-significa:
-
-```text
-versione finale corrente del modello
-```
-
-This distinction avoids ambiguity:```text
-studio = percorso didattico
-final_project = risultato finale
-data = risorse condivise
-tools = controlli
-```### What the refactor entailed
-
-Moving the folders required a neat refactor, because they changed:```text
-path degli script numerati
-import dagli snapshot
-DATASET_PATH storici
-validatore locale
-riferimenti in course_it.md
-riferimenti in course_en.md
-```
-
-For example, previously the numbered scripts were directly inside `study/`.
-Now I'm in `study/lessons/`:```text
-prima: study/42_final_project.py
-dopo:  study/lessons/42_final_project.py
-```
-
-Imports from snapshots do not change to Python form, because `studio`
-the main package remains:```python
-from study.snapshots.lesson_42.model import LanguageModel
-```
-
-The refactor therefore mainly concerned file paths, validator,
-documentation and references in code blocks.
-
-### What is `validate_learngpt.py`
-
-`tools/validate_learngpt.py` is a local validator created specifically for
-this course.
-
-It is not a test of model quality and does not measure whether training is good
-text. It serves to check that the teaching project remains coherent.
-
-Basically check:
-
-| Control | Why it is needed |
-| --- | --- |
-| root structure | avoid misplaced folders or files |
-| consecutive lessons | ensures that you don't miss a numbered lesson |
-| snapshot for each lesson | each lesson must be re-executable |
-| consistent imports | a script from lesson 28 should not import code from lesson 36 |
-| initial docstrings | each file must explain difference and purpose |
-| stable name `LanguageModel` | avoid increasingly long class names |
-| no old historical classes | avoid dragging unused code |
-| Python identifiers in English | keeps code consistent |
-| `course_it.md` consistent | complete code blocks must match actual files |
-| nothing `__pycache__` | avoid artifacts generated within the course material |
-
-So his role is:```text
-controllare la coerenza del corso come progetto didattico
-```
-
-It does not replace training or generation tests. For example:```bash
-python -B LearnGPT/tools/validate_learngpt.py
-```it can also pass if a template generates poor text. The validator checks
-the structure, not the intelligence of the model.
-
-### Refactor applied
-
-The dedicated refactor is:```text
-Refactor struttura study/progetto finale
-```
-
-The steps applied are:
-
-1. create `study/lessons/`;
-2. move the numbered scripts into `study/lessons/`;
-3. create `study/snapshots/`;
-4. move the `lesson_NN/` snapshots into `study/snapshots/`;
-5. update all imports;
-6. update the validator;
-7. update `course_it.md` and `course_en.md`;
-8. relaunch the validator;
-9. relaunch at least the most important final scripts.
-
-This reorganization makes the root cleaner and makes the
-difference between educational path and final project.
 
 ---
 
@@ -14738,26 +10339,28 @@ consolidated in the `Final Project` of lesson 42:
 | low hour | external logging like wandb | useful for long experiments, but not necessary for understanding the code |
 | optional | import of pretrained GPT-2 weights | interesting, but introduces additional complexity and dependencies |
 
-### Priority chart```mermaid
-flowchart TD
-    A["LearnGPT attuale"] --> B["Training più robusto"]
-    A --> C["Inference più efficiente"]
-    A --> D["Performance opzionale"]
-    A --> E["Scalabilità avanzata"]
+### Priority chart
 
-    B --> B1["optimizer groups<br/>weight decay solo sui pesi giusti"]
-    B --> B2["gradient accumulation<br/>batch effettivo più grande"]
+```mermaid
+flowchart TD
+    A["Current LearnGPT"] --> B["More robust training"]
+    A --> C["More efficient inference"]
+    A --> D["Performance opzionale"]
+    A --> E["Advanced scalability"]
+
+    B --> B1["optimizer groups<br/>weight decay only on the right weights"]
+    B --> B2["gradient accumulation<br/>larger effective batch"]
     B --> B3["resume checkpoint<br/>ripartenza del training"]
-    B --> B4["config di training<br/>parametri più ordinati"]
+    B --> B4["config di training<br/>more organized parameters"]
 
     C --> C1["output_head solo sull'ultimo token<br/>quando non ci sono target"]
-    C --> C2["prompt da file e più sample<br/>generazione più comoda"]
+    C --> C2["prompt from file and multiple samples<br/>more convenient generation"]
 
     D --> D1["mixed precision<br/>autocast e GradScaler"]
     D --> D2["torch.compile<br/>flag opzionale"]
     D --> D3["scaled_dot_product_attention<br/>attention ottimizzata"]
 
-    E --> E1["DDP con torchrun<br/>più processi e più GPU"]
+    E --> E1["DDP con torchrun<br/>multiple processes and multiple GPUs"]
     E --> E2["logging esterno<br/>metriche esperimenti lunghi"]
     E --> E3["MFU<br/>metrica utile soprattutto su GPU grandi"]
 ```### Optimizer with weight decay groups
@@ -14840,7 +10443,7 @@ training:
 -> output_head
 -> [batch_size, context_size, vocabulary_size]
 
-generazione:
+generation:
 [batch_size, 1, embedding_size]
 -> output_head
 -> [batch_size, 1, vocabulary_size]
@@ -14857,7 +10460,7 @@ Mixed precision means using lighter numeric types, for example
 
 The objective is:```text
 meno memoria
-più velocità
+more speed
 training ancora stabile
 ```
 
@@ -14876,8 +10479,8 @@ good. On CPU or non-accelerated environments it may not provide advantages.
 `torch.compile` try to compile the PyTorch model to make it faster.
 
 This is a useful tip, but should be treated with caution:```text
-vantaggio: può accelerare training e inference
-svantaggio: primo avvio più lento, possibili incompatibilità, debug più difficile
+advantage: can accelerare training e inference
+disadvantage: slower first startup, possible incompatibilities, harder debugging
 ```
 
 For this reason in the final project it is:```text
@@ -14898,7 +10501,7 @@ Our attention is written explicitly:```text
 queries @ keys.transpose(-2, -1)
 -> mask causale
 -> softmax
--> pesi @ values
+-> weights @ values
 ```
 
 This form is great for learning.
@@ -14908,7 +10511,7 @@ available. It is a PyTorch function that wraps the same calculation and can use
 more efficient implementations.
 
 The choice applied in the course is:```text
-prima: attention manuale per capire
+before: manual attention for understanding
 poi: attention ottimizzata opzionale
 ```
 
@@ -14920,10 +10523,10 @@ real structure used in modern projects.
 nanoGPT supports DDP, i.e. `DistributedDataParallel`.
 
 DDP is useful when the training runs on multiple processes, often on multiple GPUs:```text
-processo 0 -> batch diverso -> gradienti
-processo 1 -> batch diverso -> gradienti
-processo 2 -> batch diverso -> gradienti
-sincronizzazione dei gradienti
+process 0 -> different batch -> gradients
+process 1 -> different batch -> gradients
+process 2 -> different batch -> gradients
+gradient synchronization
 optimizer.step()
 ```
 
@@ -14933,7 +10536,7 @@ a proportionate practical advantage.
 
 The correct choice is:```text
 spiegarlo come concetto avanzato
-non renderlo parte obbligatoria del progetto finale
+do not make it a required part of the final project
 ```### How the latest lessons were distributed
 
 In order not to create a single final lesson that is too full, the ideas have been
@@ -14950,8 +10553,8 @@ distributed like this:
 | 42 | `Final Project` clean, aligned with `final_project/` |
 
 This sequence keeps the project readable:```text
-prima sistemiamo il training
-poi rendiamo più efficiente la generazione e la attention
+first we clean up training
+then we make generation and attention more efficient
 poi documentiamo le ottimizzazioni avanzate non obbligatorie
 poi consolidiamo tutto in un final project pulito
 ```### What shouldn't be brought now
@@ -14976,7 +10579,7 @@ as a mandatory route.
 The best direction is:```text
 LearnGPT resta didattico nella forma
 ma prende da nanoGPT le ottimizzazioni che migliorano davvero training,
-checkpoint, generazione e gestione delle risorse
+checkpoint, generation e resource management
 ```
 
 The changes applied are therefore:

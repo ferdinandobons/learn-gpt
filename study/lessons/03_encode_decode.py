@@ -65,7 +65,7 @@ def main():
     token_ids = encode(sample, char_to_id)
     reconstructed_text = decode(token_ids, id_to_char)
 
-    print("Vocabolario:", len(char_to_id), "different characters")
+    print("Vocabulary:", len(char_to_id), "different characters")
     print()
     print("Original text:")
     print(sample)

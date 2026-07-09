@@ -119,7 +119,7 @@ def main():
         max_new_tokens=GENERATED_TOKENS,
     )
 
-    print("Checkpoint usato per generare:")
+    print("Checkpoint used for generation:")
     print(checkpoint_path)
     print()
 

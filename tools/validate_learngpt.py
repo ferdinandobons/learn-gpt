@@ -8,7 +8,8 @@ File purpose:
 - Check that `course_it.md`, `course_en.md`, `study/lessons`,
   `study/snapshots`, `final_project`, `tools`, and `data` stay consistent.
 - Prevent a lesson from importing project code from another lesson snapshot.
-- Check that complete code blocks in the course stay aligned with real files.
+- Ensure the course stays focused on explanations and snippets instead of full
+  duplicated source files.
 """
 
 from __future__ import annotations
@@ -261,14 +262,26 @@ def check_markdown_basics(project_dir: Path, errors: list[str]) -> None:
     italian_course = read_text(project_dir / "course_it.md")
     if "## Mappa delle fonti" not in italian_course:
         errors.append("course_it.md must contain the 'Mappa delle fonti' section")
-    if "## Navigazione del documento" not in italian_course:
-        errors.append("course_it.md must contain the 'Navigazione del documento' section")
+    if "## Come eseguire gli script di studio" not in italian_course:
+        errors.append("course_it.md must contain study script instructions")
+    if "## Come usare gli snapshot nello studio" not in italian_course:
+        errors.append("course_it.md must explain study snapshots")
+    if "Codice completo" in italian_course:
+        errors.append("course_it.md must not contain complete code sections")
+    if "PDF" in italian_course or "pdf" in italian_course:
+        errors.append("course_it.md must not reference PDF generation")
 
     english_course = read_text(project_dir / "course_en.md")
     if "## Source Map" not in english_course:
         errors.append("course_en.md must contain the 'Source Map' section")
-    if "## Document Navigation" not in english_course:
-        errors.append("course_en.md must contain the 'Document Navigation' section")
+    if "## How to Run Study Scripts" not in english_course:
+        errors.append("course_en.md must contain study script instructions")
+    if "## How Study Snapshots Work" not in english_course:
+        errors.append("course_en.md must explain study snapshots")
+    if "Complete code" in english_course or "Complete study script code" in english_course:
+        errors.append("course_en.md must not contain complete code sections")
+    if "PDF" in english_course or "pdf" in english_course:
+        errors.append("course_en.md must not reference PDF generation")
 
 
 def check_course_index(project_dir: Path, errors: list[str]) -> None:
@@ -392,42 +405,6 @@ def check_course_lesson_references(project_dir: Path, errors: list[str]) -> None
             errors.append(f"Lesson {lesson}: references different snapshots: {wrong}")
 
 
-def check_complete_code_blocks(project_dir: Path, errors: list[str]) -> None:
-    course = read_text(project_dir / "course_it.md")
-    patterns = [
-        re.compile(
-            r"### Codice completo(?: aggiornato)?: `(?P<path>[^`]+)`\n\n"
-            r"```python\n(?P<code>.*?)\n```",
-            re.DOTALL,
-        ),
-        re.compile(
-            r"File:\n\n```text\n(?P<path>LearnGPT/[^`\n]+?\.py)\n```\n\n"
-            r"Codice:\n\n```python\n(?P<code>.*?)\n```",
-            re.DOTALL,
-        ),
-    ]
-
-    for pattern in patterns:
-        for match in pattern.finditer(course):
-            raw_path = match.group("path").strip()
-            code = match.group("code").strip() + "\n"
-
-            if raw_path.startswith("LearnGPT/"):
-                file_path = project_dir.parent / raw_path
-            elif raw_path.startswith(("study/", "final_project/", "tools/")):
-                file_path = project_dir / raw_path
-            else:
-                continue
-
-            if not file_path.exists():
-                errors.append(f"course_it.md references missing file: {raw_path}")
-                continue
-
-            actual = read_text(file_path).strip() + "\n"
-            if code != actual:
-                errors.append(f"course_it.md is not aligned with {raw_path}")
-
-
 def check_final_project_snapshot(project_dir: Path, errors: list[str]) -> None:
     final_dir = project_dir / "final_project"
     snapshot_dir = snapshots_dir(project_dir) / "lesson_42"
@@ -495,7 +472,6 @@ def main() -> None:
     check_study_scripts(project_dir, errors)
     check_models(project_dir, errors)
     check_course_lesson_references(project_dir, errors)
-    check_complete_code_blocks(project_dir, errors)
     check_final_project_snapshot(project_dir, errors)
     check_english_code_identifiers(project_dir, errors)
     check_python_text_is_english(project_dir, errors)

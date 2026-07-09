@@ -122,15 +122,15 @@ def main():
         top_k=TOP_K,
     )
 
-    print("Checkpoint usato:")
+    print("Checkpoint used:")
     print(checkpoint_path)
     print()
 
-    print("Step salvato:")
+    print("Saved step:")
     print(checkpoint["step"])
     print()
 
-    print("Parametri di sampling:")
+    print("Sampling parameters:")
     print("temperature:", TEMPERATURE)
     print("top_k:", TOP_K)
     print("num_samples:", NUM_SAMPLES)

@@ -6,8 +6,10 @@ using them together in a final runnable project.
 
 The course is available in two synchronized Markdown versions:
 [course_en.md](course_en.md) and [course_it.md](course_it.md). They contain
-the lesson-by-lesson explanations, code snippets, diagrams, and the current
-learning path.
+the lesson-by-lesson explanations, new code snippets, diagrams, and the current
+learning path. They intentionally do not duplicate full Python files: complete
+lesson code lives in `study/snapshots/`, and the clean current version lives in
+`final_project/`.
 
 ## Project Direction
 
@@ -120,6 +122,12 @@ Run the final smoke test:
 
 ```bash
 python -B study/lessons/42_final_project.py
+```
+
+Run a specific study lesson:
+
+```bash
+python -B study/lessons/NN_lesson_name.py
 ```
 
 Prepare FineWeb-Edu again:
