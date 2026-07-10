@@ -7,7 +7,7 @@ To prepare FineWeb-Edu locally, install the final project dependencies and run:
 
 ```bash
 python -B final_project/prepare_data.py \
-  --target-gb 5 \
+  --target-gb 10 \
   --output-dir data/processed/fineweb_edu
 ```
 

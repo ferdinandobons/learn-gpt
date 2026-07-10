@@ -14,6 +14,9 @@ import torch.nn.functional as F
 from torch import nn
 
 
+GPT_INITIALIZATION_STD = 0.02
+
+
 class SelfAttentionHead(nn.Module):
     def __init__(
         self,
@@ -243,8 +246,41 @@ class LanguageModel(nn.Module):
             out_features=vocabulary_size,
         )
 
+        self.apply(self._initialize_weights)
+        residual_projection_std = GPT_INITIALIZATION_STD / math.sqrt(
+            2 * num_transformer_blocks
+        )
+        for transformer_block in self.transformer_blocks:
+            nn.init.normal_(
+                transformer_block.multi_head_attention.output_projection.weight,
+                mean=0.0,
+                std=residual_projection_std,
+            )
+            nn.init.normal_(
+                transformer_block.feed_forward.project.weight,
+                mean=0.0,
+                std=residual_projection_std,
+            )
+
         if tie_weights:
             self.output_head.weight = self.token_embedding_table.weight
+
+    @staticmethod
+    def _initialize_weights(module):
+        if isinstance(module, nn.Linear):
+            nn.init.normal_(
+                module.weight,
+                mean=0.0,
+                std=GPT_INITIALIZATION_STD,
+            )
+            if module.bias is not None:
+                nn.init.zeros_(module.bias)
+        elif isinstance(module, nn.Embedding):
+            nn.init.normal_(
+                module.weight,
+                mean=0.0,
+                std=GPT_INITIALIZATION_STD,
+            )
 
     def forward(self, input_ids, target_ids=None):
         current_context_size = input_ids.shape[1]

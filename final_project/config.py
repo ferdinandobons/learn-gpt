@@ -7,7 +7,7 @@ File purpose:
 - Define model, training, generation, and performance configuration.
 """
 
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, fields
 
 
 @dataclass
@@ -56,9 +56,33 @@ class ModelConfig:
     def to_checkpoint_dict(self):
         return self.to_model_kwargs()
 
+    @classmethod
+    def from_checkpoint_dict(cls, payload):
+        config = cls(
+            vocabulary_size=payload["vocabulary_size"],
+            context_size=payload.get("context_size", 32),
+            embedding_size=payload.get("embedding_size", 64),
+            num_heads=payload.get("num_heads", 4),
+            num_transformer_blocks=payload.get("num_transformer_blocks", 2),
+            dropout=payload.get("dropout", 0.1),
+            tie_weights=payload.get("tie_weights", True),
+            use_scaled_dot_product_attention=payload.get(
+                "use_scaled_dot_product_attention",
+                False,
+            ),
+        )
+        saved_head_size = payload.get("head_size")
+        if saved_head_size is not None and saved_head_size != config.head_size:
+            raise ValueError(
+                "Checkpoint head_size is inconsistent with embedding_size and num_heads."
+            )
+
+        return config
+
 
 @dataclass
 class TrainingConfig:
+    seed: int = 1337
     batch_size: int = 4
     training_steps: int = 3
     eval_interval: int = 1
@@ -76,6 +100,9 @@ class TrainingConfig:
     precision_dtype: str = "float16"
 
     def __post_init__(self):
+        if self.seed < 0:
+            raise ValueError("seed cannot be negative.")
+
         if self.batch_size < 1:
             raise ValueError("batch_size must be at least 1.")
 
@@ -121,6 +148,20 @@ class TrainingConfig:
 
     def to_checkpoint_dict(self):
         return asdict(self)
+
+    @classmethod
+    def from_checkpoint_dict(cls, payload):
+        if not payload:
+            return cls()
+
+        valid_names = {field.name for field in fields(cls)}
+        return cls(
+            **{
+                key: value
+                for key, value in payload.items()
+                if key in valid_names
+            }
+        )
 
 
 @dataclass

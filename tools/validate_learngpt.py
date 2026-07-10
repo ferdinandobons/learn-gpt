@@ -42,11 +42,14 @@ EXPECTED_ROOT_ENTRIES = {
     "data",
     "final_project",
     "study",
+    "tests",
     "tools",
 }
 
 ALLOWED_LOCAL_ROOT_ENTRIES = {
+    "checkpoints",
     "guidance.md",
+    "runs",
 }
 
 FORBIDDEN_ITALIAN_IDENTIFIERS = {

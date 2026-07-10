@@ -35,8 +35,8 @@ The course is available in two Markdown versions:
 - Memmapped `train.bin` / `val.bin` loading for large local datasets.
 - CPU, CUDA, and Apple Silicon MPS device selection.
 - AdamW optimizer groups, gradient accumulation, learning-rate scheduling,
-  gradient clipping, checkpoints, resume support, optional mixed precision, and
-  optional `torch.compile`.
+  gradient clipping, GPT-style initialization, atomic best/latest checkpoints,
+  resume support, optional mixed precision, and optional `torch.compile`.
 
 ## Project Layout
 
@@ -69,6 +69,9 @@ LearnGPT/
 
   tools/
     validate_learngpt.py
+
+  tests/
+    test_final_project.py
 ```
 
 `study/` is for learning. `final_project/` is the clean current version of the
@@ -95,6 +98,12 @@ Validate the repository structure:
 
 ```bash
 python -B tools/validate_learngpt.py
+```
+
+Run the final-project regression tests:
+
+```bash
+python -B -m unittest discover -s tests -v
 ```
 
 Run a specific lesson:
@@ -194,11 +203,11 @@ The final project trains on
 [FineWeb-Edu](https://huggingface.co/datasets/HuggingFaceFW/fineweb-edu) using
 the GPT-2 BPE tokenizer. The dataset is not committed to the repository.
 
-Prepare about 5 GB of tokenized data:
+Prepare about 10 GB of tokenized data:
 
 ```bash
 python -B final_project/prepare_data.py \
-  --target-gb 5 \
+  --target-gb 10 \
   --output-dir data/processed/fineweb_edu
 ```
 
@@ -266,22 +275,44 @@ python -m final_project.generate \
   --top-k 20
 ```
 
-Train:
+Run a complete small-model training on an 8 GB Apple Silicon Mac:
 
 ```bash
-python -m final_project.training \
+caffeinate -i python -B -m final_project.training \
   --device mps \
   --data-dir data/processed/fineweb_edu \
-  --checkpoint-path checkpoints/learngpt-mps.pt \
-  --context-size 128 \
+  --checkpoint-path checkpoints/learngpt-mps-18m-gptinit.pt \
+  --encoding-name gpt2 \
+  --seed 1337 \
+  --context-size 256 \
   --embedding-size 256 \
   --num-heads 4 \
-  --num-transformer-blocks 4 \
-  --batch-size 8 \
-  --gradient-accumulation-steps 4 \
-  --training-steps 1000 \
-  --eval-interval 100 \
-  --eval-batches 10
+  --num-transformer-blocks 6 \
+  --dropout 0.1 \
+  --use-scaled-dot-product-attention \
+  --batch-size 4 \
+  --gradient-accumulation-steps 8 \
+  --training-steps 45000 \
+  --eval-interval 250 \
+  --eval-batches 20 \
+  --base-learning-rate 3e-4 \
+  --min-learning-rate 3e-5 \
+  --warmup-steps 500 \
+  --decay-steps 45000 \
+  --weight-decay 0.1 \
+  --gradient-clip 1.0
+```
+
+This configuration has about 17.7 million parameters and processes about
+368.6 million training tokens. With GPT-style initialization, the first loss
+should be close to `ln(50257)`, approximately `10.82`, rather than tens or
+hundreds.
+
+Training writes two atomic checkpoints:
+
+```text
+checkpoints/learngpt-mps-18m-gptinit.pt         # best validation loss
+checkpoints/learngpt-mps-18m-gptinit-latest.pt  # latest evaluated step
 ```
 
 Resume:
@@ -290,16 +321,20 @@ Resume:
 python -m final_project.training \
   --device mps \
   --data-dir data/processed/fineweb_edu \
-  --checkpoint-path checkpoints/learngpt-mps.pt \
-  --resume-checkpoint-path checkpoints/learngpt-mps.pt
+  --checkpoint-path checkpoints/learngpt-mps-18m-gptinit.pt \
+  --resume-checkpoint-path checkpoints/learngpt-mps-18m-gptinit-latest.pt
 ```
+
+Resume restores the saved model, tokenizer, optimizer, random-number state,
+architecture, and training configuration. Pass a larger `--training-steps`
+only when intentionally extending the total target.
 
 Generate:
 
 ```bash
 python -m final_project.generate \
   --device mps \
-  --checkpoint-path checkpoints/learngpt-mps.pt \
+  --checkpoint-path checkpoints/learngpt-mps-18m-gptinit.pt \
   --prompt "Once upon a time" \
   --max-new-tokens 120 \
   --temperature 0.9 \
@@ -347,7 +382,7 @@ python -m final_project.training \
   --device cuda \
   --data-dir data/processed/fineweb_edu \
   --checkpoint-path checkpoints/learngpt-cuda.pt \
-  --resume-checkpoint-path checkpoints/learngpt-cuda.pt \
+  --resume-checkpoint-path checkpoints/learngpt-cuda-latest.pt \
   --mixed-precision \
   --precision-dtype float16
 ```
@@ -397,7 +432,7 @@ python -m final_project.training \
   --device cpu \
   --data-dir data/processed/fineweb_edu \
   --checkpoint-path checkpoints/learngpt-cpu.pt \
-  --resume-checkpoint-path checkpoints/learngpt-cpu.pt
+  --resume-checkpoint-path checkpoints/learngpt-cpu-latest.pt
 ```
 
 Generate:

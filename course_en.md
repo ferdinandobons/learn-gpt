@@ -9971,7 +9971,7 @@ sample-10BT
 
 For us it doesn't mean downloading everything `sample-10BT`. It means to use
 `sample-10BT` as the streaming source and stop when we have reached the
-decided limit, for example around 5 GB.
+decided limit, for example around 10 GB.
 
 The conceptual loading is:```python
 from datasets import load_dataset
@@ -9993,7 +9993,7 @@ The FineWeb-Edu textual sample can be read like this:```python
 text = DATASET_PATH.read_text(encoding="utf-8")
 ```
 
-With 5 GB this form is no longer good, because load all the text into RAM and
+With 10 GB this form is no longer good, because load all the text into RAM and
 then converting it to a Python list of tokens becomes too expensive.
 
 The most correct pipeline is more similar to nanoGPT:```text
@@ -10102,10 +10102,10 @@ eval_interval
 device
 ```
 
-With FineWeb-Edu it makes no sense to always use 5 GB during lessons. It's convenient
+With FineWeb-Edu it makes no sense to always use 10 GB during lessons. It's convenient
 have two limitations:```text
 demo_size_mb = 10 o 50
-target_size_gb = 5
+target_size_gb = 10
 ```
 
 The first is used to quickly test the pipeline. The second is useful when yes
@@ -10118,7 +10118,7 @@ The practical recommendation is to proceed at levels:
 | demo | 50MB | verify streaming, BPE tokenization and batching |
 | first real training | 500MB | produce a small but sensible checkpoint |
 | recommended default | 1GB | good compromise between space, time and local utility |
-| maximum optional | 5GB | only when the pipeline is stable and you want to keep a larger corpus |
+| maximum optional | 10 GB | only when the pipeline is stable and you want to keep a larger corpus |
 
 Here "processed size" means above all:```text
 train.bin + val.bin
@@ -10130,7 +10130,7 @@ For this reason the most prudent choice is:```text
 demo iniziale: 50 MB
 first useful version: 500 MB
 default del progetto: 1 GB
-opzione esplicita: 5 GB
+opzione esplicita: 10 GB
 ```
 
 The preparation code must allow this limit to be changed without
@@ -10140,12 +10140,12 @@ touch the rest of the project.
 
 At this stage we have chosen to prepare the maximum limit directly
 optional:```text
-target_gb = 5
+target_gb = 10
 ```
 
 The command used is:```bash
 python -B LearnGPT/final_project/prepare_data.py \
-  --target-gb 5 \
+  --target-gb 10 \
   --output-dir LearnGPT/data/processed/fineweb_edu \
   --overwrite \
   --progress-mb 256
@@ -10161,18 +10161,18 @@ Real run numbers:
 
 | Field | Value |
 | --- | ---: |
-| processed documents | 2,603,158 |
-| train tokens | 2,657,944,896 |
-| validation tokens | 26,409,664 |
-| train bytes | 5,315,889,792 |
-| validation bytes | 52,819,328 |
-| total bytes | 5.368.709.120 |
-| total GiB | 5 |
+| processed documents | 5,242,061 |
+| train tokens | 5,315,384,685 |
+| validation tokens | 53,324,435 |
+| train bytes | 10,630,769,370 |
+| validation bytes | 106,648,870 |
+| total bytes | 10,737,418,240 |
+| total GiB | 10 |
 | tokenizer | GPT-2 BPE via `tiktoken` |
 | dataset | `HuggingFaceFW/fineweb-edu`, config `sample-10BT` |
 
 File `meta.json` contains `complete: true`, then `train.bin + val.bin`
-they exactly reach the target of 5 GiB processed.
+they exactly reach the target of 10 GiB processed.
 
 ### Device: CPU, CUDA, Metal/MPS
 
@@ -10308,6 +10308,7 @@ of nanoGPT:
 | MLP with GELU | present |
 | dropout | present |
 | weight tying | present |
+| GPT-style initialization | present with `0.02` standard deviation and scaled residual projections |
 | AdamW | present |
 | warmup and cosine decay | present |
 | gradient clipping | present |
@@ -10329,7 +10330,7 @@ consolidated in the `Final Project` of lesson 42:
 | high | gradient accumulation | simulate larger batches using smaller micro-batches |
 | high | training resume | allows you to restart from a checkpoint without losing optimizer and step |
 | high | more explicit training configuration | avoid scattered parameters between scripts and functions |
-| not applied now | GPT-style initialization of weights | useful, but postponed so as not to introduce too many variations at once |
+| high | GPT-style weight initialization | prevents out-of-scale logits and initial loss with the GPT-2 vocabulary |
 | medium-high | output head only on the last token during generation | reduces unnecessary work in inference |
 | average | mixed precision with `autocast` and `GradScaler` | accelerates on compatible GPUs and reduces memory |
 | average | `torch.compile` optional | can speed up the model, but should be kept deactivated by default |
@@ -10352,6 +10353,7 @@ flowchart TD
     B --> B2["gradient accumulation<br/>larger effective batch"]
     B --> B3["resume checkpoint<br/>ripartenza del training"]
     B --> B4["config di training<br/>more organized parameters"]
+    B --> B5["GPT-style initialization<br/>initial loss at the correct scale"]
 
     C --> C1["output_head solo sull'ultimo token<br/>quando non ci sono target"]
     C --> C2["prompt from file and multiple samples<br/>more convenient generation"]
@@ -10365,8 +10367,8 @@ flowchart TD
     E --> E3["MFU<br/>metrica utile soprattutto su GPU grandi"]
 ```### Optimizer with weight decay groups
 
-In our current `configure_optimizer` the `weight_decay` is passed to everyone
-the model parameters.
+In the previous version, `weight_decay` was passed to every model parameter.
+The current `configure_optimizer` separates them into groups.
 
 In nanoGPT, however, the parameters are separated:```text
 parametri 2D      -> weight_decay attivo
@@ -10405,6 +10407,29 @@ load everything together.
 This is very useful even on a small computer, because it allows you to control
 the compromise between memory and training stability is better.
 
+### GPT-style initialization
+
+Not every PyTorch default initialization is suitable for this model. In
+particular, `nn.Embedding` normally starts with a standard deviation close to
+`1.0`. With about 50,000 tokens and weight tying, this creates very large logits
+and an initial loss above 160, while a uniform random prediction should start
+close to:
+
+```text
+ln(50257) = approximately 10.82
+```
+
+The final project initializes `Linear` and `Embedding` weights with standard
+deviation `0.02`, zeros the biases, and scales projections that close residual
+branches with:
+
+```text
+0.02 / sqrt(2 * number_of_blocks)
+```
+
+This keeps activations, gradients, and loss at the expected scale from the
+first step.
+
 ### Training resume
 
 Now the checkpoint also saves data useful for training resumes.
@@ -10417,11 +10442,18 @@ tokenizer_config
 step corrente
 best_validation_loss
 training_config
+rng_state
 ```
 
 This allows you to interrupt a long training session and really start again
 same point. Without `optimizer_state_dict`, for example, AdamW loses memory
 of its internal moments.
+
+Every evaluation atomically saves two files: the `best` checkpoint selected by
+the lowest validation loss, and the `latest` checkpoint containing the most
+recent evaluated step, which is the recommended resume source. Resume rebuilds
+the architecture, tokenizer, and training configuration from the checkpoint so
+forgotten CLI arguments cannot silently change the run.
 
 ### Output head only on the last token being generated
 

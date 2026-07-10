@@ -23,7 +23,7 @@ import tiktoken
 DEFAULT_DATASET_NAME = "HuggingFaceFW/fineweb-edu"
 DEFAULT_DATASET_CONFIG = "sample-10BT"
 DEFAULT_ENCODING_NAME = "gpt2"
-DEFAULT_TARGET_GB = 5.0
+DEFAULT_TARGET_GB = 10.0
 DEFAULT_VALIDATION_RATIO = 0.01
 DEFAULT_HF_HOME = "/private/tmp/learngpt_huggingface"
 
@@ -116,8 +116,8 @@ def prepare_dataset(args):
     if args.target_gb <= 0:
         raise ValueError("--target-gb must be greater than 0.")
 
-    if not 0 <= args.validation_ratio < 1:
-        raise ValueError("--validation-ratio must be between 0 and 1.")
+    if not 0 < args.validation_ratio < 1:
+        raise ValueError("--validation-ratio must be greater than 0 and less than 1.")
 
     if args.progress_mb < 1:
         raise ValueError("--progress-mb must be at least 1.")
@@ -138,6 +138,12 @@ def prepare_dataset(args):
     disable_datasets_shared_memory()
 
     encoding = tiktoken.get_encoding(args.encoding_name)
+    maximum_token_id = max(encoding.n_vocab - 1, encoding.eot_token)
+    if maximum_token_id > np.iinfo(np.uint16).max:
+        raise ValueError(
+            "The selected tokenizer does not fit in the uint16 dataset format."
+        )
+
     train_path, val_path, meta_path, train_file, val_file = open_output_files(
         output_dir=args.output_dir,
         overwrite=args.overwrite,
@@ -186,6 +192,12 @@ def prepare_dataset(args):
 
     try:
         for document in dataset:
+            if (
+                args.max_documents is not None
+                and counters["documents_seen"] >= args.max_documents
+            ):
+                break
+
             counters["documents_seen"] += 1
 
             text = document.get("text") or ""
@@ -236,9 +248,6 @@ def prepare_dataset(args):
             if counters["total_bytes"] >= target_bytes:
                 break
 
-            if args.max_documents is not None:
-                if counters["documents_seen"] >= args.max_documents:
-                    break
     finally:
         train_file.flush()
         val_file.flush()

@@ -18,7 +18,7 @@ import time
 import torch
 
 from .batching import DEFAULT_DATA_DIR, create_batch, load_training_and_validation_data
-from .checkpoint import load_checkpoint, save_checkpoint
+from .checkpoint import load_checkpoint, load_checkpoint_payload, save_checkpoint
 from .config import ModelConfig, TrainingConfig
 from .device import (
     get_default_device,
@@ -146,6 +146,13 @@ def apply_learning_rate(optimizer, learning_rate):
         parameter_group["lr"] = learning_rate
 
 
+def get_latest_checkpoint_path(checkpoint_path):
+    checkpoint_path = Path(checkpoint_path)
+    return checkpoint_path.with_name(
+        f"{checkpoint_path.stem}-latest{checkpoint_path.suffix}"
+    )
+
+
 @torch.no_grad()
 def estimate_loss(
     model,
@@ -247,6 +254,7 @@ def train_model(
     history = []
     best_validation_loss = math.inf
     best_checkpoint_path = None
+    latest_checkpoint_path = get_latest_checkpoint_path(checkpoint_path)
     start_step = 1
     training_start_time = time.time()
 
@@ -258,8 +266,20 @@ def train_model(
             device=device,
         )
         start_step = int(checkpoint.get("step", 0)) + 1
-        best_validation_loss = checkpoint.get("best_validation_loss") or math.inf
-        best_checkpoint_path = resume_checkpoint_path
+        saved_best_validation_loss = checkpoint.get("best_validation_loss")
+        if saved_best_validation_loss is not None:
+            best_validation_loss = float(saved_best_validation_loss)
+        best_checkpoint_path = (
+            Path(checkpoint_path)
+            if Path(checkpoint_path).exists()
+            else Path(resume_checkpoint_path)
+        )
+
+    if start_step > training_steps:
+        raise ValueError(
+            "The resume checkpoint is already at or beyond training_steps. "
+            "Choose a larger total --training-steps value."
+        )
 
     scaler = create_gradient_scaler(
         device=device,
@@ -311,7 +331,11 @@ def train_model(
         scaler.step(optimizer)
         scaler.update()
 
-        should_evaluate = step == 1 or step % eval_interval == 0
+        should_evaluate = (
+            step == 1
+            or step % eval_interval == 0
+            or step == training_steps
+        )
 
         if should_evaluate:
             elapsed_seconds = max(time.time() - training_start_time, 0.001)
@@ -367,8 +391,23 @@ def train_model(
                     flush=True,
                 )
 
-            if losses["validation"] < best_validation_loss:
+            is_best_checkpoint = losses["validation"] < best_validation_loss
+            if is_best_checkpoint:
                 best_validation_loss = losses["validation"]
+
+            save_checkpoint(
+                checkpoint_path=latest_checkpoint_path,
+                model=model,
+                optimizer=optimizer,
+                model_config=model_config,
+                step=step,
+                losses=losses,
+                tokenizer_config=tokenizer_config,
+                training_config=training_config,
+                best_validation_loss=best_validation_loss,
+            )
+
+            if is_best_checkpoint:
                 best_checkpoint_path = save_checkpoint(
                     checkpoint_path=checkpoint_path,
                     model=model,
@@ -407,6 +446,7 @@ def parse_args():
     parser.add_argument("--resume-checkpoint-path", type=Path, default=None)
     parser.add_argument("--device", default="auto", choices=["auto", "cpu", "cuda", "mps"])
     parser.add_argument("--encoding-name", default=DEFAULT_ENCODING_NAME)
+    parser.add_argument("--seed", type=int, default=1337)
 
     parser.add_argument("--context-size", type=int, default=128)
     parser.add_argument("--embedding-size", type=int, default=256)
@@ -417,7 +457,7 @@ def parse_args():
     parser.add_argument("--use-scaled-dot-product-attention", action="store_true")
 
     parser.add_argument("--batch-size", type=int, default=8)
-    parser.add_argument("--training-steps", type=int, default=1000)
+    parser.add_argument("--training-steps", type=int, default=None)
     parser.add_argument("--eval-interval", type=int, default=100)
     parser.add_argument("--eval-batches", type=int, default=10)
     parser.add_argument("--base-learning-rate", type=float, default=3e-4)
@@ -443,46 +483,89 @@ def parse_args():
 def main():
     args = parse_args()
     device = resolve_device(args.device)
-    training_data, validation_data = load_training_and_validation_data(args.data_dir)
+    checkpoint_preview = None
 
-    model_config = ModelConfig(
-        vocabulary_size=get_vocabulary_size(args.encoding_name),
-        context_size=args.context_size,
-        embedding_size=args.embedding_size,
-        num_heads=args.num_heads,
-        num_transformer_blocks=args.num_transformer_blocks,
-        dropout=args.dropout,
-        tie_weights=not args.no_weight_tying,
-        use_scaled_dot_product_attention=args.use_scaled_dot_product_attention,
-    )
-    training_config = TrainingConfig(
-        batch_size=args.batch_size,
-        training_steps=args.training_steps,
-        eval_interval=args.eval_interval,
-        eval_batches=args.eval_batches,
-        base_learning_rate=args.base_learning_rate,
-        min_learning_rate=args.min_learning_rate,
-        warmup_steps=args.warmup_steps,
-        decay_steps=args.decay_steps,
-        weight_decay=args.weight_decay,
-        gradient_clip=None if args.no_gradient_clip else args.gradient_clip,
-        gradient_accumulation_steps=args.gradient_accumulation_steps,
-        resume_from_checkpoint=args.resume_checkpoint_path is not None,
-        compile_model=args.compile_model,
-        mixed_precision=args.mixed_precision,
-        precision_dtype=args.precision_dtype,
+    if args.resume_checkpoint_path is not None:
+        checkpoint_preview = load_checkpoint_payload(
+            args.resume_checkpoint_path,
+            device="cpu",
+        )
+        model_config = ModelConfig.from_checkpoint_dict(
+            checkpoint_preview["model_config"]
+        )
+        tokenizer_config = checkpoint_preview.get("tokenizer_config") or {
+            "encoding_name": DEFAULT_ENCODING_NAME,
+        }
+        encoding_name = tokenizer_config.get(
+            "encoding_name",
+            DEFAULT_ENCODING_NAME,
+        )
+    else:
+        encoding_name = args.encoding_name
+        tokenizer_config = {"encoding_name": encoding_name}
+        model_config = ModelConfig(
+            vocabulary_size=get_vocabulary_size(encoding_name),
+            context_size=args.context_size,
+            embedding_size=args.embedding_size,
+            num_heads=args.num_heads,
+            num_transformer_blocks=args.num_transformer_blocks,
+            dropout=args.dropout,
+            tie_weights=not args.no_weight_tying,
+            use_scaled_dot_product_attention=args.use_scaled_dot_product_attention,
+        )
+
+    if checkpoint_preview is not None and checkpoint_preview.get("training_config"):
+        training_config = TrainingConfig.from_checkpoint_dict(
+            checkpoint_preview["training_config"]
+        )
+        if args.training_steps is not None:
+            training_config.training_steps = args.training_steps
+        training_config.resume_from_checkpoint = True
+        training_config.compile_model = args.compile_model
+        if args.mixed_precision:
+            training_config.mixed_precision = True
+            training_config.precision_dtype = args.precision_dtype
+        training_config.__post_init__()
+    else:
+        training_config = TrainingConfig(
+            seed=args.seed,
+            batch_size=args.batch_size,
+            training_steps=(
+                1000 if args.training_steps is None else args.training_steps
+            ),
+            eval_interval=args.eval_interval,
+            eval_batches=args.eval_batches,
+            base_learning_rate=args.base_learning_rate,
+            min_learning_rate=args.min_learning_rate,
+            warmup_steps=args.warmup_steps,
+            decay_steps=args.decay_steps,
+            weight_decay=args.weight_decay,
+            gradient_clip=None if args.no_gradient_clip else args.gradient_clip,
+            gradient_accumulation_steps=args.gradient_accumulation_steps,
+            resume_from_checkpoint=args.resume_checkpoint_path is not None,
+            compile_model=args.compile_model,
+            mixed_precision=args.mixed_precision,
+            precision_dtype=args.precision_dtype,
+        )
+
+    checkpoint_preview = None
+    torch.manual_seed(training_config.seed)
+    training_data, validation_data = load_training_and_validation_data(
+        args.data_dir,
+        encoding_name=encoding_name,
     )
 
     model = LanguageModel(**model_config.to_model_kwargs())
-    model = maybe_compile_model(model, compile_model=args.compile_model)
+    model = maybe_compile_model(
+        model,
+        compile_model=training_config.compile_model,
+    )
     optimizer = configure_optimizer(
         model=model,
-        learning_rate=args.base_learning_rate,
-        weight_decay=args.weight_decay,
+        learning_rate=training_config.base_learning_rate,
+        weight_decay=training_config.weight_decay,
         device=device,
     )
-
-    tokenizer_config = {"encoding_name": args.encoding_name}
 
     print("LearnGPT training")
     print(json.dumps(
@@ -504,24 +587,24 @@ def main():
         optimizer=optimizer,
         training_data=training_data,
         validation_data=validation_data,
-        batch_size=args.batch_size,
-        context_size=args.context_size,
-        training_steps=args.training_steps,
-        eval_interval=args.eval_interval,
-        eval_batches=args.eval_batches,
+        batch_size=training_config.batch_size,
+        context_size=model_config.context_size,
+        training_steps=training_config.training_steps,
+        eval_interval=training_config.eval_interval,
+        eval_batches=training_config.eval_batches,
         checkpoint_path=args.checkpoint_path,
         model_config=model_config.to_checkpoint_dict(),
         tokenizer_config=tokenizer_config,
-        base_learning_rate=args.base_learning_rate,
-        min_learning_rate=args.min_learning_rate,
-        warmup_steps=args.warmup_steps,
-        decay_steps=args.decay_steps,
-        gradient_clip=None if args.no_gradient_clip else args.gradient_clip,
-        gradient_accumulation_steps=args.gradient_accumulation_steps,
+        base_learning_rate=training_config.base_learning_rate,
+        min_learning_rate=training_config.min_learning_rate,
+        warmup_steps=training_config.warmup_steps,
+        decay_steps=training_config.decay_steps,
+        gradient_clip=training_config.gradient_clip,
+        gradient_accumulation_steps=training_config.gradient_accumulation_steps,
         resume_checkpoint_path=args.resume_checkpoint_path,
         training_config=training_config.to_checkpoint_dict(),
-        mixed_precision=args.mixed_precision,
-        precision_dtype=args.precision_dtype,
+        mixed_precision=training_config.mixed_precision,
+        precision_dtype=training_config.precision_dtype,
         device=device,
         print_progress=True,
     )
@@ -529,6 +612,7 @@ def main():
     print()
     print("Training finished.")
     print("Best checkpoint:", best_checkpoint_path)
+    print("Latest checkpoint:", get_latest_checkpoint_path(args.checkpoint_path))
     if history:
         print("Last metrics:")
         print(json.dumps(history[-1], indent=2))

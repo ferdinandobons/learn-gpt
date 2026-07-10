@@ -12,6 +12,7 @@ from pathlib import Path
 
 import torch
 
+from .checkpoint import canonicalize_model_state_dict, load_checkpoint_payload
 from .device import get_default_device, resolve_device
 from .model import LanguageModel
 from .tokenizer import DEFAULT_ENCODING_NAME, decode, encode
@@ -19,14 +20,12 @@ from .tokenizer import DEFAULT_ENCODING_NAME, decode, encode
 
 def load_model_from_checkpoint(checkpoint_path, device=None, compile_model=False):
     device = device or get_default_device()
-    checkpoint = torch.load(
-        checkpoint_path,
-        map_location=device,
-        weights_only=True,
-    )
+    checkpoint = load_checkpoint_payload(checkpoint_path, device="cpu")
 
     model = LanguageModel(**checkpoint["model_config"])
-    model.load_state_dict(checkpoint["model_state_dict"])
+    model.load_state_dict(
+        canonicalize_model_state_dict(checkpoint["model_state_dict"])
+    )
     model.to(device)
     model.eval()
 
@@ -71,7 +70,7 @@ def generate_text_from_checkpoint(
 
     input_ids = torch.tensor([prompt_ids], dtype=torch.long, device=device)
 
-    with torch.no_grad():
+    with torch.inference_mode():
         generated_ids = model.generate(
             input_ids,
             max_new_tokens=max_new_tokens,
@@ -100,18 +99,38 @@ def generate_samples_from_checkpoint(
     if num_samples < 1:
         raise ValueError("num_samples must be at least 1.")
 
-    samples = []
-    checkpoint = None
+    device = device or get_default_device()
+    model, checkpoint = load_model_from_checkpoint(
+        checkpoint_path=checkpoint_path,
+        device=device,
+        compile_model=compile_model,
+    )
+    tokenizer_config = checkpoint.get(
+        "tokenizer_config",
+        {"encoding_name": DEFAULT_ENCODING_NAME},
+    )
+    encoding_name = tokenizer_config.get("encoding_name", DEFAULT_ENCODING_NAME)
+    prompt_ids = encode(prompt_text, encoding_name=encoding_name)
+    if len(prompt_ids) == 0:
+        raise ValueError("prompt_text must produce at least one token.")
 
+    samples = []
     for _ in range(num_samples):
-        generated_text, checkpoint = generate_text_from_checkpoint(
-            checkpoint_path=checkpoint_path,
-            prompt_text=prompt_text,
-            max_new_tokens=max_new_tokens,
-            temperature=temperature,
-            top_k=top_k,
+        input_ids = torch.tensor(
+            [prompt_ids],
+            dtype=torch.long,
             device=device,
-            compile_model=compile_model,
+        )
+        with torch.inference_mode():
+            generated_ids = model.generate(
+                input_ids,
+                max_new_tokens=max_new_tokens,
+                temperature=temperature,
+                top_k=top_k,
+            )
+        generated_text = decode(
+            generated_ids[0].detach().cpu().tolist(),
+            encoding_name=encoding_name,
         )
         samples.append(generated_text)
 
