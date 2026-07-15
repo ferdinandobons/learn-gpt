@@ -4,15 +4,22 @@ import json
 import math
 from pathlib import Path
 import tempfile
+from types import SimpleNamespace
 import unittest
 
 import numpy as np
 import torch
+from torch import nn
 
 from final_project.batching import load_training_and_validation_data
 from final_project.checkpoint import load_checkpoint, load_checkpoint_payload, save_checkpoint
 from final_project.config import ModelConfig
-from final_project.model import GPT_INITIALIZATION_STD, LanguageModel
+from final_project.model import (
+    GPT_INITIALIZATION_STD,
+    LanguageModel,
+)
+from final_project.prepare_subset import prepare_subset
+from final_project.quality import estimate_context_sensitivity
 from final_project.training import (
     configure_optimizer,
     get_latest_checkpoint_path,
@@ -131,6 +138,172 @@ class DatasetValidationTests(unittest.TestCase):
                 load_training_and_validation_data(data_dir)
 
 
+class ExperimentalSubsetTests(unittest.TestCase):
+    def write_source_dataset(self, data_dir):
+        training_data = np.arange(4096, dtype=np.uint16) % 128
+        validation_data = np.arange(2048, dtype=np.uint16) % 128
+        training_data.tofile(data_dir / "train.bin")
+        validation_data.tofile(data_dir / "val.bin")
+        (data_dir / "meta.json").write_text(
+            json.dumps(
+                {
+                    "complete": True,
+                    "dtype": "uint16",
+                    "encoding_name": "gpt2",
+                    "dataset_name": "test-dataset",
+                    "dataset_config": "test-config",
+                    "counters": {
+                        "train_tokens": len(training_data),
+                        "val_tokens": len(validation_data),
+                    },
+                }
+            ),
+            encoding="utf-8",
+        )
+
+    def make_arguments(self, source_dir, output_dir):
+        target_tokens = 512
+        return SimpleNamespace(
+            source_data_dir=source_dir,
+            output_dir=output_dir,
+            target_gb=(target_tokens * np.dtype(np.uint16).itemsize) / 1024**3,
+            validation_ratio=0.25,
+            seed=123,
+            chunk_tokens=32,
+            overwrite=False,
+        )
+
+    def test_subset_is_complete_and_reproducible(self):
+        with tempfile.TemporaryDirectory() as temporary_dir:
+            root = Path(temporary_dir)
+            source_dir = root / "source"
+            first_output_dir = root / "first"
+            second_output_dir = root / "second"
+            source_dir.mkdir()
+            self.write_source_dataset(source_dir)
+
+            first_metadata = prepare_subset(
+                self.make_arguments(source_dir, first_output_dir)
+            )
+            second_metadata = prepare_subset(
+                self.make_arguments(source_dir, second_output_dir)
+            )
+
+            self.assertTrue(first_metadata["complete"])
+            self.assertEqual(first_metadata["counters"]["train_tokens"], 384)
+            self.assertEqual(first_metadata["counters"]["val_tokens"], 128)
+            self.assertEqual(first_metadata["subset_seed"], 123)
+            self.assertEqual(first_metadata["preparation_mode"], "randomized_subset")
+            self.assertTrue(second_metadata["complete"])
+            self.assertEqual(
+                (first_output_dir / "train.bin").read_bytes(),
+                (second_output_dir / "train.bin").read_bytes(),
+            )
+            self.assertEqual(
+                (first_output_dir / "val.bin").read_bytes(),
+                (second_output_dir / "val.bin").read_bytes(),
+            )
+
+
+class StaticLogitModel(nn.Module):
+    def __init__(self, vocabulary_size):
+        super().__init__()
+        self.vocabulary_size = vocabulary_size
+
+    def forward(self, input_ids):
+        return torch.zeros(
+            input_ids.shape[0],
+            1,
+            self.vocabulary_size,
+            device=input_ids.device,
+        )
+
+
+class ContextualLogitModel(nn.Module):
+    def __init__(self, vocabulary_size):
+        super().__init__()
+        self.vocabulary_size = vocabulary_size
+
+    def forward(self, input_ids):
+        logits = torch.full(
+            (input_ids.shape[0], 1, self.vocabulary_size),
+            -20.0,
+            device=input_ids.device,
+        )
+        next_token_ids = input_ids[:, -1].remainder(self.vocabulary_size)
+        logits.scatter_(
+            2,
+            next_token_ids.view(-1, 1, 1),
+            20.0,
+        )
+        return logits
+
+
+class ContextSensitivityTests(unittest.TestCase):
+    def test_context_metric_distinguishes_static_and_contextual_logits(self):
+        validation_data = np.arange(256, dtype=np.int64)
+        static_metrics = estimate_context_sensitivity(
+            model=StaticLogitModel(vocabulary_size=32),
+            validation_data=validation_data,
+            context_size=8,
+            num_contexts=8,
+            device="cpu",
+        )
+        contextual_metrics = estimate_context_sensitivity(
+            model=ContextualLogitModel(vocabulary_size=32),
+            validation_data=validation_data,
+            context_size=8,
+            num_contexts=8,
+            device="cpu",
+        )
+
+        self.assertLess(static_metrics["context_js_divergence"], 1e-8)
+        self.assertGreater(contextual_metrics["context_js_divergence"], 1.0)
+        self.assertGreater(
+            contextual_metrics["context_logit_std"],
+            static_metrics["context_logit_std"],
+        )
+
+    def test_training_stops_when_the_context_gate_fails(self):
+        torch.manual_seed(123)
+        config = make_model_config(vocabulary_size=32)
+        model = LanguageModel(**config.to_model_kwargs())
+        optimizer = configure_optimizer(
+            model,
+            learning_rate=1e-3,
+            weight_decay=0.1,
+            device="cpu",
+        )
+        training_data = np.arange(512, dtype=np.int64) % config.vocabulary_size
+        validation_data = np.arange(256, dtype=np.int64) % config.vocabulary_size
+
+        with tempfile.TemporaryDirectory() as temporary_dir:
+            with self.assertRaisesRegex(RuntimeError, "Context-sensitivity gate failed"):
+                train_model(
+                    model=model,
+                    optimizer=optimizer,
+                    training_data=training_data,
+                    validation_data=validation_data,
+                    batch_size=2,
+                    context_size=config.context_size,
+                    training_steps=1,
+                    eval_interval=1,
+                    eval_batches=1,
+                    checkpoint_path=Path(temporary_dir) / "best.pt",
+                    model_config=config.to_checkpoint_dict(),
+                    tokenizer_config={"encoding_name": "gpt2"},
+                    base_learning_rate=1e-3,
+                    min_learning_rate=1e-4,
+                    warmup_steps=0,
+                    decay_steps=1,
+                    gradient_clip=1.0,
+                    context_sensitivity_contexts=2,
+                    min_context_js_divergence=100.0,
+                    stop_on_low_context_sensitivity=True,
+                    device="cpu",
+                )
+
+
 class CheckpointTests(unittest.TestCase):
     def test_compiled_checkpoint_uses_canonical_model_keys(self):
         torch.manual_seed(123)
@@ -206,6 +379,7 @@ class CheckpointTests(unittest.TestCase):
                 warmup_steps=0,
                 decay_steps=2,
                 gradient_clip=1.0,
+                context_sensitivity_contexts=2,
                 device="cpu",
             )
 
@@ -214,8 +388,12 @@ class CheckpointTests(unittest.TestCase):
             self.assertTrue(best_path.exists())
             self.assertTrue(latest_path.exists())
             self.assertEqual(len(history), 2)
+            self.assertIn("context_js_divergence", history[-1])
+            self.assertIn("context_logit_std", history[-1])
             latest = load_checkpoint_payload(latest_path, device="cpu")
             self.assertEqual(latest["step"], 2)
+            self.assertIn("context_js_divergence", latest["losses"])
+            self.assertIn("context_logit_std", latest["losses"])
 
 
 if __name__ == "__main__":

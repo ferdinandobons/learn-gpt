@@ -150,6 +150,11 @@ Per ora il flusso arriva fino a:
 testo -> token IDs -> training/validation split -> batch -> embeddings -> più TransformerBlock -> final LayerNorm -> logits -> loss -> backward -> gradient clipping -> optimizer.step -> pesi aggiornati -> estimate_loss -> miglior checkpoint -> checkpoint ricaricato -> sampling controllato -> testo generato
 ```
 
+Per un training locale con budget limitato, il corpus canonico può avere un
+passaggio opzionale in più prima dei batch: `prepare_subset.py` seleziona chunk
+casuali riproducibili e scrive un dataset sperimentale separato. La mappa
+controllata completa è descritta nell'approfondimento finale.
+
 Ogni `TransformerBlock` contiene i passaggi studiati nelle lezioni precedenti:
 
 ```text
@@ -12267,3 +12272,40 @@ Questo porta il progetto molto vicino allo spirito di nanoGPT, ma senza perdere
 la chiarezza passo passo che serve al corso. Il punto importante è che
 `42_final_project.py` non è una nuova ottimizzazione: è la versione pulita che
 rispecchia `final_project/`.
+
+## Approfondimento dopo la lezione 42 - Retraining controllato
+
+Il corpus FineWeb-Edu canonico contiene circa 5,3 miliardi di token. Un run da
+45.000 aggiornamenti con `batch_size=4`, `context_size=256` e accumulo 8 vede
+circa 369 milioni di token: meno del 7% del corpus. In questo caso il modello
+ha imparato soprattutto la frequenza dei token comuni, non una continuazione
+dipendente dal contesto.
+
+La soluzione non è aumentare subito il modello. Manteniamo inizialmente il GPT
+da circa 17,7 milioni di parametri e prepariamo un dataset sperimentale di 1
+GiB, separato dal corpus da 10 GiB. I chunk vengono scelti senza sostituzione,
+con seed fisso, quindi il run è riproducibile.
+
+```mermaid
+flowchart LR
+    A["FineWeb-Edu canonico\ntrain.bin + val.bin"]
+    B["prepare_subset.py\nchunk casuali con seed"]
+    C["dataset sperimentale 1 GiB\ntrain.bin + val.bin + meta.json"]
+    D["training probe\n10.000 step"]
+    E["validation + context_js"]
+    F["checkpoint migliore"]
+    G["estensione a 80.000 step\nsolo se il gate passa"]
+
+    A --> B --> C --> D --> E --> F --> G
+```
+
+`context_js` confronta la distribuzione del prossimo token su otto contesti di
+validation fissi. Non misura se il testo è già bello, ma intercetta un collasso:
+se il modello dà quasi la stessa risposta a contesti diversi, il valore è molto
+basso. Il checkpoint collassato misurava circa `2e-6`; il gate sperimentale
+ferma il run sotto `1e-4`, dopo aver salvato il checkpoint latest per l'analisi.
+
+La ricetta iniziale è deliberatamente prudente: `dropout=0`, learning rate
+massimo `1e-4`, warm-up di 1.000 step, weight decay `0.05` e clipping a `1.0`.
+Prima di estendere il run bisogna generare alcuni prompt dal checkpoint best:
+una loss che cala e un gate superato non sostituiscono questa verifica umana.

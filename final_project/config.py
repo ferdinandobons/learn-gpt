@@ -94,6 +94,9 @@ class TrainingConfig:
     weight_decay: float = 0.01
     gradient_clip: float | None = 1.0
     gradient_accumulation_steps: int = 1
+    context_sensitivity_contexts: int = 0
+    min_context_js_divergence: float | None = None
+    stop_on_low_context_sensitivity: bool = False
     resume_from_checkpoint: bool = False
     compile_model: bool = False
     mixed_precision: bool = False
@@ -140,6 +143,38 @@ class TrainingConfig:
 
         if self.gradient_accumulation_steps < 1:
             raise ValueError("gradient_accumulation_steps must be at least 1.")
+
+        if self.context_sensitivity_contexts < 0:
+            raise ValueError("context_sensitivity_contexts cannot be negative.")
+
+        if self.context_sensitivity_contexts == 1:
+            raise ValueError(
+                "context_sensitivity_contexts must be 0 or at least 2."
+            )
+
+        if (
+            self.min_context_js_divergence is not None
+            and self.min_context_js_divergence <= 0
+        ):
+            raise ValueError(
+                "min_context_js_divergence must be greater than 0 when set."
+            )
+
+        if (
+            self.stop_on_low_context_sensitivity
+            and self.min_context_js_divergence is None
+        ):
+            raise ValueError(
+                "stop_on_low_context_sensitivity requires min_context_js_divergence."
+            )
+
+        if (
+            self.min_context_js_divergence is not None
+            and self.context_sensitivity_contexts < 2
+        ):
+            raise ValueError(
+                "min_context_js_divergence requires at least two context samples."
+            )
 
         if self.precision_dtype not in {"float16", "bfloat16", "float32"}:
             raise ValueError(

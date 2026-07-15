@@ -32,11 +32,13 @@ The course is available in two Markdown versions:
 - A clean final project under `final_project/`.
 - GPT-2 BPE tokenization with `tiktoken`.
 - FineWeb-Edu data preparation for local training.
+- Reproducible randomized experimental subsets derived from processed data.
 - Memmapped `train.bin` / `val.bin` loading for large local datasets.
 - CPU, CUDA, and Apple Silicon MPS device selection.
 - AdamW optimizer groups, gradient accumulation, learning-rate scheduling,
   gradient clipping, GPT-style initialization, atomic best/latest checkpoints,
-  resume support, optional mixed precision, and optional `torch.compile`.
+  resume support, context-sensitivity quality gates, optional mixed precision,
+  and optional `torch.compile`.
 
 ## Project Layout
 
@@ -59,12 +61,14 @@ LearnGPT/
     config.py
     tokenizer.py
     prepare_data.py
+    prepare_subset.py
     batching.py
     device.py
     model.py
     training.py
     checkpoint.py
     generate.py
+    quality.py
     requirements.txt
 
   tools/
@@ -275,54 +279,87 @@ python -m final_project.generate \
   --top-k 20
 ```
 
-Run a complete small-model training on an 8 GB Apple Silicon Mac:
+### Controlled real training on an 8 GB Apple Silicon Mac
+
+Do not train the 17.7M model for 45,000 steps directly on the complete 10 GiB
+corpus. That budget sees only about 7% of its 5.3B training tokens and can
+converge to an almost context-free frequency model. Keep the full corpus as the
+canonical source and create a separate, reproducible 1 GiB experiment:
 
 ```bash
-caffeinate -i python -B -m final_project.training \
+.venv/bin/python -B -m final_project.prepare_subset \
+  --source-data-dir data/processed/fineweb_edu \
+  --output-dir data/processed/fineweb_edu_experiment_1g \
+  --target-gb 1 \
+  --validation-ratio 0.01 \
+  --seed 1337 \
+  --chunk-tokens 65536
+```
+
+The command only reads `fineweb_edu` and writes a new 1 GiB local dataset. It
+selects non-overlapping token chunks in a deterministic order, so the same
+source dataset and seed reproduce the same experiment.
+
+First run a 10,000-step quality probe. The architecture stays small enough for
+the Mac, while the optimization is more conservative and the gate stops a
+run that stops using its context:
+
+```bash
+caffeinate -i .venv/bin/python -B -m final_project.training \
   --device mps \
-  --data-dir data/processed/fineweb_edu \
-  --checkpoint-path checkpoints/learngpt-mps-18m-gptinit.pt \
+  --data-dir data/processed/fineweb_edu_experiment_1g \
+  --checkpoint-path checkpoints/learngpt-mps-18m-experiment-1g.pt \
   --encoding-name gpt2 \
   --seed 1337 \
   --context-size 256 \
   --embedding-size 256 \
   --num-heads 4 \
   --num-transformer-blocks 6 \
-  --dropout 0.1 \
+  --dropout 0.0 \
   --use-scaled-dot-product-attention \
   --batch-size 4 \
   --gradient-accumulation-steps 8 \
-  --training-steps 45000 \
+  --training-steps 10000 \
   --eval-interval 250 \
   --eval-batches 20 \
-  --base-learning-rate 3e-4 \
-  --min-learning-rate 3e-5 \
-  --warmup-steps 500 \
-  --decay-steps 45000 \
-  --weight-decay 0.1 \
-  --gradient-clip 1.0
+  --base-learning-rate 1e-4 \
+  --min-learning-rate 1e-5 \
+  --warmup-steps 1000 \
+  --decay-steps 80000 \
+  --weight-decay 0.05 \
+  --gradient-clip 1.0 \
+  --context-sensitivity-contexts 8 \
+  --min-context-js-divergence 1e-4 \
+  --stop-on-low-context-sensitivity
 ```
 
-This configuration has about 17.7 million parameters and processes about
-368.6 million training tokens. With GPT-style initialization, the first loss
-should be close to `ln(50257)`, approximately `10.82`, rather than tens or
-hundreds.
+`context_js` measures how differently the model distributes next-token
+probability across eight fixed validation contexts. It is an anti-collapse
+signal, not a text-quality score: a value below `1e-4` stops the run after
+writing its latest checkpoint. The original collapsed checkpoint measured about
+`2e-6`; a fresh model measured about `2e-2`.
+
+With GPT-style initialization, the first loss should be close to `ln(50257)`,
+approximately `10.82`, rather than tens or hundreds. After the probe, generate
+from the best checkpoint and inspect several prompts before extending it.
 
 Training writes two atomic checkpoints:
 
 ```text
-checkpoints/learngpt-mps-18m-gptinit.pt         # best validation loss
-checkpoints/learngpt-mps-18m-gptinit-latest.pt  # latest evaluated step
+checkpoints/learngpt-mps-18m-experiment-1g.pt         # best validation loss
+checkpoints/learngpt-mps-18m-experiment-1g-latest.pt  # latest evaluated step
 ```
 
-Resume:
+If the probe keeps passing the context gate and its samples improve, extend the
+same run to the planned 80,000-step total target:
 
 ```bash
-python -m final_project.training \
+caffeinate -i .venv/bin/python -B -m final_project.training \
   --device mps \
-  --data-dir data/processed/fineweb_edu \
-  --checkpoint-path checkpoints/learngpt-mps-18m-gptinit.pt \
-  --resume-checkpoint-path checkpoints/learngpt-mps-18m-gptinit-latest.pt
+  --data-dir data/processed/fineweb_edu_experiment_1g \
+  --checkpoint-path checkpoints/learngpt-mps-18m-experiment-1g.pt \
+  --resume-checkpoint-path checkpoints/learngpt-mps-18m-experiment-1g-latest.pt \
+  --training-steps 80000
 ```
 
 Resume restores the saved model, tokenizer, optimizer, random-number state,
@@ -332,9 +369,9 @@ only when intentionally extending the total target.
 Generate:
 
 ```bash
-python -m final_project.generate \
+.venv/bin/python -B -m final_project.generate \
   --device mps \
-  --checkpoint-path checkpoints/learngpt-mps-18m-gptinit.pt \
+  --checkpoint-path checkpoints/learngpt-mps-18m-experiment-1g.pt \
   --prompt "Once upon a time" \
   --max-new-tokens 120 \
   --temperature 0.9 \

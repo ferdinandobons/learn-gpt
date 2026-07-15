@@ -147,6 +147,11 @@ For now the flow reaches up to:```text
 text -> token IDs -> training/validation split -> batch -> embeddings -> more TransformerBlock -> final LayerNorm -> logits -> loss -> backward -> gradient clipping -> optimizer.step -> weights aggiornati -> estimate_loss -> miglior checkpoint -> checkpoint ricaricato -> sampling controllato -> generated text
 ```
 
+For compute-bounded local training, the canonical corpus can take one optional
+step before batching: `prepare_subset.py` selects reproducible random chunks
+and writes a separate experimental dataset. The controlled path is described in
+the final follow-up section.
+
 Each `TransformerBlock` contains the steps studied in the previous lessons:
 
 ```text
@@ -10630,3 +10635,40 @@ This brings the project very close to the spirit of nanoGPT, but without losing 
 the step-by-step clarity that the course needs. The important point is that
 `42_final_project.py` is not a new optimization - it's the clean version that
 mirrors `final_project/`.
+
+## Follow-up after Lesson 42 - Controlled retraining
+
+The canonical FineWeb-Edu corpus contains about 5.3 billion tokens. A 45,000
+step run with `batch_size=4`, `context_size=256`, and eight accumulated
+micro-batches sees about 369 million tokens: less than 7% of the corpus. In the
+observed run the model learned mainly common-token frequency, rather than
+context-dependent continuation.
+
+The first response is not to make the model larger. We keep the roughly 17.7M
+parameter GPT and derive a separate 1 GiB experimental dataset from the 10 GiB
+canonical source. Chunks are selected without replacement from a fixed seed, so
+the experiment is reproducible.
+
+```mermaid
+flowchart LR
+    A["Canonical FineWeb-Edu\ntrain.bin + val.bin"]
+    B["prepare_subset.py\nseeded random chunks"]
+    C["1 GiB experiment\ntrain.bin + val.bin + meta.json"]
+    D["10,000-step probe"]
+    E["validation + context_js"]
+    F["best checkpoint"]
+    G["extend to 80,000 steps\nonly when the gate passes"]
+
+    A --> B --> C --> D --> E --> F --> G
+```
+
+`context_js` compares the next-token distribution across eight fixed validation
+contexts. It is not a prose-quality score; it detects collapse. If the model
+answers unrelated contexts almost identically, the value becomes very small.
+The collapsed checkpoint measured about `2e-6`; the experimental gate stops a
+run below `1e-4` after preserving its latest checkpoint for inspection.
+
+The initial recipe is intentionally conservative: `dropout=0`, maximum learning
+rate `1e-4`, 1,000 warm-up steps, `0.05` weight decay, and gradient clipping at
+`1.0`. Before extending the run, generate several prompts from the best
+checkpoint: lower loss and a passing gate do not replace this human check.

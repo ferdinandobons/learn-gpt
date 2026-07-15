@@ -28,6 +28,7 @@ from .device import (
     supports_mixed_precision,
 )
 from .model import LanguageModel
+from .quality import estimate_context_sensitivity
 from .tokenizer import DEFAULT_ENCODING_NAME, get_vocabulary_size
 
 
@@ -216,6 +217,9 @@ def train_model(
     decay_steps,
     gradient_clip,
     gradient_accumulation_steps=1,
+    context_sensitivity_contexts=0,
+    min_context_js_divergence=None,
+    stop_on_low_context_sensitivity=False,
     resume_checkpoint_path=None,
     training_config=None,
     mixed_precision=False,
@@ -246,6 +250,30 @@ def train_model(
 
     if gradient_accumulation_steps < 1:
         raise ValueError("gradient_accumulation_steps must be at least 1.")
+
+    if context_sensitivity_contexts < 0:
+        raise ValueError("context_sensitivity_contexts cannot be negative.")
+
+    if context_sensitivity_contexts == 1:
+        raise ValueError("context_sensitivity_contexts must be 0 or at least 2.")
+
+    if min_context_js_divergence is not None and min_context_js_divergence <= 0:
+        raise ValueError(
+            "min_context_js_divergence must be greater than 0 when set."
+        )
+
+    if (
+        min_context_js_divergence is not None
+        and context_sensitivity_contexts < 2
+    ):
+        raise ValueError(
+            "min_context_js_divergence requires at least two context samples."
+        )
+
+    if stop_on_low_context_sensitivity and min_context_js_divergence is None:
+        raise ValueError(
+            "stop_on_low_context_sensitivity requires min_context_js_divergence."
+        )
 
     device = device or get_default_device()
     model.to(device)
@@ -354,18 +382,33 @@ def train_model(
                 eval_batches=eval_batches,
                 device=device,
             )
-            history.append(
-                {
-                    "step": step,
-                    "learning_rate": learning_rate,
-                    "loss": total_loss,
-                    "training": losses["training"],
-                    "validation": losses["validation"],
-                    "grad_norm": grad_norm,
-                    "tokens_per_second": tokens_per_second,
-                    "eta_seconds": eta_seconds,
-                }
-            )
+            metrics = {
+                "step": step,
+                "learning_rate": learning_rate,
+                "loss": total_loss,
+                "training": losses["training"],
+                "validation": losses["validation"],
+                "grad_norm": grad_norm,
+                "tokens_per_second": tokens_per_second,
+                "eta_seconds": eta_seconds,
+            }
+            context_gate_failed = False
+            if context_sensitivity_contexts:
+                context_metrics = estimate_context_sensitivity(
+                    model=model,
+                    validation_data=validation_data,
+                    context_size=context_size,
+                    num_contexts=context_sensitivity_contexts,
+                    device=device,
+                )
+                metrics.update(context_metrics)
+                if min_context_js_divergence is not None:
+                    context_gate_failed = (
+                        context_metrics["context_js_divergence"]
+                        < min_context_js_divergence
+                    )
+                    metrics["context_gate_passed"] = not context_gate_failed
+            history.append(metrics)
 
             if print_progress:
                 grad_norm_text = "n/a" if grad_norm is None else f"{grad_norm:.4f}"
@@ -390,10 +433,33 @@ def train_model(
                     ),
                     flush=True,
                 )
+                if context_sensitivity_contexts:
+                    gate_text = "not-set"
+                    if min_context_js_divergence is not None:
+                        gate_text = "failed" if context_gate_failed else "passed"
+                    print(
+                        "context_js={context_js:.2e} "
+                        "context_logit_std={context_logit_std:.2e} "
+                        "context_gate={gate}".format(
+                            context_js=metrics["context_js_divergence"],
+                            context_logit_std=metrics["context_logit_std"],
+                            gate=gate_text,
+                        ),
+                        flush=True,
+                    )
 
             is_best_checkpoint = losses["validation"] < best_validation_loss
             if is_best_checkpoint:
                 best_validation_loss = losses["validation"]
+
+            checkpoint_losses = dict(losses)
+            for metric_name in (
+                "context_js_divergence",
+                "context_logit_std",
+                "context_gate_passed",
+            ):
+                if metric_name in metrics:
+                    checkpoint_losses[metric_name] = metrics[metric_name]
 
             save_checkpoint(
                 checkpoint_path=latest_checkpoint_path,
@@ -401,7 +467,7 @@ def train_model(
                 optimizer=optimizer,
                 model_config=model_config,
                 step=step,
-                losses=losses,
+                losses=checkpoint_losses,
                 tokenizer_config=tokenizer_config,
                 training_config=training_config,
                 best_validation_loss=best_validation_loss,
@@ -414,10 +480,18 @@ def train_model(
                     optimizer=optimizer,
                     model_config=model_config,
                     step=step,
-                    losses=losses,
+                    losses=checkpoint_losses,
                     tokenizer_config=tokenizer_config,
                     training_config=training_config,
                     best_validation_loss=best_validation_loss,
+                )
+
+            if context_gate_failed and stop_on_low_context_sensitivity:
+                raise RuntimeError(
+                    "Context-sensitivity gate failed at step "
+                    f"{step}: measured {metrics['context_js_divergence']:.2e}, "
+                    "which is below --min-context-js-divergence "
+                    f"{min_context_js_divergence:.2e}."
                 )
 
     return history, best_checkpoint_path
@@ -468,6 +542,9 @@ def parse_args():
     parser.add_argument("--gradient-clip", type=float, default=1.0)
     parser.add_argument("--no-gradient-clip", action="store_true")
     parser.add_argument("--gradient-accumulation-steps", type=int, default=4)
+    parser.add_argument("--context-sensitivity-contexts", type=int, default=0)
+    parser.add_argument("--min-context-js-divergence", type=float, default=None)
+    parser.add_argument("--stop-on-low-context-sensitivity", action="store_true")
 
     parser.add_argument("--compile-model", action="store_true")
     parser.add_argument("--mixed-precision", action="store_true")
@@ -542,6 +619,9 @@ def main():
             weight_decay=args.weight_decay,
             gradient_clip=None if args.no_gradient_clip else args.gradient_clip,
             gradient_accumulation_steps=args.gradient_accumulation_steps,
+            context_sensitivity_contexts=args.context_sensitivity_contexts,
+            min_context_js_divergence=args.min_context_js_divergence,
+            stop_on_low_context_sensitivity=args.stop_on_low_context_sensitivity,
             resume_from_checkpoint=args.resume_checkpoint_path is not None,
             compile_model=args.compile_model,
             mixed_precision=args.mixed_precision,
@@ -601,6 +681,11 @@ def main():
         decay_steps=training_config.decay_steps,
         gradient_clip=training_config.gradient_clip,
         gradient_accumulation_steps=training_config.gradient_accumulation_steps,
+        context_sensitivity_contexts=training_config.context_sensitivity_contexts,
+        min_context_js_divergence=training_config.min_context_js_divergence,
+        stop_on_low_context_sensitivity=(
+            training_config.stop_on_low_context_sensitivity
+        ),
         resume_checkpoint_path=args.resume_checkpoint_path,
         training_config=training_config.to_checkpoint_dict(),
         mixed_precision=training_config.mixed_precision,
