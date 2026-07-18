@@ -219,6 +219,7 @@ def train_model(
     gradient_accumulation_steps=1,
     context_sensitivity_contexts=0,
     min_context_js_divergence=None,
+    context_gate_start_step=0,
     stop_on_low_context_sensitivity=False,
     resume_checkpoint_path=None,
     training_config=None,
@@ -261,6 +262,9 @@ def train_model(
         raise ValueError(
             "min_context_js_divergence must be greater than 0 when set."
         )
+
+    if context_gate_start_step < 0:
+        raise ValueError("context_gate_start_step cannot be negative.")
 
     if (
         min_context_js_divergence is not None
@@ -403,11 +407,16 @@ def train_model(
                 )
                 metrics.update(context_metrics)
                 if min_context_js_divergence is not None:
+                    context_gate_active = step >= context_gate_start_step
                     context_gate_failed = (
-                        context_metrics["context_js_divergence"]
+                        context_gate_active
+                        and context_metrics["context_js_divergence"]
                         < min_context_js_divergence
                     )
-                    metrics["context_gate_passed"] = not context_gate_failed
+                    metrics["context_gate_active"] = context_gate_active
+                    metrics["context_gate_passed"] = (
+                        None if not context_gate_active else not context_gate_failed
+                    )
             history.append(metrics)
 
             if print_progress:
@@ -436,7 +445,10 @@ def train_model(
                 if context_sensitivity_contexts:
                     gate_text = "not-set"
                     if min_context_js_divergence is not None:
-                        gate_text = "failed" if context_gate_failed else "passed"
+                        if not metrics["context_gate_active"]:
+                            gate_text = f"deferred-until-step-{context_gate_start_step}"
+                        else:
+                            gate_text = "failed" if context_gate_failed else "passed"
                     print(
                         "context_js={context_js:.2e} "
                         "context_logit_std={context_logit_std:.2e} "
@@ -456,6 +468,7 @@ def train_model(
             for metric_name in (
                 "context_js_divergence",
                 "context_logit_std",
+                "context_gate_active",
                 "context_gate_passed",
             ):
                 if metric_name in metrics:
@@ -544,6 +557,7 @@ def parse_args():
     parser.add_argument("--gradient-accumulation-steps", type=int, default=4)
     parser.add_argument("--context-sensitivity-contexts", type=int, default=0)
     parser.add_argument("--min-context-js-divergence", type=float, default=None)
+    parser.add_argument("--context-gate-start-step", type=int, default=None)
     parser.add_argument("--stop-on-low-context-sensitivity", action="store_true")
 
     parser.add_argument("--compile-model", action="store_true")
@@ -597,6 +611,12 @@ def main():
         )
         if args.training_steps is not None:
             training_config.training_steps = args.training_steps
+        if args.min_context_js_divergence is not None:
+            training_config.min_context_js_divergence = (
+                args.min_context_js_divergence
+            )
+        if args.context_gate_start_step is not None:
+            training_config.context_gate_start_step = args.context_gate_start_step
         training_config.resume_from_checkpoint = True
         training_config.compile_model = args.compile_model
         if args.mixed_precision:
@@ -621,6 +641,11 @@ def main():
             gradient_accumulation_steps=args.gradient_accumulation_steps,
             context_sensitivity_contexts=args.context_sensitivity_contexts,
             min_context_js_divergence=args.min_context_js_divergence,
+            context_gate_start_step=(
+                0
+                if args.context_gate_start_step is None
+                else args.context_gate_start_step
+            ),
             stop_on_low_context_sensitivity=args.stop_on_low_context_sensitivity,
             resume_from_checkpoint=args.resume_checkpoint_path is not None,
             compile_model=args.compile_model,
@@ -683,6 +708,7 @@ def main():
         gradient_accumulation_steps=training_config.gradient_accumulation_steps,
         context_sensitivity_contexts=training_config.context_sensitivity_contexts,
         min_context_js_divergence=training_config.min_context_js_divergence,
+        context_gate_start_step=training_config.context_gate_start_step,
         stop_on_low_context_sensitivity=(
             training_config.stop_on_low_context_sensitivity
         ),

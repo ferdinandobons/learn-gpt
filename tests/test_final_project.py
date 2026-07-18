@@ -303,6 +303,48 @@ class ContextSensitivityTests(unittest.TestCase):
                     device="cpu",
                 )
 
+    def test_context_gate_is_deferred_until_the_configured_step(self):
+        torch.manual_seed(123)
+        config = make_model_config(vocabulary_size=32)
+        model = LanguageModel(**config.to_model_kwargs())
+        optimizer = configure_optimizer(
+            model,
+            learning_rate=1e-3,
+            weight_decay=0.1,
+            device="cpu",
+        )
+        training_data = np.arange(512, dtype=np.int64) % config.vocabulary_size
+        validation_data = np.arange(256, dtype=np.int64) % config.vocabulary_size
+
+        with tempfile.TemporaryDirectory() as temporary_dir:
+            history, _ = train_model(
+                model=model,
+                optimizer=optimizer,
+                training_data=training_data,
+                validation_data=validation_data,
+                batch_size=2,
+                context_size=config.context_size,
+                training_steps=1,
+                eval_interval=1,
+                eval_batches=1,
+                checkpoint_path=Path(temporary_dir) / "best.pt",
+                model_config=config.to_checkpoint_dict(),
+                tokenizer_config={"encoding_name": "gpt2"},
+                base_learning_rate=1e-3,
+                min_learning_rate=1e-4,
+                warmup_steps=0,
+                decay_steps=1,
+                gradient_clip=1.0,
+                context_sensitivity_contexts=2,
+                min_context_js_divergence=100.0,
+                context_gate_start_step=2,
+                stop_on_low_context_sensitivity=True,
+                device="cpu",
+            )
+
+        self.assertFalse(history[-1]["context_gate_active"])
+        self.assertIsNone(history[-1]["context_gate_passed"])
+
 
 class CheckpointTests(unittest.TestCase):
     def test_compiled_checkpoint_uses_canonical_model_keys(self):

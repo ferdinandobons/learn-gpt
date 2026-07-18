@@ -329,15 +329,19 @@ caffeinate -i .venv/bin/python -B -m final_project.training \
   --weight-decay 0.05 \
   --gradient-clip 1.0 \
   --context-sensitivity-contexts 8 \
-  --min-context-js-divergence 1e-4 \
+  --min-context-js-divergence 1e-5 \
+  --context-gate-start-step 1000 \
   --stop-on-low-context-sensitivity
 ```
 
 `context_js` measures how differently the model distributes next-token
 probability across eight fixed validation contexts. It is an anti-collapse
-signal, not a text-quality score: a value below `1e-4` stops the run after
-writing its latest checkpoint. The original collapsed checkpoint measured about
-`2e-6`; a fresh model measured about `2e-2`.
+signal, not a text-quality score. The metric is recorded immediately, but the
+gate is deferred until the 1,000-step warm-up is complete. From that point, a
+value below `1e-5` stops the run after writing its latest checkpoint. The
+original collapsed checkpoint measured about `2e-6`; a fresh model measured
+about `2e-2`. An early healthy-but-untrained checkpoint measured about `4e-5`,
+which is why `1e-4` was too aggressive during warm-up.
 
 With GPT-style initialization, the first loss should be close to `ln(50257)`,
 approximately `10.82`, rather than tens or hundreds. After the probe, generate

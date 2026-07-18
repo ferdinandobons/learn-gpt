@@ -12302,8 +12302,11 @@ flowchart LR
 `context_js` confronta la distribuzione del prossimo token su otto contesti di
 validation fissi. Non misura se il testo è già bello, ma intercetta un collasso:
 se il modello dà quasi la stessa risposta a contesti diversi, il valore è molto
-basso. Il checkpoint collassato misurava circa `2e-6`; il gate sperimentale
-ferma il run sotto `1e-4`, dopo aver salvato il checkpoint latest per l'analisi.
+basso. Il checkpoint collassato misurava circa `2e-6`; un checkpoint ancora
+immaturo ma non collassato misurava circa `4e-5` allo step 500. Per evitare un
+falso stop durante il warm-up, la metrica viene registrata da subito ma il gate
+si attiva allo step 1.000. Da quel momento ferma il run sotto `1e-5`, dopo aver
+salvato il checkpoint latest per l'analisi.
 
 La ricetta iniziale è deliberatamente prudente: `dropout=0`, learning rate
 massimo `1e-4`, warm-up di 1.000 step, weight decay `0.05` e clipping a `1.0`.

@@ -96,6 +96,7 @@ class TrainingConfig:
     gradient_accumulation_steps: int = 1
     context_sensitivity_contexts: int = 0
     min_context_js_divergence: float | None = None
+    context_gate_start_step: int = 0
     stop_on_low_context_sensitivity: bool = False
     resume_from_checkpoint: bool = False
     compile_model: bool = False
@@ -159,6 +160,9 @@ class TrainingConfig:
             raise ValueError(
                 "min_context_js_divergence must be greater than 0 when set."
             )
+
+        if self.context_gate_start_step < 0:
+            raise ValueError("context_gate_start_step cannot be negative.")
 
         if (
             self.stop_on_low_context_sensitivity

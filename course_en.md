@@ -10665,8 +10665,11 @@ flowchart LR
 `context_js` compares the next-token distribution across eight fixed validation
 contexts. It is not a prose-quality score; it detects collapse. If the model
 answers unrelated contexts almost identically, the value becomes very small.
-The collapsed checkpoint measured about `2e-6`; the experimental gate stops a
-run below `1e-4` after preserving its latest checkpoint for inspection.
+The collapsed checkpoint measured about `2e-6`; an immature but non-collapsed
+checkpoint measured about `4e-5` at step 500. To avoid a false stop during
+warm-up, the metric is recorded immediately but the gate becomes active at step
+1,000. From that point it stops a run below `1e-5`, after preserving the latest
+checkpoint for inspection.
 
 The initial recipe is intentionally conservative: `dropout=0`, maximum learning
 rate `1e-4`, 1,000 warm-up steps, `0.05` weight decay, and gradient clipping at
