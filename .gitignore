@@ -4,8 +4,6 @@ __pycache__/
 .venv/
 .pytest_cache/
 
-guidance.md
-
 data/raw/*
 data/processed/*
 !data/README.md

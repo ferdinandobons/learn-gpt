@@ -2,11 +2,11 @@
 Changes compared with the previous files:
 - This is not a lesson file and does not add model code.
 - It validates the English public structure of `LearnGPT`.
-- It no longer requires `guidance.md`, which is intentionally local-only.
+- It requires one English course and rejects retired Italian guides.
 
 File purpose:
-- Check that `course_it.md`, `course_en.md`, `study/lessons`,
-  `study/snapshots`, `final_project`, `tools`, and `data` stay consistent.
+- Check that `course_en.md`, `study/lessons`, `study/snapshots`,
+  `final_project`, `tools`, and `data` stay consistent.
 - Prevent a lesson from importing project code from another lesson snapshot.
 - Ensure the course stays focused on explanations and snippets instead of full
   duplicated source files.
@@ -38,7 +38,6 @@ OLD_MODEL_NAMES = {
 EXPECTED_ROOT_ENTRIES = {
     "README.md",
     "course_en.md",
-    "course_it.md",
     "data",
     "final_project",
     "study",
@@ -48,7 +47,6 @@ EXPECTED_ROOT_ENTRIES = {
 
 ALLOWED_LOCAL_ROOT_ENTRIES = {
     "checkpoints",
-    "guidance.md",
     "runs",
 }
 
@@ -124,6 +122,15 @@ ITALIAN_CODE_MARKERS = {
     "non può",
     "non è",
 }
+
+ITALIAN_COURSE_PATTERN = re.compile(
+    r"\b(?:aggiornati|causale|codice|configurazione|contesto|corso|dati|"
+    r"deve|devono|dopo|durante|esempio|esempi|lezione|lezioni|maschera|"
+    r"migliore|modello|nuovo|ogni|opzionale|perché|poi|posizione|"
+    r"preparazione|prima|punteggio|punteggi|quindi|salvato|somma|testo|"
+    r"ultima|ultimo|valore|valori|vettore|vettori)\b",
+    flags=re.IGNORECASE,
+)
 
 IGNORED_SCAN_DIR_NAMES = {
     ".git",
@@ -258,7 +265,6 @@ def check_required_structure(
 def check_markdown_basics(project_dir: Path, errors: list[str]) -> None:
     markdown_files = [
         "README.md",
-        "course_it.md",
         "course_en.md",
         "data/README.md",
         "study/snapshots/README.md",
@@ -285,18 +291,6 @@ def check_markdown_basics(project_dir: Path, errors: list[str]) -> None:
             if reference in text:
                 errors.append(f"{name} still contains legacy reference: {reference}")
 
-    italian_course = read_text(project_dir / "course_it.md")
-    if "## Mappa delle fonti" not in italian_course:
-        errors.append("course_it.md must contain the 'Mappa delle fonti' section")
-    if "## Come eseguire gli script di studio" not in italian_course:
-        errors.append("course_it.md must contain study script instructions")
-    if "## Come usare gli snapshot nello studio" not in italian_course:
-        errors.append("course_it.md must explain study snapshots")
-    if "Codice completo" in italian_course:
-        errors.append("course_it.md must not contain complete code sections")
-    if "PDF" in italian_course or "pdf" in italian_course:
-        errors.append("course_it.md must not reference PDF generation")
-
     english_course = read_text(project_dir / "course_en.md")
     if "## Source Map" not in english_course:
         errors.append("course_en.md must contain the 'Source Map' section")
@@ -309,20 +303,28 @@ def check_markdown_basics(project_dir: Path, errors: list[str]) -> None:
     if "PDF" in english_course or "pdf" in english_course:
         errors.append("course_en.md must not reference PDF generation")
 
+    italian_terms = sorted(
+        {
+            match.group(0).lower()
+            for match in ITALIAN_COURSE_PATTERN.finditer(english_course)
+        }
+    )
+    if italian_terms:
+        errors.append(
+            "course_en.md contains Italian terms: "
+            f"{italian_terms}"
+        )
+
 
 def check_course_index(project_dir: Path, errors: list[str]) -> None:
-    italian_course = read_text(project_dir / "course_it.md")
+    english_course = read_text(project_dir / "course_en.md")
 
     for lesson_number in lesson_numbers_from_study(project_dir):
         lesson = f"{lesson_number:02d}"
-        if f"Lezione {lesson} -" not in italian_course:
-            errors.append(f"course_it.md does not contain index item Lezione {lesson}")
-        if not re.search(rf"^## Lezione {lesson} - ", italian_course, flags=re.MULTILINE):
-            errors.append(f"course_it.md does not contain section ## Lezione {lesson}")
-
-    english_course = read_text(project_dir / "course_en.md")
-    if "Lesson 42 - Final Project" not in english_course:
-        errors.append("course_en.md must contain Lesson 42 - Final Project")
+        if f"Lesson {lesson} -" not in english_course:
+            errors.append(f"course_en.md does not contain index item Lesson {lesson}")
+        if not re.search(rf"^## Lesson {lesson} - ", english_course, flags=re.MULTILINE):
+            errors.append(f"course_en.md does not contain section ## Lesson {lesson}")
 
 
 def check_study_scripts(project_dir: Path, errors: list[str]) -> None:
@@ -409,12 +411,12 @@ def check_models(project_dir: Path, errors: list[str]) -> None:
 
 
 def check_course_lesson_references(project_dir: Path, errors: list[str]) -> None:
-    course = read_text(project_dir / "course_it.md")
+    course = read_text(project_dir / "course_en.md")
     headings = list(re.finditer(r"^## (.+)$", course, flags=re.MULTILINE))
 
     for index, heading in enumerate(headings):
         title = heading.group(1)
-        lesson_match = re.match(r"Lezione (\d{2}) - ", title)
+        lesson_match = re.match(r"Lesson (\d{2}) - ", title)
         if not lesson_match:
             continue
 

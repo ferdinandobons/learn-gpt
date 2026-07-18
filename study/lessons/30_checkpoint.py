@@ -136,7 +136,7 @@ def main():
     generated_ids = loaded_model.generate(prompt_ids, max_new_tokens=GENERATED_TOKENS)
     generated_text = decode(generated_ids[0].tolist(), checkpoint["id_to_char"])
 
-    print("Checkpoint salvato in:")
+    print("Checkpoint saved at:")
     print(saved_path)
     print()
 

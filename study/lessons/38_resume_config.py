@@ -98,7 +98,7 @@ def main():
     print(first_checkpoint_path)
     print("Checkpoint after resume:")
     print(resumed_checkpoint_path)
-    print("Step salvato:")
+    print("Saved step:")
     print(checkpoint["step"])
     print("History of the second run:")
     print(history)

@@ -20,10 +20,9 @@ Tags:
 `apple-silicon`, `mps`, `cuda`, `cpu`, `mixed-precision`, `torch-compile`,
 `machine-learning`, `deep-learning`, `education`, `study-project`.
 
-The course is available in two Markdown versions:
+The course is maintained as one English guide:
 
 - [course_en.md](course_en.md)
-- [course_it.md](course_it.md)
 
 ## What This Project Contains
 
@@ -46,7 +45,6 @@ The course is available in two Markdown versions:
 LearnGPT/
   README.md
   course_en.md
-  course_it.md
 
   data/
     README.md
@@ -308,7 +306,7 @@ run that stops using its context:
 caffeinate -i .venv/bin/python -B -m final_project.training \
   --device mps \
   --data-dir data/processed/fineweb_edu_experiment_1g \
-  --checkpoint-path checkpoints/learngpt-mps-18m-experiment-1g.pt \
+  --checkpoint-path checkpoints/learngpt-mps-18m-fresh-1g.pt \
   --encoding-name gpt2 \
   --seed 1337 \
   --context-size 256 \
@@ -350,8 +348,8 @@ from the best checkpoint and inspect several prompts before extending it.
 Training writes two atomic checkpoints:
 
 ```text
-checkpoints/learngpt-mps-18m-experiment-1g.pt         # best validation loss
-checkpoints/learngpt-mps-18m-experiment-1g-latest.pt  # latest evaluated step
+checkpoints/learngpt-mps-18m-fresh-1g.pt         # best validation loss
+checkpoints/learngpt-mps-18m-fresh-1g-latest.pt  # latest evaluated step
 ```
 
 If the probe keeps passing the context gate and its samples improve, extend the
@@ -361,8 +359,8 @@ same run to the planned 80,000-step total target:
 caffeinate -i .venv/bin/python -B -m final_project.training \
   --device mps \
   --data-dir data/processed/fineweb_edu_experiment_1g \
-  --checkpoint-path checkpoints/learngpt-mps-18m-experiment-1g.pt \
-  --resume-checkpoint-path checkpoints/learngpt-mps-18m-experiment-1g-latest.pt \
+  --checkpoint-path checkpoints/learngpt-mps-18m-fresh-1g.pt \
+  --resume-checkpoint-path checkpoints/learngpt-mps-18m-fresh-1g-latest.pt \
   --training-steps 80000
 ```
 
@@ -375,7 +373,7 @@ Generate:
 ```bash
 .venv/bin/python -B -m final_project.generate \
   --device mps \
-  --checkpoint-path checkpoints/learngpt-mps-18m-experiment-1g.pt \
+  --checkpoint-path checkpoints/learngpt-mps-18m-fresh-1g.pt \
   --prompt "Once upon a time" \
   --max-new-tokens 120 \
   --temperature 0.9 \

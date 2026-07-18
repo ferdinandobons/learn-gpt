@@ -21,7 +21,7 @@ When a new lesson is created:
 2. copy or write only the project files needed by that lesson;
 3. update the import paths in the numbered script under `study/lessons`, for
    example `study/lessons/31_generate.py`;
-4. update `course_it.md` and `course_en.md`;
+4. update `course_en.md`;
 5. update `final_project/` if the final project changes.
 
 Additional rules:

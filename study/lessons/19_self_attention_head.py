@@ -112,7 +112,7 @@ def main():
     print(attention_scores.shape)
     print()
 
-    print("Maschera causale:")
+    print("Causal mask:")
     print(causal_mask)
     print()
 

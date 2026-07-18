@@ -57,7 +57,7 @@ def main():
         input_text = decode(input_tokens, id_to_char)
         target_text = decode(target_tokens, id_to_char)
 
-        print("Esempio", example_number + 1)
+        print("Example", example_number + 1)
         print("Input:")
         print(repr(input_text))
         print("Target:")

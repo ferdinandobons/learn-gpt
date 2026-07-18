@@ -90,35 +90,35 @@ def main():
     print("Final loss after short training:", loss.item())
     print()
 
-    logits_nel = show_prediction(
+    logits_all = show_prediction(
         model=model,
-        prompt="Nel",
+        prompt="all",
         char_to_id=char_to_id,
         id_to_char=id_to_char,
     )
 
-    logits_sol = show_prediction(
+    logits_fall = show_prediction(
         model=model,
-        prompt="sol",
+        prompt="fall",
         char_to_id=char_to_id,
         id_to_char=id_to_char,
     )
 
-    logits_nea = show_prediction(
+    logits_are = show_prediction(
         model=model,
-        prompt="Nea",
+        prompt="are",
         char_to_id=char_to_id,
         id_to_char=id_to_char,
     )
 
-    print("`Nel` e `sol` finiscono entrambi con `l`.")
-    print("I loro punteggi finali sono uguali?")
-    print(torch.allclose(logits_nel, logits_sol))
+    print("`all` and `fall` both end in `l`.")
+    print("Are their final scores identical?")
+    print(torch.allclose(logits_all, logits_fall))
     print()
 
-    print("`Nel` and `Nea` end in different characters.")
-    print("I loro punteggi finali sono uguali?")
-    print(torch.allclose(logits_nel, logits_nea))
+    print("`all` and `are` end in different characters.")
+    print("Are their final scores identical?")
+    print(torch.allclose(logits_all, logits_are))
 
 
 if __name__ == "__main__":

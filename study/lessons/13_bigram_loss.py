@@ -83,7 +83,7 @@ def main():
     print(first_input, repr(decode([first_input], id_to_char)))
     print()
 
-    print("Target corretto per quella posizione:")
+    print("Correct target for that position:")
     print(first_target, repr(decode([first_target], id_to_char)))
     print()
 

@@ -70,12 +70,12 @@ def main():
     print("Length of each example:", len(batch_inputs[0]))
     print()
 
-    for indice in range(BATCH_SIZE):
-        print("Esempio", indice + 1)
+    for example_index in range(BATCH_SIZE):
+        print("Example", example_index + 1)
         print("Input:")
-        print(repr(decode(batch_inputs[indice], id_to_char)))
+        print(repr(decode(batch_inputs[example_index], id_to_char)))
         print("Target:")
-        print(repr(decode(batch_targets[indice], id_to_char)))
+        print(repr(decode(batch_targets[example_index], id_to_char)))
         print()
 
 

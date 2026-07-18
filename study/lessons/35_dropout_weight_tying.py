@@ -139,7 +139,7 @@ def main():
         gradient_clip=GRADIENT_CLIP,
     )
 
-    print("Ultima valutazione:")
+    print("Final evaluation:")
     print(history[-1])
     print()
 

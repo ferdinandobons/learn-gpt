@@ -27,9 +27,9 @@ def create_vocabulary(text):
         char_to_id[char] = token_id
         id_to_char[token_id] = char
     
-    # print(f"Carattere a ID: {char_to_id}")
+    # print(f"Character to ID: {char_to_id}")
     # print("")
-    # print(f"ID a Carattere: {id_to_char}")
+    # print(f"ID to character: {id_to_char}")
 
     return char_to_id, id_to_char
 

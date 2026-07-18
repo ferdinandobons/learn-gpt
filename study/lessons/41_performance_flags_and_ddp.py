@@ -87,13 +87,13 @@ def main():
     print("optimizer groups:", len(optimizer.param_groups))
     print()
 
-    print("Forward verificato:")
+    print("Forward pass verified:")
     print("logits shape:", tuple(logits.shape))
     print("finite loss:", bool(loss.isfinite().item()))
     print()
 
     print("DDP:")
-    print("concetto avanzato per training multi-processo; non viene avviato qui.")
+    print("advanced multi-process training concept; it is not started in this example.")
 
 
 if __name__ == "__main__":
