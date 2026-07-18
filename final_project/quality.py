@@ -50,7 +50,7 @@ def estimate_context_sensitivity(
 
     was_training = model.training
     model.eval()
-    logits = model(input_tensor)[:, -1, :]
+    logits = model(input_tensor)[:, -1, :].float()
     log_probabilities = functional.log_softmax(logits, dim=-1)
     probabilities = log_probabilities.exp()
     mean_probability = probabilities.mean(dim=0)

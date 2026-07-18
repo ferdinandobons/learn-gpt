@@ -17,11 +17,13 @@ from final_project.config import ModelConfig
 from final_project.model import (
     GPT_INITIALIZATION_STD,
     LanguageModel,
+    SelfAttentionHead,
 )
 from final_project.prepare_subset import prepare_subset
 from final_project.quality import estimate_context_sensitivity
 from final_project.training import (
     configure_optimizer,
+    get_learning_rate,
     get_latest_checkpoint_path,
     train_model,
 )
@@ -93,6 +95,88 @@ class ModelInitializationTests(unittest.TestCase):
                 expected_std,
                 delta=0.002,
             )
+
+
+class NanoGPTArchitectureTests(unittest.TestCase):
+    def test_token_embedding_and_output_head_share_weights(self):
+        config = make_model_config()
+        model = LanguageModel(**config.to_model_kwargs())
+
+        self.assertIs(model.output_head.weight, model.token_embedding_table.weight)
+
+    def test_future_tokens_do_not_change_earlier_logits(self):
+        torch.manual_seed(123)
+        config = make_model_config()
+        model = LanguageModel(**config.to_model_kwargs())
+        model.eval()
+        shared_prefix = torch.tensor([[1, 2, 3, 4]], dtype=torch.long)
+        first_input = torch.cat(
+            (shared_prefix, torch.tensor([[5, 6, 7, 8]], dtype=torch.long)),
+            dim=1,
+        )
+        second_input = torch.cat(
+            (shared_prefix, torch.tensor([[9, 10, 11, 12]], dtype=torch.long)),
+            dim=1,
+        )
+
+        with torch.no_grad():
+            first_logits, _ = model(first_input, first_input)
+            second_logits, _ = model(second_input, second_input)
+
+        self.assertTrue(
+            torch.allclose(
+                first_logits[:, : shared_prefix.shape[1]],
+                second_logits[:, : shared_prefix.shape[1]],
+                atol=1e-6,
+                rtol=1e-5,
+            )
+        )
+
+    def test_manual_and_scaled_dot_product_attention_match_in_eval(self):
+        torch.manual_seed(123)
+        manual = SelfAttentionHead(
+            embedding_size=32,
+            head_size=8,
+            context_size=8,
+            dropout=0.0,
+            use_scaled_dot_product_attention=False,
+        )
+        optimized = SelfAttentionHead(
+            embedding_size=32,
+            head_size=8,
+            context_size=8,
+            dropout=0.0,
+            use_scaled_dot_product_attention=True,
+        )
+        optimized.load_state_dict(manual.state_dict())
+        manual.eval()
+        optimized.eval()
+        embeddings = torch.randn(2, 8, 32)
+
+        with torch.no_grad():
+            manual_output, _ = manual(embeddings)
+            optimized_output, _ = optimized(embeddings)
+
+        self.assertTrue(
+            torch.allclose(manual_output, optimized_output, atol=1e-6, rtol=1e-5)
+        )
+
+    def test_learning_rate_uses_warmup_cosine_decay_and_minimum(self):
+        settings = {
+            "base_learning_rate": 1e-3,
+            "min_learning_rate": 1e-4,
+            "warmup_steps": 10,
+            "decay_steps": 100,
+        }
+
+        self.assertEqual(get_learning_rate(step=0, **settings), 0.0)
+        self.assertAlmostEqual(get_learning_rate(step=10, **settings), 1e-3)
+        self.assertGreater(
+            get_learning_rate(step=50, **settings),
+            get_learning_rate(step=90, **settings),
+        )
+        self.assertAlmostEqual(get_learning_rate(step=100, **settings), 1e-4)
+        self.assertAlmostEqual(get_learning_rate(step=101, **settings), 1e-4)
 
 
 class DatasetValidationTests(unittest.TestCase):

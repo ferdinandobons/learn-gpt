@@ -45,7 +45,9 @@ def main():
     model_config = ModelConfig(
         vocabulary_size=get_vocabulary_size(DEFAULT_ENCODING_NAME),
     )
-    training_config = TrainingConfig()
+    training_config = TrainingConfig(
+        context_sensitivity_contexts=2,
+    )
     generation_config = GenerationConfig()
 
     model = LanguageModel(**model_config.to_model_kwargs()).to(device)
@@ -79,6 +81,7 @@ def main():
         decay_steps=training_config.decay_steps,
         gradient_clip=training_config.gradient_clip,
         gradient_accumulation_steps=training_config.gradient_accumulation_steps,
+        context_sensitivity_contexts=training_config.context_sensitivity_contexts,
         training_config=training_config.to_checkpoint_dict(),
         mixed_precision=training_config.mixed_precision,
         precision_dtype=training_config.precision_dtype,
@@ -98,8 +101,9 @@ def main():
 
     print("Verified final modules:")
     print(
-        "config.py, prepare_data.py, tokenizer.py, batching.py, device.py, "
-        "model.py, training.py, checkpoint.py, generate.py"
+        "config.py, prepare_data.py, prepare_subset.py, tokenizer.py, "
+        "batching.py, device.py, model.py, training.py, checkpoint.py, "
+        "quality.py, generate.py"
     )
     print()
 
@@ -109,6 +113,10 @@ def main():
 
     print("Best observed validation loss:")
     print(round(best_validation, 4))
+    print()
+
+    print("Last context JS divergence:")
+    print(f"{history[-1]['context_js_divergence']:.2e}")
     print()
 
     torch.manual_seed(123)

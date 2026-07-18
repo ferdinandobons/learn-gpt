@@ -85,7 +85,7 @@ def main():
 
     print("Gradient accumulation steps:")
     print(GRADIENT_ACCUMULATION_STEPS)
-    print("Batch effettivo:")
+    print("Effective batch size:")
     print(BATCH_SIZE * GRADIENT_ACCUMULATION_STEPS)
     print("Checkpoint:")
     print(best_checkpoint_path)

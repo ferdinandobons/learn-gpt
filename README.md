@@ -500,7 +500,8 @@ instead of committing `.pt`, `.pth`, or `.ckpt` files to the repository.
 
 ## Relationship To nanoGPT
 
-LearnGPT follows the broad nanoGPT direction:
+LearnGPT follows the local `../nanoGPT` implementation as its architectural
+and training reference:
 
 - decoder-only Transformer architecture
 - learned token and position embeddings
@@ -509,10 +510,15 @@ LearnGPT follows the broad nanoGPT direction:
 - pre-LayerNorm Transformer blocks
 - residual connections
 - MLP/feed-forward blocks with GELU
+- tied token-embedding and output weights with GPT-style initialization
 - AdamW training
-- checkpointing and autoregressive generation
+- gradient accumulation, clipping, warmup, and cosine learning-rate decay
+- train/validation evaluation, checkpointing, and autoregressive generation
 
-The main difference is educational structure. nanoGPT is compact and optimized
-for people who already know the moving parts. LearnGPT keeps names and steps
-more verbose so the reader can inspect how each tensor shape and training step
-fits into the complete model.
+The main difference is educational structure. nanoGPT batches Q/K/V into one
+projection and includes production-oriented features such as real DDP, MFU
+reporting, and pretrained GPT-2 import. LearnGPT uses separate Q/K/V projections
+and verbose names so every tensor shape is inspectable. It keeps mixed precision
+and `torch.compile` optional, explains DDP without launching it, and adds
+reproducible FineWeb-Edu subsets plus a context-sensitivity quality gate for
+compute-bounded local experiments.

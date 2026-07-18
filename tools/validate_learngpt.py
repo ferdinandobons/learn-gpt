@@ -109,8 +109,12 @@ FORBIDDEN_PUBLIC_REFERENCES = {
 }
 
 ITALIAN_CODE_MARKERS = {
+    "Batch creato",
     "Differenza rispetto",
+    "Gruppi dell'optimizer",
     "Scopo del file",
+    "Weight tying attivo",
+    "Batch effettivo",
     "Prima ",
     "Qui ",
     "Questa ",

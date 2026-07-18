@@ -56,12 +56,12 @@ def main():
         weight_decay=WEIGHT_DECAY,
     )
 
-    print("Batch creato dall'unica finestra valida:")
+    print("Batch created from the only valid window:")
     print("input_tensor shape:", tuple(input_tensor.shape))
     print("target_tensor shape:", tuple(target_tensor.shape))
     print()
 
-    print("Gruppi dell'optimizer:")
+    print("Optimizer groups:")
     for index, parameter_group in enumerate(optimizer.param_groups):
         parameter_count = sum(
             parameter.numel()

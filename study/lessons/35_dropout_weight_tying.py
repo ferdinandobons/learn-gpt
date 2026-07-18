@@ -106,7 +106,7 @@ def main():
     eval_logits_b = model(input_tensor)
     eval_difference = torch.sum(torch.abs(eval_logits_a - eval_logits_b)).item()
 
-    print("Weight tying attivo:")
+    print("Weight tying enabled:")
     print(model.output_head.weight is model.token_embedding_table.weight)
     print()
 
