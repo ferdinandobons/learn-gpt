@@ -36,8 +36,9 @@ The course is maintained as one English guide:
 - CPU, CUDA, and Apple Silicon MPS device selection.
 - AdamW optimizer groups, gradient accumulation, learning-rate scheduling,
   gradient clipping, GPT-style initialization, atomic best/latest checkpoints,
-  resume support, context-sensitivity quality gates, optional mixed precision,
-  and optional `torch.compile`.
+  resume support, chunked vocabulary projection, MPS gradient-integrity checks,
+  target-aware context diagnostics, optional mixed precision, and optional
+  `torch.compile`.
 
 ## Project Layout
 
@@ -128,7 +129,8 @@ the complete code state for that lesson.
 
 For most local study runs, `python -m pip install -r final_project/requirements.txt`
 is enough. For real training, install the PyTorch build that matches your
-hardware first, then install the remaining project dependencies.
+hardware first, then install the remaining project dependencies. The
+requirements file pins the exact versions used by the verified run.
 
 Use the official [PyTorch install selector](https://pytorch.org/get-started/locally/)
 when you need the latest backend-specific command.
@@ -136,11 +138,11 @@ when you need the latest backend-specific command.
 <details>
 <summary>Apple Silicon MPS PyTorch install</summary>
 
-On macOS with Apple Silicon, install the standard macOS wheel:
+On macOS with Apple Silicon, install the tested standard macOS wheel and the
+remaining pinned dependencies:
 
 ```bash
-python -m pip install torch
-python -m pip install datasets numpy tiktoken
+python -m pip install -r final_project/requirements.txt
 ```
 
 Verify MPS from a normal Terminal session:
@@ -279,10 +281,8 @@ python -m final_project.generate \
 
 ### Controlled real training on an 8 GB Apple Silicon Mac
 
-Do not train the 17.7M model for 45,000 steps directly on the complete 10 GiB
-corpus. That budget sees only about 7% of its 5.3B training tokens and can
-converge to an almost context-free frequency model. Keep the full corpus as the
-canonical source and create a separate, reproducible 1 GiB experiment:
+Keep the complete processed corpus as the canonical source and create a
+separate, reproducible 1 GiB experiment for this compute-bounded run:
 
 ```bash
 .venv/bin/python -B -m final_project.prepare_subset \
@@ -298,15 +298,44 @@ The command only reads `fineweb_edu` and writes a new 1 GiB local dataset. It
 selects non-overlapping token chunks in a deterministic order, so the same
 source dataset and seed reproduce the same experiment.
 
-First run a 10,000-step quality probe. The architecture stays small enough for
-the Mac, while the optimization is more conservative and the gate stops a
-run that stops using its context:
+#### Why the previous MPS run failed
+
+The failure was in the backward pass, not in FineWeb-Edu or tokenization. Two
+MPS problems contributed. The monolithic `256 -> 50257` vocabulary projection
+returned a wrong hidden-state gradient direction even when its forward loss was
+correct. Separately, `optimizer.zero_grad(set_to_none=True)` made MPS allocate
+new leaf-gradient buffers and intermittently produced enormous gradients.
+Clipping those gradients to `1.0` limited their size but could not repair their
+direction, so the model drifted toward nearly the same high-frequency
+distribution for every prompt.
+
+The corrected path now:
+
+- projects the 50,257-token vocabulary in chunks of at most 32,768 entries;
+- allocates persistent MPS gradient buffers and clears them in place;
+- performs a discarded warm-up backward pass before training;
+- requires two identical MPS backward passes to agree with each other and with
+  a CPU reference before the first optimizer update;
+- rejects a raw gradient norm above `100`, retries the exact same batches up to
+  three times, and stops without applying an update if every attempt fails.
+
+Do not resume one of the checkpoints produced by the affected training path.
+Gradient clipping hid the corruption inside their learned weights, so there is
+no reliable way to repair them. Start from random initialization with a new,
+previously unused checkpoint path.
+
+#### Complete 45,000-step run
+
+This is the single controlled command for the 17.7M-parameter model. At batch
+size 4, context 256, and eight accumulated micro-batches, it processes 8,192
+tokens per optimizer step and about 368.6 million token positions in 45,000
+steps:
 
 ```bash
 caffeinate -i .venv/bin/python -B -m final_project.training \
   --device mps \
   --data-dir data/processed/fineweb_edu_experiment_1g \
-  --checkpoint-path checkpoints/learngpt-mps-18m-fresh-1g.pt \
+  --checkpoint-path checkpoints/learngpt-mps-18m-stable-1g.pt \
   --encoding-name gpt2 \
   --seed 1337 \
   --context-size 256 \
@@ -315,70 +344,90 @@ caffeinate -i .venv/bin/python -B -m final_project.training \
   --num-transformer-blocks 6 \
   --dropout 0.0 \
   --use-scaled-dot-product-attention \
+  --output-chunk-size 32768 \
   --batch-size 4 \
   --gradient-accumulation-steps 8 \
-  --training-steps 10000 \
+  --training-steps 45000 \
   --eval-interval 250 \
   --eval-batches 20 \
-  --base-learning-rate 1e-4 \
-  --min-learning-rate 1e-5 \
+  --base-learning-rate 3e-4 \
+  --min-learning-rate 3e-5 \
   --warmup-steps 1000 \
-  --decay-steps 80000 \
+  --decay-steps 45000 \
   --weight-decay 0.05 \
   --gradient-clip 1.0 \
-  --context-sensitivity-contexts 8 \
-  --min-context-js-divergence 1e-5 \
-  --context-gate-start-step 1000 \
-  --stop-on-low-context-sensitivity
+  --max-grad-norm-before-clip 100 \
+  --gradient-retry-attempts 3 \
+  --context-sensitivity-contexts 32
 ```
 
-`context_js` measures how differently the model distributes next-token
-probability across eight fixed validation contexts. It is an anti-collapse
-signal, not a text-quality score. The metric is recorded immediately, but the
-gate is deferred until the 1,000-step warm-up is complete. From that point, a
-value below `1e-5` stops the run after writing its latest checkpoint. The
-original collapsed checkpoint measured about `2e-6`; a fresh model measured
-about `2e-2`. An early healthy-but-untrained checkpoint measured about `4e-5`,
-which is why `1e-4` was too aggressive during warm-up.
+Do not add `--mixed-precision` or `--compile-model` to this MPS recipe. They are
+optional features for other backends, not part of the verified path.
+
+At startup, training runs the MPS repeatability and CPU-parity self-check. It
+will stop before step 1 if the gradients do not agree. During training,
+`grad_norm` is the raw norm measured before clipping; `grad_retries=0` is the
+normal result. A persistent integrity failure aborts the run before the
+optimizer can consume the bad gradient.
+
+A real 100-step MPS integration run of this architecture and dataset passed
+the startup parity check, used zero retries, reduced validation loss from
+`10.834` to `7.697`, reduced the raw gradient norm from `4.238` to `0.773`, and
+finished with `context_loss_gain=+0.378` at about 4,111 tokens per second.
+
+`context_js` remains an observational measure of how much the output
+distribution varies across contexts. A value near zero early in training is
+not, by itself, a failure: a new model normally learns broad token frequencies
+before it learns useful context. `context_loss_gain` is target-aware and equals
+the loss with shuffled contexts minus the loss with the correct contexts. A
+positive trend means the real contexts help predict their next tokens; a value
+near zero during the early phase is expected. Neither metric is used as a
+premature hard gate.
 
 With GPT-style initialization, the first loss should be close to `ln(50257)`,
-approximately `10.82`, rather than tens or hundreds. After the probe, generate
-from the best checkpoint and inspect several prompts before extending it.
+approximately `10.82`, rather than tens or hundreds. Loss should then trend
+down over many evaluations; individual validation points can still fluctuate.
+
+No artificial delay is needed between steps. `caffeinate` prevents sleep and
+macOS already manages thermal throttling. Keep the Mac on a hard surface with
+clear airflow and stop only if macOS reports sustained thermal or memory
+pressure.
 
 Training writes two atomic checkpoints:
 
 ```text
-checkpoints/learngpt-mps-18m-fresh-1g.pt         # best validation loss
-checkpoints/learngpt-mps-18m-fresh-1g-latest.pt  # latest evaluated step
+checkpoints/learngpt-mps-18m-stable-1g.pt         # best validation loss
+checkpoints/learngpt-mps-18m-stable-1g-latest.pt  # latest evaluated step
 ```
 
-If the probe keeps passing the context gate and its samples improve, extend the
-same run to the planned 80,000-step total target:
+If the terminal or Mac is interrupted, resume only this new, verified run. The
+step count remains the total target, not 45,000 additional steps:
 
 ```bash
 caffeinate -i .venv/bin/python -B -m final_project.training \
   --device mps \
   --data-dir data/processed/fineweb_edu_experiment_1g \
-  --checkpoint-path checkpoints/learngpt-mps-18m-fresh-1g.pt \
-  --resume-checkpoint-path checkpoints/learngpt-mps-18m-fresh-1g-latest.pt \
-  --training-steps 80000
+  --checkpoint-path checkpoints/learngpt-mps-18m-stable-1g.pt \
+  --resume-checkpoint-path checkpoints/learngpt-mps-18m-stable-1g-latest.pt \
+  --training-steps 45000
 ```
-
-Resume restores the saved model, tokenizer, optimizer, random-number state,
-architecture, and training configuration. Pass a larger `--training-steps`
-only when intentionally extending the total target.
 
 Generate:
 
 ```bash
 .venv/bin/python -B -m final_project.generate \
   --device mps \
-  --checkpoint-path checkpoints/learngpt-mps-18m-fresh-1g.pt \
+  --checkpoint-path checkpoints/learngpt-mps-18m-stable-1g.pt \
   --prompt "Once upon a time" \
   --max-new-tokens 120 \
   --temperature 0.9 \
   --top-k 50
 ```
+
+This run trains a small base language model. Its job is to continue prompts in
+plausible English; it is not yet an instruction-following assistant and will
+not reliably answer questions. Assistant-style behavior requires a later
+instruction-tuning stage on prompt-response examples.
 
 If MPS is not available in the current PyTorch runtime, fix the PyTorch/macOS
 environment before training with `--device mps`.
@@ -488,9 +537,10 @@ python -m final_project.generate \
 
 </details>
 
-The training CLI prints the selected device, dataset size, model config,
-training config, validation loss, learning rate, gradient norm, tokens per
-second, and estimated remaining time.
+The training CLI prints the Python and PyTorch runtime, selected device,
+dataset size, model and training configuration, validation loss, learning
+rate, raw pre-clipping gradient norm, retry count, target-aware context
+diagnostics, tokens per second, and estimated remaining time.
 
 ## Publishing Checkpoints
 
@@ -520,5 +570,5 @@ projection and includes production-oriented features such as real DDP, MFU
 reporting, and pretrained GPT-2 import. LearnGPT uses separate Q/K/V projections
 and verbose names so every tensor shape is inspectable. It keeps mixed precision
 and `torch.compile` optional, explains DDP without launching it, and adds
-reproducible FineWeb-Edu subsets plus a context-sensitivity quality gate for
-compute-bounded local experiments.
+reproducible FineWeb-Edu subsets, MPS gradient-integrity checks, and target-aware
+context diagnostics for compute-bounded local experiments.

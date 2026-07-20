@@ -87,6 +87,7 @@ def save_checkpoint(
     tokenizer_config,
     training_config=None,
     best_validation_loss=None,
+    runtime_metadata=None,
 ):
     checkpoint_path = Path(checkpoint_path)
     checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
@@ -101,6 +102,7 @@ def save_checkpoint(
         "training_config": training_config,
         "best_validation_loss": best_validation_loss,
         "rng_state": capture_rng_state(),
+        "runtime": runtime_metadata or {"torch_version": str(torch.__version__)},
     }
 
     temporary_path = checkpoint_path.with_name(f".{checkpoint_path.name}.tmp")

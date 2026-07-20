@@ -13,6 +13,7 @@ from pathlib import Path
 import torch
 
 from .checkpoint import canonicalize_model_state_dict, load_checkpoint_payload
+from .config import ModelConfig
 from .device import get_default_device, resolve_device
 from .model import LanguageModel
 from .tokenizer import DEFAULT_ENCODING_NAME, decode, encode
@@ -22,7 +23,8 @@ def load_model_from_checkpoint(checkpoint_path, device=None, compile_model=False
     device = device or get_default_device()
     checkpoint = load_checkpoint_payload(checkpoint_path, device="cpu")
 
-    model = LanguageModel(**checkpoint["model_config"])
+    model_config = ModelConfig.from_checkpoint_dict(checkpoint["model_config"])
+    model = LanguageModel(**model_config.to_model_kwargs())
     model.load_state_dict(
         canonicalize_model_state_dict(checkpoint["model_state_dict"])
     )

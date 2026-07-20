@@ -18,8 +18,10 @@ class ModelConfig:
     num_heads: int = 4
     num_transformer_blocks: int = 2
     dropout: float = 0.1
+    bias: bool = True
     tie_weights: bool = True
     use_scaled_dot_product_attention: bool = False
+    output_chunk_size: int = 32768
 
     def __post_init__(self):
         if self.vocabulary_size < 1:
@@ -43,6 +45,9 @@ class ModelConfig:
         if not 0.0 <= self.dropout <= 1.0:
             raise ValueError("dropout must be between 0.0 and 1.0.")
 
+        if self.output_chunk_size < 0:
+            raise ValueError("output_chunk_size cannot be negative.")
+
     @property
     def head_size(self):
         return self.embedding_size // self.num_heads
@@ -65,11 +70,14 @@ class ModelConfig:
             num_heads=payload.get("num_heads", 4),
             num_transformer_blocks=payload.get("num_transformer_blocks", 2),
             dropout=payload.get("dropout", 0.1),
+            # Checkpoints written before this field existed used biases.
+            bias=payload.get("bias", True),
             tie_weights=payload.get("tie_weights", True),
             use_scaled_dot_product_attention=payload.get(
                 "use_scaled_dot_product_attention",
                 False,
             ),
+            output_chunk_size=payload.get("output_chunk_size", 32768),
         )
         saved_head_size = payload.get("head_size")
         if saved_head_size is not None and saved_head_size != config.head_size:
@@ -93,11 +101,10 @@ class TrainingConfig:
     decay_steps: int = 10
     weight_decay: float = 0.01
     gradient_clip: float | None = 1.0
+    max_grad_norm_before_clip: float | None = None
+    gradient_retry_attempts: int = 0
     gradient_accumulation_steps: int = 1
     context_sensitivity_contexts: int = 0
-    min_context_js_divergence: float | None = None
-    context_gate_start_step: int = 0
-    stop_on_low_context_sensitivity: bool = False
     resume_from_checkpoint: bool = False
     compile_model: bool = False
     mixed_precision: bool = False
@@ -142,6 +149,25 @@ class TrainingConfig:
         if self.gradient_clip is not None and self.gradient_clip <= 0:
             raise ValueError("gradient_clip must be greater than 0 when set.")
 
+        if (
+            self.max_grad_norm_before_clip is not None
+            and self.max_grad_norm_before_clip <= 0
+        ):
+            raise ValueError(
+                "max_grad_norm_before_clip must be greater than 0 when set."
+            )
+
+        if self.gradient_retry_attempts < 0:
+            raise ValueError("gradient_retry_attempts cannot be negative.")
+
+        if (
+            self.gradient_retry_attempts > 0
+            and self.max_grad_norm_before_clip is None
+        ):
+            raise ValueError(
+                "gradient_retry_attempts requires max_grad_norm_before_clip."
+            )
+
         if self.gradient_accumulation_steps < 1:
             raise ValueError("gradient_accumulation_steps must be at least 1.")
 
@@ -151,33 +177,6 @@ class TrainingConfig:
         if self.context_sensitivity_contexts == 1:
             raise ValueError(
                 "context_sensitivity_contexts must be 0 or at least 2."
-            )
-
-        if (
-            self.min_context_js_divergence is not None
-            and self.min_context_js_divergence <= 0
-        ):
-            raise ValueError(
-                "min_context_js_divergence must be greater than 0 when set."
-            )
-
-        if self.context_gate_start_step < 0:
-            raise ValueError("context_gate_start_step cannot be negative.")
-
-        if (
-            self.stop_on_low_context_sensitivity
-            and self.min_context_js_divergence is None
-        ):
-            raise ValueError(
-                "stop_on_low_context_sensitivity requires min_context_js_divergence."
-            )
-
-        if (
-            self.min_context_js_divergence is not None
-            and self.context_sensitivity_contexts < 2
-        ):
-            raise ValueError(
-                "min_context_js_divergence requires at least two context samples."
             )
 
         if self.precision_dtype not in {"float16", "bfloat16", "float32"}:

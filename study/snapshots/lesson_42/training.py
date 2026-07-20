@@ -12,13 +12,21 @@ import argparse
 import inspect
 import json
 import math
+import platform
 from pathlib import Path
 import time
 
 import torch
 
 from .batching import DEFAULT_DATA_DIR, create_batch, load_training_and_validation_data
-from .checkpoint import load_checkpoint, load_checkpoint_payload, save_checkpoint
+from .checkpoint import (
+    capture_rng_state,
+    load_checkpoint,
+    load_checkpoint_payload,
+    restore_checkpoint_rng_state,
+    save_checkpoint,
+    unwrap_model,
+)
 from .config import ModelConfig, TrainingConfig
 from .device import (
     get_default_device,
@@ -115,6 +123,237 @@ def create_gradient_scaler(device, mixed_precision, precision_dtype):
     return torch.amp.GradScaler("cuda", enabled=use_scaler)
 
 
+def restore_rng_state(rng_state):
+    restore_checkpoint_rng_state({"rng_state": rng_state})
+
+
+def preallocate_gradient_buffers(model):
+    """Allocate persistent gradients before MPS enters AccumulateGrad."""
+    with torch.no_grad():
+        for parameter in model.parameters():
+            if parameter.requires_grad and parameter.grad is None:
+                parameter.grad = torch.zeros_like(
+                    parameter,
+                    memory_format=torch.preserve_format,
+                )
+
+
+def clear_gradient_buffers(model):
+    with torch.no_grad():
+        for parameter in model.parameters():
+            if parameter.grad is not None:
+                parameter.grad.zero_()
+
+
+def get_gradient_norm(model):
+    gradient_norm = torch.nn.utils.clip_grad_norm_(
+        model.parameters(),
+        max_norm=float("inf"),
+        error_if_nonfinite=True,
+    )
+    return float(gradient_norm.detach().cpu().item())
+
+
+def get_gradient_signature(model):
+    """Sample every gradient so the MPS startup check compares direction too."""
+    signature_parts = []
+    for parameter in model.parameters():
+        if parameter.grad is None or parameter.grad.numel() == 0:
+            continue
+        flattened = parameter.grad.detach().reshape(-1)
+        indices = sorted({0, flattened.numel() // 2, flattened.numel() - 1})
+        signature_parts.append(flattened[indices].float().cpu())
+
+    if not signature_parts:
+        raise RuntimeError("The gradient self-check produced no gradients.")
+
+    return torch.cat(signature_parts)
+
+
+def get_gradient_cosine_similarity(first_model, second_model):
+    dot_product = 0.0
+    first_squared_norm = 0.0
+    second_squared_norm = 0.0
+
+    first_parameters = dict(first_model.named_parameters())
+    second_parameters = dict(second_model.named_parameters())
+    if first_parameters.keys() != second_parameters.keys():
+        raise RuntimeError("Gradient comparison models have different parameters.")
+
+    for name, first_parameter in first_parameters.items():
+        second_parameter = second_parameters[name]
+        if first_parameter.grad is None or second_parameter.grad is None:
+            raise RuntimeError(f"Missing gradient for parameter {name!r}.")
+        first_gradient = first_parameter.grad.detach().float().cpu().reshape(-1)
+        second_gradient = second_parameter.grad.detach().float().cpu().reshape(-1)
+        dot_product += torch.dot(first_gradient, second_gradient).item()
+        first_squared_norm += torch.dot(first_gradient, first_gradient).item()
+        second_squared_norm += torch.dot(second_gradient, second_gradient).item()
+
+    denominator = math.sqrt(first_squared_norm * second_squared_norm)
+    if denominator == 0.0:
+        raise RuntimeError("Gradient comparison produced a zero norm.")
+
+    return dot_product / denominator
+
+
+def run_backward_batches(
+    model,
+    batches,
+    device,
+    mixed_precision,
+    precision_dtype,
+):
+    total_loss = 0.0
+    for input_tensor, target_tensor in batches:
+        with get_autocast_context(
+            device=device,
+            mixed_precision=mixed_precision,
+            precision_dtype=precision_dtype,
+        ):
+            _, loss = model(input_tensor, target_tensor)
+            loss = loss / len(batches)
+        total_loss += loss.item()
+        loss.backward()
+
+    return total_loss
+
+
+def run_mps_gradient_self_check(
+    model,
+    model_config,
+    training_data,
+    batch_size,
+    context_size,
+    gradient_accumulation_steps,
+    device,
+    mixed_precision=False,
+    precision_dtype="float16",
+):
+    """Warm MPS autograd, then require two identical backward passes to agree."""
+    if get_device_type(device) != "mps":
+        return None
+
+    original_rng_state = capture_rng_state()
+    was_training = model.training
+    try:
+        model.eval()
+        batches = [
+            create_batch(
+                data=training_data,
+                batch_size=batch_size,
+                context_size=context_size,
+                device=device,
+            )
+            for _ in range(gradient_accumulation_steps)
+        ]
+        backward_rng_state = capture_rng_state()
+        preallocate_gradient_buffers(model)
+
+        # A first real-shape backward initializes MPS kernels and gradient paths.
+        restore_rng_state(backward_rng_state)
+        run_backward_batches(
+            model=model,
+            batches=batches,
+            device=device,
+            mixed_precision=mixed_precision,
+            precision_dtype=precision_dtype,
+        )
+        clear_gradient_buffers(model)
+
+        probe_results = []
+        for probe_index in range(2):
+            restore_rng_state(backward_rng_state)
+            probe_loss = run_backward_batches(
+                model=model,
+                batches=batches,
+                device=device,
+                mixed_precision=mixed_precision,
+                precision_dtype=precision_dtype,
+            )
+            probe_results.append(
+                (probe_loss, get_gradient_norm(model), get_gradient_signature(model))
+            )
+            if probe_index == 0:
+                clear_gradient_buffers(model)
+
+        first_loss, first_norm, first_signature = probe_results[0]
+        second_loss, second_norm, second_signature = probe_results[1]
+        probe_losses_match = math.isclose(
+            first_loss,
+            second_loss,
+            rel_tol=1e-6,
+            abs_tol=1e-7,
+        )
+        norms_match = math.isclose(first_norm, second_norm, rel_tol=0.01, abs_tol=1e-5)
+        signatures_match = torch.allclose(
+            first_signature,
+            second_signature,
+            rtol=0.01,
+            atol=1e-6,
+        )
+        if not probe_losses_match or not norms_match or not signatures_match:
+            raise RuntimeError(
+                "MPS gradient self-check failed before training: identical "
+                f"backward passes produced norms {first_norm:.6g} and "
+                f"{second_norm:.6g}. No model update was applied."
+            )
+
+        cpu_model_config = ModelConfig.from_checkpoint_dict(model_config)
+        cpu_model = LanguageModel(**cpu_model_config.to_model_kwargs())
+        cpu_model.load_state_dict(unwrap_model(model).state_dict())
+        # CPU's monolithic projection is the independent reference for the
+        # chunked MPS workaround.
+        cpu_model.output_chunk_size = 0
+        cpu_model.eval()
+        cpu_batches = [
+            (input_tensor.cpu(), target_tensor.cpu())
+            for input_tensor, target_tensor in batches
+        ]
+        cpu_loss = run_backward_batches(
+            model=cpu_model,
+            batches=cpu_batches,
+            device="cpu",
+            mixed_precision=False,
+            precision_dtype="float32",
+        )
+        cpu_norm = get_gradient_norm(cpu_model)
+        gradient_cosine = get_gradient_cosine_similarity(
+            unwrap_model(model),
+            cpu_model,
+        )
+        norm_relative_error = abs(second_norm - cpu_norm) / max(cpu_norm, 1e-12)
+        losses_match = math.isclose(
+            second_loss,
+            cpu_loss,
+            rel_tol=1e-4,
+            abs_tol=1e-5,
+        )
+        if (
+            not losses_match
+            or norm_relative_error > 0.01
+            or gradient_cosine < 0.999
+        ):
+            raise RuntimeError(
+                "MPS gradient CPU-parity check failed before training: "
+                f"MPS norm={second_norm:.6g}, CPU norm={cpu_norm:.6g}, "
+                f"relative error={norm_relative_error:.2%}, "
+                f"cosine={gradient_cosine:.6f}. No model update was applied."
+            )
+
+        return {
+            "first_grad_norm": first_norm,
+            "second_grad_norm": second_norm,
+            "cpu_grad_norm": cpu_norm,
+            "gradient_cosine": gradient_cosine,
+        }
+    finally:
+        restore_rng_state(original_rng_state)
+        clear_gradient_buffers(model)
+        if was_training:
+            model.train()
+
+
 def get_learning_rate(
     step,
     base_learning_rate,
@@ -163,6 +402,8 @@ def estimate_loss(
     context_size,
     eval_batches,
     device=None,
+    mixed_precision=False,
+    precision_dtype="float16",
 ):
     if eval_batches < 1:
         raise ValueError("eval_batches must be at least 1.")
@@ -170,6 +411,7 @@ def estimate_loss(
     device = device or get_default_device()
     was_training = model.training
     model.eval()
+    rng_state = capture_rng_state()
 
     losses_by_split = {}
     data_by_split = {
@@ -177,23 +419,30 @@ def estimate_loss(
         "validation": validation_data,
     }
 
-    for split_name, split_data in data_by_split.items():
-        split_losses = []
+    try:
+        for split_name, split_data in data_by_split.items():
+            split_losses = []
 
-        for _ in range(eval_batches):
-            input_tensor, target_tensor = create_batch(
-                data=split_data,
-                batch_size=batch_size,
-                context_size=context_size,
-                device=device,
-            )
-            _, loss = model(input_tensor, target_tensor)
-            split_losses.append(loss.item())
+            for _ in range(eval_batches):
+                input_tensor, target_tensor = create_batch(
+                    data=split_data,
+                    batch_size=batch_size,
+                    context_size=context_size,
+                    device=device,
+                )
+                with get_autocast_context(
+                    device=device,
+                    mixed_precision=mixed_precision,
+                    precision_dtype=precision_dtype,
+                ):
+                    _, loss = model(input_tensor, target_tensor)
+                split_losses.append(loss.item())
 
-        losses_by_split[split_name] = sum(split_losses) / len(split_losses)
-
-    if was_training:
-        model.train()
+            losses_by_split[split_name] = sum(split_losses) / len(split_losses)
+    finally:
+        restore_rng_state(rng_state)
+        if was_training:
+            model.train()
 
     return losses_by_split
 
@@ -216,13 +465,13 @@ def train_model(
     warmup_steps,
     decay_steps,
     gradient_clip,
+    max_grad_norm_before_clip=None,
+    gradient_retry_attempts=0,
     gradient_accumulation_steps=1,
     context_sensitivity_contexts=0,
-    min_context_js_divergence=None,
-    context_gate_start_step=0,
-    stop_on_low_context_sensitivity=False,
     resume_checkpoint_path=None,
     training_config=None,
+    runtime_metadata=None,
     mixed_precision=False,
     precision_dtype="float16",
     device=None,
@@ -252,34 +501,30 @@ def train_model(
     if gradient_accumulation_steps < 1:
         raise ValueError("gradient_accumulation_steps must be at least 1.")
 
+    if (
+        max_grad_norm_before_clip is not None
+        and max_grad_norm_before_clip <= 0
+    ):
+        raise ValueError(
+            "max_grad_norm_before_clip must be greater than 0 when set."
+        )
+
+    if gradient_retry_attempts < 0:
+        raise ValueError("gradient_retry_attempts cannot be negative.")
+
+    if gradient_retry_attempts and max_grad_norm_before_clip is None:
+        raise ValueError(
+            "gradient_retry_attempts requires max_grad_norm_before_clip."
+        )
+
     if context_sensitivity_contexts < 0:
         raise ValueError("context_sensitivity_contexts cannot be negative.")
 
     if context_sensitivity_contexts == 1:
         raise ValueError("context_sensitivity_contexts must be 0 or at least 2.")
 
-    if min_context_js_divergence is not None and min_context_js_divergence <= 0:
-        raise ValueError(
-            "min_context_js_divergence must be greater than 0 when set."
-        )
-
-    if context_gate_start_step < 0:
-        raise ValueError("context_gate_start_step cannot be negative.")
-
-    if (
-        min_context_js_divergence is not None
-        and context_sensitivity_contexts < 2
-    ):
-        raise ValueError(
-            "min_context_js_divergence requires at least two context samples."
-        )
-
-    if stop_on_low_context_sensitivity and min_context_js_divergence is None:
-        raise ValueError(
-            "stop_on_low_context_sensitivity requires min_context_js_divergence."
-        )
-
     device = device or get_default_device()
+    device_type = get_device_type(device)
     model.to(device)
     model.train()
 
@@ -288,7 +533,6 @@ def train_model(
     best_checkpoint_path = None
     latest_checkpoint_path = get_latest_checkpoint_path(checkpoint_path)
     start_step = 1
-    training_start_time = time.time()
 
     if resume_checkpoint_path is not None:
         checkpoint = load_checkpoint(
@@ -319,6 +563,37 @@ def train_model(
         precision_dtype=precision_dtype,
     )
 
+    if scaler.is_enabled() and gradient_retry_attempts:
+        raise ValueError(
+            "gradient retries are not supported with a CUDA gradient scaler."
+        )
+
+    mps_self_check = run_mps_gradient_self_check(
+        model=model,
+        model_config=model_config,
+        training_data=training_data,
+        batch_size=batch_size,
+        context_size=context_size,
+        gradient_accumulation_steps=gradient_accumulation_steps,
+        device=device,
+        mixed_precision=mixed_precision,
+        precision_dtype=precision_dtype,
+    )
+    use_persistent_gradients = device_type == "mps"
+    if use_persistent_gradients:
+        preallocate_gradient_buffers(model)
+    if print_progress and mps_self_check is not None:
+        print(
+            "MPS gradient self-check passed: "
+            f"MPS norms={mps_self_check['first_grad_norm']:.6f},"
+            f"{mps_self_check['second_grad_norm']:.6f}; "
+            f"CPU norm={mps_self_check['cpu_grad_norm']:.6f}; "
+            f"cosine={mps_self_check['gradient_cosine']:.6f}",
+            flush=True,
+        )
+
+    training_start_time = time.time()
+
     for step in range(start_step, training_steps + 1):
         learning_rate = get_learning_rate(
             step=step,
@@ -329,36 +604,83 @@ def train_model(
         )
         apply_learning_rate(optimizer=optimizer, learning_rate=learning_rate)
 
-        optimizer.zero_grad(set_to_none=True)
-        total_loss = 0.0
-        grad_norm = None
-
-        for _ in range(gradient_accumulation_steps):
-            input_tensor, target_tensor = create_batch(
+        batches = [
+            create_batch(
                 data=training_data,
                 batch_size=batch_size,
                 context_size=context_size,
                 device=device,
             )
+            for _ in range(gradient_accumulation_steps)
+        ]
+        backward_rng_state = capture_rng_state()
+        total_loss = 0.0
+        grad_norm = None
+        gradient_retries = 0
 
-            with get_autocast_context(
-                device=device,
-                mixed_precision=mixed_precision,
-                precision_dtype=precision_dtype,
+        for attempt in range(gradient_retry_attempts + 1):
+            restore_rng_state(backward_rng_state)
+            optimizer.zero_grad(set_to_none=not use_persistent_gradients)
+            total_loss = 0.0
+
+            for input_tensor, target_tensor in batches:
+                with get_autocast_context(
+                    device=device,
+                    mixed_precision=mixed_precision,
+                    precision_dtype=precision_dtype,
+                ):
+                    _, loss = model(input_tensor, target_tensor)
+                    loss = loss / gradient_accumulation_steps
+
+                total_loss += loss.item()
+                scaler.scale(loss).backward()
+
+            gradient_integrity_error = None
+            if gradient_clip is not None or max_grad_norm_before_clip is not None:
+                scaler.unscale_(optimizer)
+                try:
+                    grad_norm = get_gradient_norm(model)
+                except RuntimeError as error:
+                    gradient_integrity_error = str(error)
+
+            if (
+                gradient_integrity_error is None
+                and max_grad_norm_before_clip is not None
+                and grad_norm is not None
+                and grad_norm > max_grad_norm_before_clip
             ):
-                _, loss = model(input_tensor, target_tensor)
-                loss = loss / gradient_accumulation_steps
+                gradient_integrity_error = (
+                    f"raw gradient norm {grad_norm:.6g} exceeded the configured "
+                    f"limit {max_grad_norm_before_clip:.6g}"
+                )
 
-            total_loss += loss.item()
-            scaler.scale(loss).backward()
+            if gradient_integrity_error is None and gradient_clip is not None:
+                try:
+                    torch.nn.utils.clip_grad_norm_(
+                        model.parameters(),
+                        max_norm=gradient_clip,
+                        error_if_nonfinite=True,
+                    )
+                except RuntimeError as error:
+                    gradient_integrity_error = str(error)
 
-        if gradient_clip is not None:
-            scaler.unscale_(optimizer)
-            grad_norm = torch.nn.utils.clip_grad_norm_(
-                model.parameters(),
-                gradient_clip,
-            )
-            grad_norm = float(grad_norm.detach().cpu().item())
+            if gradient_integrity_error is None:
+                gradient_retries = attempt
+                break
+
+            if attempt == gradient_retry_attempts:
+                raise RuntimeError(
+                    f"Gradient integrity check failed at step {step} after "
+                    f"{attempt + 1} attempt(s): {gradient_integrity_error}. "
+                    "No optimizer update was applied."
+                )
+
+            if print_progress:
+                print(
+                    f"step={step} gradient retry {attempt + 1}/"
+                    f"{gradient_retry_attempts}: {gradient_integrity_error}",
+                    flush=True,
+                )
 
         scaler.step(optimizer)
         scaler.update()
@@ -385,6 +707,8 @@ def train_model(
                 context_size=context_size,
                 eval_batches=eval_batches,
                 device=device,
+                mixed_precision=mixed_precision,
+                precision_dtype=precision_dtype,
             )
             metrics = {
                 "step": step,
@@ -393,10 +717,10 @@ def train_model(
                 "training": losses["training"],
                 "validation": losses["validation"],
                 "grad_norm": grad_norm,
+                "gradient_retries": gradient_retries,
                 "tokens_per_second": tokens_per_second,
                 "eta_seconds": eta_seconds,
             }
-            context_gate_failed = False
             if context_sensitivity_contexts:
                 context_metrics = estimate_context_sensitivity(
                     model=model,
@@ -406,17 +730,6 @@ def train_model(
                     device=device,
                 )
                 metrics.update(context_metrics)
-                if min_context_js_divergence is not None:
-                    context_gate_active = step >= context_gate_start_step
-                    context_gate_failed = (
-                        context_gate_active
-                        and context_metrics["context_js_divergence"]
-                        < min_context_js_divergence
-                    )
-                    metrics["context_gate_active"] = context_gate_active
-                    metrics["context_gate_passed"] = (
-                        None if not context_gate_active else not context_gate_failed
-                    )
             history.append(metrics)
 
             if print_progress:
@@ -428,6 +741,7 @@ def train_model(
                     "loss={loss:.4f} "
                     "lr={learning_rate:.2e} "
                     "grad_norm={grad_norm} "
+                    "grad_retries={gradient_retries} "
                     "tok/s={tokens_per_second:.0f} "
                     "eta={eta}".format(
                         step=step,
@@ -437,25 +751,26 @@ def train_model(
                         loss=total_loss,
                         learning_rate=learning_rate,
                         grad_norm=grad_norm_text,
+                        gradient_retries=gradient_retries,
                         tokens_per_second=tokens_per_second,
                         eta=format_duration(eta_seconds),
                     ),
                     flush=True,
                 )
                 if context_sensitivity_contexts:
-                    gate_text = "not-set"
-                    if min_context_js_divergence is not None:
-                        if not metrics["context_gate_active"]:
-                            gate_text = f"deferred-until-step-{context_gate_start_step}"
-                        else:
-                            gate_text = "failed" if context_gate_failed else "passed"
                     print(
                         "context_js={context_js:.2e} "
                         "context_logit_std={context_logit_std:.2e} "
-                        "context_gate={gate}".format(
+                        "context_true_loss={context_true_loss:.4f} "
+                        "context_shuffled_loss={context_shuffled_loss:.4f} "
+                        "context_loss_gain={context_loss_gain:+.4f}".format(
                             context_js=metrics["context_js_divergence"],
                             context_logit_std=metrics["context_logit_std"],
-                            gate=gate_text,
+                            context_true_loss=metrics["context_true_loss"],
+                            context_shuffled_loss=metrics[
+                                "context_shuffled_loss"
+                            ],
+                            context_loss_gain=metrics["context_loss_gain"],
                         ),
                         flush=True,
                     )
@@ -465,11 +780,14 @@ def train_model(
                 best_validation_loss = losses["validation"]
 
             checkpoint_losses = dict(losses)
+            checkpoint_losses["grad_norm"] = grad_norm
+            checkpoint_losses["gradient_retries"] = gradient_retries
             for metric_name in (
                 "context_js_divergence",
                 "context_logit_std",
-                "context_gate_active",
-                "context_gate_passed",
+                "context_true_loss",
+                "context_shuffled_loss",
+                "context_loss_gain",
             ):
                 if metric_name in metrics:
                     checkpoint_losses[metric_name] = metrics[metric_name]
@@ -484,6 +802,7 @@ def train_model(
                 tokenizer_config=tokenizer_config,
                 training_config=training_config,
                 best_validation_loss=best_validation_loss,
+                runtime_metadata=runtime_metadata,
             )
 
             if is_best_checkpoint:
@@ -497,14 +816,7 @@ def train_model(
                     tokenizer_config=tokenizer_config,
                     training_config=training_config,
                     best_validation_loss=best_validation_loss,
-                )
-
-            if context_gate_failed and stop_on_low_context_sensitivity:
-                raise RuntimeError(
-                    "Context-sensitivity gate failed at step "
-                    f"{step}: measured {metrics['context_js_divergence']:.2e}, "
-                    "which is below --min-context-js-divergence "
-                    f"{min_context_js_divergence:.2e}."
+                    runtime_metadata=runtime_metadata,
                 )
 
     return history, best_checkpoint_path
@@ -540,8 +852,10 @@ def parse_args():
     parser.add_argument("--num-heads", type=int, default=4)
     parser.add_argument("--num-transformer-blocks", type=int, default=4)
     parser.add_argument("--dropout", type=float, default=0.1)
+    parser.add_argument("--no-bias", action="store_true")
     parser.add_argument("--no-weight-tying", action="store_true")
     parser.add_argument("--use-scaled-dot-product-attention", action="store_true")
+    parser.add_argument("--output-chunk-size", type=int, default=32768)
 
     parser.add_argument("--batch-size", type=int, default=8)
     parser.add_argument("--training-steps", type=int, default=None)
@@ -554,11 +868,10 @@ def parse_args():
     parser.add_argument("--weight-decay", type=float, default=0.1)
     parser.add_argument("--gradient-clip", type=float, default=1.0)
     parser.add_argument("--no-gradient-clip", action="store_true")
+    parser.add_argument("--max-grad-norm-before-clip", type=float, default=None)
+    parser.add_argument("--gradient-retry-attempts", type=int, default=None)
     parser.add_argument("--gradient-accumulation-steps", type=int, default=4)
     parser.add_argument("--context-sensitivity-contexts", type=int, default=0)
-    parser.add_argument("--min-context-js-divergence", type=float, default=None)
-    parser.add_argument("--context-gate-start-step", type=int, default=None)
-    parser.add_argument("--stop-on-low-context-sensitivity", action="store_true")
 
     parser.add_argument("--compile-model", action="store_true")
     parser.add_argument("--mixed-precision", action="store_true")
@@ -601,8 +914,10 @@ def main():
             num_heads=args.num_heads,
             num_transformer_blocks=args.num_transformer_blocks,
             dropout=args.dropout,
+            bias=not args.no_bias,
             tie_weights=not args.no_weight_tying,
             use_scaled_dot_product_attention=args.use_scaled_dot_product_attention,
+            output_chunk_size=args.output_chunk_size,
         )
 
     if checkpoint_preview is not None and checkpoint_preview.get("training_config"):
@@ -611,12 +926,12 @@ def main():
         )
         if args.training_steps is not None:
             training_config.training_steps = args.training_steps
-        if args.min_context_js_divergence is not None:
-            training_config.min_context_js_divergence = (
-                args.min_context_js_divergence
+        if args.max_grad_norm_before_clip is not None:
+            training_config.max_grad_norm_before_clip = (
+                args.max_grad_norm_before_clip
             )
-        if args.context_gate_start_step is not None:
-            training_config.context_gate_start_step = args.context_gate_start_step
+        if args.gradient_retry_attempts is not None:
+            training_config.gradient_retry_attempts = args.gradient_retry_attempts
         training_config.resume_from_checkpoint = True
         training_config.compile_model = args.compile_model
         if args.mixed_precision:
@@ -638,15 +953,14 @@ def main():
             decay_steps=args.decay_steps,
             weight_decay=args.weight_decay,
             gradient_clip=None if args.no_gradient_clip else args.gradient_clip,
+            max_grad_norm_before_clip=args.max_grad_norm_before_clip,
+            gradient_retry_attempts=(
+                0
+                if args.gradient_retry_attempts is None
+                else args.gradient_retry_attempts
+            ),
             gradient_accumulation_steps=args.gradient_accumulation_steps,
             context_sensitivity_contexts=args.context_sensitivity_contexts,
-            min_context_js_divergence=args.min_context_js_divergence,
-            context_gate_start_step=(
-                0
-                if args.context_gate_start_step is None
-                else args.context_gate_start_step
-            ),
-            stop_on_low_context_sensitivity=args.stop_on_low_context_sensitivity,
             resume_from_checkpoint=args.resume_checkpoint_path is not None,
             compile_model=args.compile_model,
             mixed_precision=args.mixed_precision,
@@ -671,6 +985,11 @@ def main():
         weight_decay=training_config.weight_decay,
         device=device,
     )
+    runtime_metadata = {
+        "python_version": platform.python_version(),
+        "torch_version": str(torch.__version__),
+        "device": str(device),
+    }
 
     print("LearnGPT training")
     print(json.dumps(
@@ -680,6 +999,7 @@ def main():
             "checkpoint_path": str(args.checkpoint_path),
             "train_tokens": int(len(training_data)),
             "val_tokens": int(len(validation_data)),
+            "runtime": runtime_metadata,
             "model_config": model_config.to_checkpoint_dict(),
             "training_config": training_config.to_checkpoint_dict(),
         },
@@ -705,15 +1025,13 @@ def main():
         warmup_steps=training_config.warmup_steps,
         decay_steps=training_config.decay_steps,
         gradient_clip=training_config.gradient_clip,
+        max_grad_norm_before_clip=training_config.max_grad_norm_before_clip,
+        gradient_retry_attempts=training_config.gradient_retry_attempts,
         gradient_accumulation_steps=training_config.gradient_accumulation_steps,
         context_sensitivity_contexts=training_config.context_sensitivity_contexts,
-        min_context_js_divergence=training_config.min_context_js_divergence,
-        context_gate_start_step=training_config.context_gate_start_step,
-        stop_on_low_context_sensitivity=(
-            training_config.stop_on_low_context_sensitivity
-        ),
         resume_checkpoint_path=args.resume_checkpoint_path,
         training_config=training_config.to_checkpoint_dict(),
+        runtime_metadata=runtime_metadata,
         mixed_precision=training_config.mixed_precision,
         precision_dtype=training_config.precision_dtype,
         device=device,

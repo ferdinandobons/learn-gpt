@@ -44,8 +44,11 @@ def main():
     tokenizer_config = {"encoding_name": DEFAULT_ENCODING_NAME}
     model_config = ModelConfig(
         vocabulary_size=get_vocabulary_size(DEFAULT_ENCODING_NAME),
+        output_chunk_size=32768,
     )
     training_config = TrainingConfig(
+        max_grad_norm_before_clip=100.0,
+        gradient_retry_attempts=3,
         context_sensitivity_contexts=2,
     )
     generation_config = GenerationConfig()
@@ -80,6 +83,8 @@ def main():
         warmup_steps=training_config.warmup_steps,
         decay_steps=training_config.decay_steps,
         gradient_clip=training_config.gradient_clip,
+        max_grad_norm_before_clip=training_config.max_grad_norm_before_clip,
+        gradient_retry_attempts=training_config.gradient_retry_attempts,
         gradient_accumulation_steps=training_config.gradient_accumulation_steps,
         context_sensitivity_contexts=training_config.context_sensitivity_contexts,
         training_config=training_config.to_checkpoint_dict(),
@@ -115,8 +120,20 @@ def main():
     print(round(best_validation, 4))
     print()
 
+    print("Output vocabulary chunk size:")
+    print(model_config.output_chunk_size)
+    print()
+
+    print("Last raw gradient norm and retries:")
+    print(round(history[-1]["grad_norm"], 4), history[-1]["gradient_retries"])
+    print()
+
     print("Last context JS divergence:")
     print(f"{history[-1]['context_js_divergence']:.2e}")
+    print()
+
+    print("Last target-aware context loss gain:")
+    print(f"{history[-1]['context_loss_gain']:+.4f}")
     print()
 
     torch.manual_seed(123)

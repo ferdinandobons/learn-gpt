@@ -124,11 +124,13 @@ flowchart LR
     F["Transformer blocks"]
     G["Final LayerNorm and output head"]
     H["Cross-entropy loss"]
-    I["Backward and AdamW"]
+    I["Backward"]
+    Q["Raw-gradient integrity check"]
+    R["Gradient clipping and AdamW"]
     J["Best and latest checkpoints"]
     K["Prompt-based generation"]
 
-    A --> B --> C --> D --> E --> F --> G --> H --> I --> J --> K
+    A --> B --> C --> D --> E --> F --> G --> H --> I --> Q --> R --> J --> K
 ```
 
 The extended model path is:
@@ -459,6 +461,10 @@ also preserve a latest checkpoint so interrupted runs can resume.
 AdamW uses warm-up followed by cosine decay. Gradient clipping limits the norm
 used by the optimizer update.
 
+The final runtime first checks the unmodified raw norm. A non-finite or
+implausibly large gradient is retried or rejected; clipping is applied only to
+a gradient that passed that integrity check.
+
 ```text
 warm-up -> maximum learning rate -> cosine decay -> minimum learning rate
 ```
@@ -494,7 +500,9 @@ the saved schedule.
 
 Training needs logits for every position. Generation needs only the final
 position, so the output head processes `[batch_size, 1, embedding_size]` when no
-targets are provided.
+targets are provided. The final training path also projects the 50,257-token
+vocabulary in chunks. Concatenating the chunks gives the same logits and loss,
+while avoiding the unstable monolithic MPS output-projection backward path.
 
 ## Lesson 40 - Scaled Dot-Product Attention
 
@@ -505,6 +513,10 @@ training recipe.
 On this project and hardware, keep
 `--use-scaled-dot-product-attention` enabled for MPS training.
 
+The failed training run was also reproduced with manual attention, so scaled
+dot-product attention was not its root cause. It remains enabled because it is
+the efficient attention implementation for the controlled run.
+
 ## Lesson 41 - Performance Flags and DDP
 
 `torch.compile` and mixed precision remain optional because backend support can
@@ -512,6 +524,12 @@ vary. DDP is explained as a multi-process, multi-GPU technique but is not part
 of the required local Mac workflow.
 
 Do not add `--mixed-precision` to the controlled MPS training recipe.
+
+MPS uses persistent, preallocated gradient buffers in the final training loop.
+A discarded warm-up backward initializes the real-shape kernels, and a startup
+self-check compares repeated MPS gradients with a CPU reference before any
+optimizer update is allowed. Raw gradient norms are checked before clipping;
+clipping alone cannot make a corrupted gradient direction correct.
 
 ## Lesson 42 - Final Project
 
@@ -529,7 +547,9 @@ identical.
 
 The canonical processed dataset contains about 5.3 billion training tokens.
 The controlled local experiment keeps that dataset unchanged and derives a
-reproducible 1 GiB subset.
+reproducible 1 GiB subset. The 45,000-step configuration sees about 368.6
+million token positions, or about 20.8 positions per model parameter, while
+remaining practical on an 8 GB Apple Silicon Mac.
 
 The local subset used by the current recipe is:
 
@@ -540,14 +560,37 @@ data/processed/fineweb_edu_experiment_1g/
   meta.json
 ```
 
-Start a new 10,000-step probe with a checkpoint name that does not already
-exist:
+### What was wrong with the old training path
+
+The dataset and tokenizer were valid. Two failures occurred in the MPS backward
+path. Projecting each 256-dimensional hidden state to all 50,257 vocabulary
+logits in one monolithic operation returned the wrong hidden-state gradient
+direction even though the forward loss was correct. Separately,
+`optimizer.zero_grad(set_to_none=True)` forced MPS to allocate new leaf-gradient
+buffers and intermittently produced enormous gradients. Clipping them to `1.0`
+hid their magnitude but did not repair their direction, so corrupted updates
+pushed the model toward nearly context-free high-frequency output.
+
+The final implementation splits the vocabulary projection into chunks,
+preallocates persistent MPS gradient buffers, clears them in place, performs a
+discarded warm-up backward, and checks repeated MPS gradients against a CPU
+reference. Every training step also rejects a raw gradient norm above `100`,
+retries the same batches up to three times, and applies no optimizer update if
+the integrity check keeps failing.
+
+Checkpoints made by the affected path already contain corrupted updates. Do
+not resume them. Use the new checkpoint name below, verify that it does not
+already exist, and start from random GPT-style initialization.
+
+### Complete 45,000-step command
+
+This is the controlled full run:
 
 ```bash
 caffeinate -i .venv/bin/python -B -m final_project.training \
   --device mps \
   --data-dir data/processed/fineweb_edu_experiment_1g \
-  --checkpoint-path checkpoints/learngpt-mps-18m-fresh-1g.pt \
+  --checkpoint-path checkpoints/learngpt-mps-18m-stable-1g.pt \
   --encoding-name gpt2 \
   --seed 1337 \
   --context-size 256 \
@@ -556,41 +599,52 @@ caffeinate -i .venv/bin/python -B -m final_project.training \
   --num-transformer-blocks 6 \
   --dropout 0.0 \
   --use-scaled-dot-product-attention \
+  --output-chunk-size 32768 \
   --batch-size 4 \
   --gradient-accumulation-steps 8 \
-  --training-steps 10000 \
+  --training-steps 45000 \
   --eval-interval 250 \
   --eval-batches 20 \
-  --base-learning-rate 1e-4 \
-  --min-learning-rate 1e-5 \
+  --base-learning-rate 3e-4 \
+  --min-learning-rate 3e-5 \
   --warmup-steps 1000 \
-  --decay-steps 80000 \
+  --decay-steps 45000 \
   --weight-decay 0.05 \
   --gradient-clip 1.0 \
-  --context-sensitivity-contexts 8 \
-  --min-context-js-divergence 1e-5 \
-  --context-gate-start-step 1000 \
-  --stop-on-low-context-sensitivity
+  --max-grad-norm-before-clip 100 \
+  --gradient-retry-attempts 3 \
+  --context-sensitivity-contexts 32
 ```
 
 This command starts from random GPT-style initialization because it does not
 contain `--resume-checkpoint-path`.
 
-The first loss should be close to `10.82`. During warm-up, the metric is still
-reported but the output says:
+The first loss should be close to `ln(50257)`, approximately `10.82`. Before
+step 1, the output must report that the MPS repeatability and CPU-parity
+self-check passed. During training, `grad_norm` is the raw norm before clipping
+and `grad_retries=0` is the normal value. If all three retries fail, training
+stops without applying that optimizer update.
 
-```text
-context_gate=deferred-until-step-1000
-```
+The verified 100-step MPS integration run passed that self-check with zero
+retries. Validation loss moved from `10.834` to `7.697`, raw gradient norm from
+`4.238` to `0.773`, and `context_loss_gain` reached `+0.378` at about 4,111
+tokens per second.
 
-From step 1,000 onward, `context_gate=passed` means the next-token distribution
-still changes across different validation contexts. The threshold is an
-anti-collapse diagnostic, not a prose-quality score.
+The context diagnostics have different meanings:
 
-The stopped early checkpoint observed during development measured roughly
-`4e-5` at step 500 and was not collapsed. The older failed model measured
-roughly `2e-6`. This is why the active threshold is `1e-5` and enforcement
-starts after warm-up.
+- `context_js` observes how much the predicted distribution changes between
+  contexts. It is useful for inspection, but it is not a quality gate.
+- `context_loss_gain` is the shuffled-context loss minus the true-context loss.
+  It directly tests whether the correct context helps predict the real next
+  token. A positive trend is useful evidence of context learning.
+
+Both values can be near zero early in a healthy run because a new model first
+learns broad token frequencies. A single noisy evaluation must not abort an
+otherwise valid run. Loss, validation loss, gradient integrity, the trend in
+`context_loss_gain`, and generated samples should be inspected together.
+
+Do not add `--mixed-precision` or `--compile-model` to this controlled MPS
+command. Those optional modes are outside the verified path.
 
 No artificial pause is required between steps. `caffeinate` prevents system
 sleep, while macOS manages thermal throttling. Keep the Mac on a hard surface
@@ -599,12 +653,15 @@ memory pressure.
 
 ## Testing a Checkpoint
 
-Generate several samples after the probe:
+Training saves the best validation checkpoint at
+`checkpoints/learngpt-mps-18m-stable-1g.pt` and the most recent evaluated state
+at `checkpoints/learngpt-mps-18m-stable-1g-latest.pt`. Generate several samples
+from the best checkpoint after the complete run:
 
 ```bash
 .venv/bin/python -B -m final_project.generate \
   --device mps \
-  --checkpoint-path checkpoints/learngpt-mps-18m-fresh-1g.pt \
+  --checkpoint-path checkpoints/learngpt-mps-18m-stable-1g.pt \
   --prompt "The purpose of education is" \
   --max-new-tokens 120 \
   --temperature 0.8 \
@@ -612,26 +669,15 @@ Generate several samples after the probe:
   --num-samples 3
 ```
 
-At 10,000 steps the text can still be rough. The first requirement is that the
-samples react to their prompts and do not collapse into the same repeated
-high-frequency tokens.
+This is a small base language model trained for next-token prediction. A
+successful result should continue English prompts coherently and react to
+their content, but it is not yet an instruction-following assistant. Reliable
+question answering requires a later instruction-tuning stage with curated
+prompt-response examples.
 
-## Extending a Healthy Run
-
-Only after inspecting loss, validation loss, `context_js`, and generated text,
-extend the same run to a larger total step target:
-
-```bash
-caffeinate -i .venv/bin/python -B -m final_project.training \
-  --device mps \
-  --data-dir data/processed/fineweb_edu_experiment_1g \
-  --checkpoint-path checkpoints/learngpt-mps-18m-fresh-1g.pt \
-  --resume-checkpoint-path checkpoints/learngpt-mps-18m-fresh-1g-latest.pt \
-  --training-steps 80000
-```
-
-Resume restores the saved training configuration. The larger
-`--training-steps` value is the new total target.
+If a valid run is interrupted, resume its `stable-1g-latest.pt` checkpoint and
+keep `--training-steps 45000`; that value is the total target. Never resume the
+older affected checkpoints.
 
 ## Final Mental Model
 

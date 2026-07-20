@@ -17,6 +17,24 @@ from torch import nn
 GPT_INITIALIZATION_STD = 0.02
 
 
+class LayerNorm(nn.Module):
+    """LayerNorm with nanoGPT-style optional bias support."""
+
+    def __init__(self, embedding_size, bias):
+        super().__init__()
+        self.weight = nn.Parameter(torch.ones(embedding_size))
+        self.bias = nn.Parameter(torch.zeros(embedding_size)) if bias else None
+
+    def forward(self, embeddings):
+        return F.layer_norm(
+            embeddings,
+            self.weight.shape,
+            self.weight,
+            self.bias,
+            1e-5,
+        )
+
+
 class SelfAttentionHead(nn.Module):
     def __init__(
         self,
@@ -24,12 +42,16 @@ class SelfAttentionHead(nn.Module):
         head_size,
         context_size,
         dropout,
+        bias=False,
         use_scaled_dot_product_attention=False,
     ):
         super().__init__()
 
         self.dropout = dropout
         self.use_scaled_dot_product_attention = use_scaled_dot_product_attention
+        # GPT-style Q/K/V projections stay bias-free. The broader bias option
+        # controls modules whose bias-free MPS kernels must pass the startup
+        # CPU-parity check before they are used for real training.
         self.key = nn.Linear(embedding_size, head_size, bias=False)
         self.query = nn.Linear(embedding_size, head_size, bias=False)
         self.value = nn.Linear(embedding_size, head_size, bias=False)
@@ -81,6 +103,7 @@ class MultiHeadAttention(nn.Module):
         context_size,
         num_heads,
         dropout,
+        bias=False,
         use_scaled_dot_product_attention=False,
     ):
         super().__init__()
@@ -92,6 +115,7 @@ class MultiHeadAttention(nn.Module):
                     head_size=head_size,
                     context_size=context_size,
                     dropout=dropout,
+                    bias=bias,
                     use_scaled_dot_product_attention=use_scaled_dot_product_attention,
                 )
                 for _ in range(num_heads)
@@ -100,6 +124,7 @@ class MultiHeadAttention(nn.Module):
         self.output_projection = nn.Linear(
             in_features=num_heads * head_size,
             out_features=embedding_size,
+            bias=bias,
         )
         self.output_dropout = nn.Dropout(dropout)
 
@@ -120,17 +145,19 @@ class MultiHeadAttention(nn.Module):
 
 
 class FeedForward(nn.Module):
-    def __init__(self, embedding_size, dropout):
+    def __init__(self, embedding_size, dropout, bias=False):
         super().__init__()
 
         self.expand = nn.Linear(
             in_features=embedding_size,
             out_features=4 * embedding_size,
+            bias=bias,
         )
         self.activation = nn.GELU()
         self.project = nn.Linear(
             in_features=4 * embedding_size,
             out_features=embedding_size,
+            bias=bias,
         )
         self.dropout = nn.Dropout(dropout)
 
@@ -151,27 +178,26 @@ class TransformerBlock(nn.Module):
         context_size,
         num_heads,
         dropout,
+        bias=False,
         use_scaled_dot_product_attention=False,
     ):
         super().__init__()
 
-        self.attention_layer_norm = nn.LayerNorm(
-            normalized_shape=embedding_size,
-        )
+        self.attention_layer_norm = LayerNorm(embedding_size, bias=bias)
         self.multi_head_attention = MultiHeadAttention(
             embedding_size=embedding_size,
             head_size=head_size,
             context_size=context_size,
             num_heads=num_heads,
             dropout=dropout,
+            bias=bias,
             use_scaled_dot_product_attention=use_scaled_dot_product_attention,
         )
-        self.feed_forward_layer_norm = nn.LayerNorm(
-            normalized_shape=embedding_size,
-        )
+        self.feed_forward_layer_norm = LayerNorm(embedding_size, bias=bias)
         self.feed_forward = FeedForward(
             embedding_size=embedding_size,
             dropout=dropout,
+            bias=bias,
         )
 
     def forward(self, embeddings):
@@ -196,8 +222,10 @@ class LanguageModel(nn.Module):
         num_heads,
         num_transformer_blocks,
         dropout=0.0,
+        bias=False,
         tie_weights=True,
         use_scaled_dot_product_attention=False,
+        output_chunk_size=32768,
     ):
         super().__init__()
 
@@ -213,7 +241,11 @@ class LanguageModel(nn.Module):
         if not 0.0 <= dropout <= 1.0:
             raise ValueError("dropout must be between 0.0 and 1.0.")
 
+        if output_chunk_size < 0:
+            raise ValueError("output_chunk_size cannot be negative.")
+
         self.context_size = context_size
+        self.output_chunk_size = output_chunk_size
         self.token_embedding_table = nn.Embedding(
             num_embeddings=vocabulary_size,
             embedding_dim=embedding_size,
@@ -232,18 +264,18 @@ class LanguageModel(nn.Module):
                     context_size=context_size,
                     num_heads=num_heads,
                     dropout=dropout,
+                    bias=bias,
                     use_scaled_dot_product_attention=use_scaled_dot_product_attention,
                 )
                 for _ in range(num_transformer_blocks)
             ]
         )
 
-        self.final_layer_norm = nn.LayerNorm(
-            normalized_shape=embedding_size,
-        )
+        self.final_layer_norm = LayerNorm(embedding_size, bias=bias)
         self.output_head = nn.Linear(
             in_features=embedding_size,
             out_features=vocabulary_size,
+            bias=bias,
         )
 
         self.apply(self._initialize_weights)
@@ -282,6 +314,32 @@ class LanguageModel(nn.Module):
                 std=GPT_INITIALIZATION_STD,
             )
 
+    def project_to_vocabulary(self, embeddings):
+        vocabulary_size = self.output_head.weight.shape[0]
+        if (
+            self.output_chunk_size == 0
+            or self.output_chunk_size >= vocabulary_size
+        ):
+            return self.output_head(embeddings)
+
+        projected_chunks = []
+        for start in range(0, vocabulary_size, self.output_chunk_size):
+            end = min(start + self.output_chunk_size, vocabulary_size)
+            bias = (
+                None
+                if self.output_head.bias is None
+                else self.output_head.bias[start:end]
+            )
+            projected_chunks.append(
+                F.linear(
+                    embeddings,
+                    self.output_head.weight[start:end],
+                    bias,
+                )
+            )
+
+        return torch.cat(projected_chunks, dim=-1)
+
     def forward(self, input_ids, target_ids=None):
         current_context_size = input_ids.shape[1]
 
@@ -304,12 +362,12 @@ class LanguageModel(nn.Module):
 
         if target_ids is None:
             block_output = self.final_layer_norm(block_output[:, [-1], :])
-            logits = self.output_head(block_output)
+            logits = self.project_to_vocabulary(block_output)
 
             return logits
 
         block_output = self.final_layer_norm(block_output)
-        logits = self.output_head(block_output)
+        logits = self.project_to_vocabulary(block_output)
 
         batch_size, context_size, vocabulary_size = logits.shape
 

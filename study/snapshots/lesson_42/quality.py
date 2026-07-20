@@ -1,10 +1,10 @@
 """
 Changes compared with the previous files:
-- This module adds a checkpoint-independent signal for detecting a model that
-  gives nearly the same next-token distribution to unrelated contexts.
+- This module adds target-aware context diagnostics alongside distributional
+  context-variation signals.
 
 File purpose:
-- Measure whether next-token logits vary across fixed validation contexts.
+- Compare correct and shuffled validation contexts against real next tokens.
 """
 
 from __future__ import annotations
@@ -47,10 +47,19 @@ def estimate_context_sensitivity(
             for start in start_positions
         ]
     ).to(device)
+    target_tensor = torch.tensor(
+        [
+            int(validation_data[start + context_size])
+            for start in start_positions
+        ],
+        dtype=torch.long,
+        device=device,
+    )
 
     was_training = model.training
     model.eval()
     logits = model(input_tensor)[:, -1, :].float()
+    shuffled_logits = model(input_tensor.roll(shifts=1, dims=0))[:, -1, :].float()
     log_probabilities = functional.log_softmax(logits, dim=-1)
     probabilities = log_probabilities.exp()
     mean_probability = probabilities.mean(dim=0)
@@ -59,6 +68,12 @@ def estimate_context_sensitivity(
         * (log_probabilities - mean_probability.clamp_min(torch.finfo(probabilities.dtype).tiny).log())
     ).sum(dim=-1).mean()
     context_logit_std = logits.float().std(dim=0, correction=0).mean()
+    context_true_loss = functional.cross_entropy(logits, target_tensor)
+    context_shuffled_loss = functional.cross_entropy(
+        shuffled_logits,
+        target_tensor,
+    )
+    context_loss_gain = context_shuffled_loss - context_true_loss
 
     if was_training:
         model.train()
@@ -66,4 +81,7 @@ def estimate_context_sensitivity(
     return {
         "context_js_divergence": float(context_js_divergence.cpu().item()),
         "context_logit_std": float(context_logit_std.cpu().item()),
+        "context_true_loss": float(context_true_loss.cpu().item()),
+        "context_shuffled_loss": float(context_shuffled_loss.cpu().item()),
+        "context_loss_gain": float(context_loss_gain.cpu().item()),
     }

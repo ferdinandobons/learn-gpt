@@ -1,4 +1,4 @@
-torch
-datasets
-numpy
-tiktoken
+torch==2.12.1
+datasets==5.0.0
+numpy==2.5.1
+tiktoken==0.13.0

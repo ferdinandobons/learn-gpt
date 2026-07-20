@@ -13,7 +13,8 @@ from torch import nn
 
 from final_project.batching import load_training_and_validation_data
 from final_project.checkpoint import load_checkpoint, load_checkpoint_payload, save_checkpoint
-from final_project.config import ModelConfig
+from final_project.config import ModelConfig, TrainingConfig
+from final_project.generate import load_model_from_checkpoint
 from final_project.model import (
     GPT_INITIALIZATION_STD,
     LanguageModel,
@@ -104,6 +105,24 @@ class NanoGPTArchitectureTests(unittest.TestCase):
 
         self.assertIs(model.output_head.weight, model.token_embedding_table.weight)
 
+    def test_default_model_keeps_stable_biases_but_not_qkv_biases(self):
+        config = make_model_config()
+        model = LanguageModel(**config.to_model_kwargs())
+
+        self.assertTrue(config.bias)
+        self.assertIsNotNone(model.output_head.bias)
+        self.assertIsNone(model.transformer_blocks[0].multi_head_attention.heads[0].key.bias)
+
+    def test_legacy_checkpoint_config_preserves_biases(self):
+        payload = make_model_config().to_checkpoint_dict()
+        payload.pop("bias")
+
+        restored = ModelConfig.from_checkpoint_dict(payload)
+        model = LanguageModel(**restored.to_model_kwargs())
+
+        self.assertTrue(restored.bias)
+        self.assertIsNotNone(model.output_head.bias)
+
     def test_future_tokens_do_not_change_earlier_logits(self):
         torch.manual_seed(123)
         config = make_model_config()
@@ -160,6 +179,43 @@ class NanoGPTArchitectureTests(unittest.TestCase):
         self.assertTrue(
             torch.allclose(manual_output, optimized_output, atol=1e-6, rtol=1e-5)
         )
+
+    def test_chunked_and_monolithic_output_projection_match(self):
+        torch.manual_seed(123)
+        config = make_model_config()
+        config.output_chunk_size = 32
+        chunked = LanguageModel(**config.to_model_kwargs())
+        monolithic_config = ModelConfig.from_checkpoint_dict(
+            config.to_checkpoint_dict()
+        )
+        monolithic_config.output_chunk_size = 0
+        monolithic = LanguageModel(**monolithic_config.to_model_kwargs())
+        monolithic.load_state_dict(chunked.state_dict())
+        input_ids = torch.randint(
+            0,
+            config.vocabulary_size,
+            (2, config.context_size),
+        )
+
+        chunked_logits, chunked_loss = chunked(input_ids, input_ids)
+        monolithic_logits, monolithic_loss = monolithic(input_ids, input_ids)
+
+        self.assertTrue(torch.equal(chunked_logits, monolithic_logits))
+        self.assertEqual(chunked_loss.item(), monolithic_loss.item())
+        chunked_loss.backward()
+        monolithic_loss.backward()
+        for chunked_parameter, monolithic_parameter in zip(
+            chunked.parameters(),
+            monolithic.parameters(),
+        ):
+            self.assertTrue(
+                torch.allclose(
+                    chunked_parameter.grad,
+                    monolithic_parameter.grad,
+                    atol=1e-7,
+                    rtol=1e-6,
+                )
+            )
 
     def test_learning_rate_uses_warmup_cosine_decay_and_minimum(self):
         settings = {
@@ -314,7 +370,7 @@ class ContextualLogitModel(nn.Module):
             -20.0,
             device=input_ids.device,
         )
-        next_token_ids = input_ids[:, -1].remainder(self.vocabulary_size)
+        next_token_ids = (input_ids[:, -1] + 1).remainder(self.vocabulary_size)
         logits.scatter_(
             2,
             next_token_ids.view(-1, 1, 1),
@@ -325,7 +381,7 @@ class ContextualLogitModel(nn.Module):
 
 class ContextSensitivityTests(unittest.TestCase):
     def test_context_metric_distinguishes_static_and_contextual_logits(self):
-        validation_data = np.arange(256, dtype=np.int64)
+        validation_data = np.arange(256, dtype=np.int64) % 32
         static_metrics = estimate_context_sensitivity(
             model=StaticLogitModel(vocabulary_size=32),
             validation_data=validation_data,
@@ -347,11 +403,27 @@ class ContextSensitivityTests(unittest.TestCase):
             contextual_metrics["context_logit_std"],
             static_metrics["context_logit_std"],
         )
+        self.assertAlmostEqual(static_metrics["context_loss_gain"], 0.0, places=6)
+        self.assertGreater(contextual_metrics["context_loss_gain"], 1.0)
+        self.assertLess(
+            contextual_metrics["context_true_loss"],
+            contextual_metrics["context_shuffled_loss"],
+        )
 
-    def test_training_stops_when_the_context_gate_fails(self):
+
+class GradientIntegrityTests(unittest.TestCase):
+    def test_retry_configuration_requires_a_raw_norm_limit(self):
+        with self.assertRaisesRegex(
+            ValueError,
+            "requires max_grad_norm_before_clip",
+        ):
+            TrainingConfig(gradient_retry_attempts=1)
+
+    def test_training_rejects_invalid_gradient_before_an_update(self):
         torch.manual_seed(123)
         config = make_model_config(vocabulary_size=32)
         model = LanguageModel(**config.to_model_kwargs())
+        initial_parameters = [parameter.detach().clone() for parameter in model.parameters()]
         optimizer = configure_optimizer(
             model,
             learning_rate=1e-3,
@@ -362,7 +434,7 @@ class ContextSensitivityTests(unittest.TestCase):
         validation_data = np.arange(256, dtype=np.int64) % config.vocabulary_size
 
         with tempfile.TemporaryDirectory() as temporary_dir:
-            with self.assertRaisesRegex(RuntimeError, "Context-sensitivity gate failed"):
+            with self.assertRaisesRegex(RuntimeError, "Gradient integrity check failed"):
                 train_model(
                     model=model,
                     optimizer=optimizer,
@@ -381,15 +453,20 @@ class ContextSensitivityTests(unittest.TestCase):
                     warmup_steps=0,
                     decay_steps=1,
                     gradient_clip=1.0,
-                    context_sensitivity_contexts=2,
-                    min_context_js_divergence=100.0,
-                    stop_on_low_context_sensitivity=True,
+                    max_grad_norm_before_clip=1e-12,
+                    gradient_retry_attempts=1,
                     device="cpu",
                 )
 
-    def test_context_gate_is_deferred_until_the_configured_step(self):
+        for initial, current in zip(initial_parameters, model.parameters()):
+            self.assertTrue(torch.equal(initial, current))
+
+
+class CheckpointTests(unittest.TestCase):
+    def test_legacy_bias_checkpoint_still_loads_for_generation(self):
         torch.manual_seed(123)
-        config = make_model_config(vocabulary_size=32)
+        config = make_model_config()
+        config.bias = True
         model = LanguageModel(**config.to_model_kwargs())
         optimizer = configure_optimizer(
             model,
@@ -397,40 +474,27 @@ class ContextSensitivityTests(unittest.TestCase):
             weight_decay=0.1,
             device="cpu",
         )
-        training_data = np.arange(512, dtype=np.int64) % config.vocabulary_size
-        validation_data = np.arange(256, dtype=np.int64) % config.vocabulary_size
+        legacy_config = config.to_checkpoint_dict()
+        legacy_config.pop("bias")
 
         with tempfile.TemporaryDirectory() as temporary_dir:
-            history, _ = train_model(
+            checkpoint_path = Path(temporary_dir) / "legacy.pt"
+            save_checkpoint(
+                checkpoint_path=checkpoint_path,
                 model=model,
                 optimizer=optimizer,
-                training_data=training_data,
-                validation_data=validation_data,
-                batch_size=2,
-                context_size=config.context_size,
-                training_steps=1,
-                eval_interval=1,
-                eval_batches=1,
-                checkpoint_path=Path(temporary_dir) / "best.pt",
-                model_config=config.to_checkpoint_dict(),
+                model_config=legacy_config,
+                step=1,
+                losses={"training": 1.0, "validation": 1.0},
                 tokenizer_config={"encoding_name": "gpt2"},
-                base_learning_rate=1e-3,
-                min_learning_rate=1e-4,
-                warmup_steps=0,
-                decay_steps=1,
-                gradient_clip=1.0,
-                context_sensitivity_contexts=2,
-                min_context_js_divergence=100.0,
-                context_gate_start_step=2,
-                stop_on_low_context_sensitivity=True,
+            )
+            loaded_model, _ = load_model_from_checkpoint(
+                checkpoint_path,
                 device="cpu",
             )
 
-        self.assertFalse(history[-1]["context_gate_active"])
-        self.assertIsNone(history[-1]["context_gate_passed"])
+        self.assertIsNotNone(loaded_model.output_head.bias)
 
-
-class CheckpointTests(unittest.TestCase):
     def test_compiled_checkpoint_uses_canonical_model_keys(self):
         torch.manual_seed(123)
         config = make_model_config()
@@ -516,10 +580,15 @@ class CheckpointTests(unittest.TestCase):
             self.assertEqual(len(history), 2)
             self.assertIn("context_js_divergence", history[-1])
             self.assertIn("context_logit_std", history[-1])
+            self.assertIn("context_loss_gain", history[-1])
+            self.assertIn("gradient_retries", history[-1])
             latest = load_checkpoint_payload(latest_path, device="cpu")
             self.assertEqual(latest["step"], 2)
             self.assertIn("context_js_divergence", latest["losses"])
             self.assertIn("context_logit_std", latest["losses"])
+            self.assertIn("context_loss_gain", latest["losses"])
+            self.assertIn("gradient_retries", latest["losses"])
+            self.assertIn("torch_version", latest["runtime"])
 
 
 if __name__ == "__main__":
