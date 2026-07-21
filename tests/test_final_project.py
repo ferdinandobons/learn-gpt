@@ -16,7 +16,12 @@ from final_project.batching import (
     create_dataset_fingerprint,
     load_training_and_validation_data,
 )
-from final_project.checkpoint import load_checkpoint, load_checkpoint_payload, save_checkpoint
+from final_project.checkpoint import (
+    load_checkpoint,
+    load_checkpoint_payload,
+    restore_checkpoint_rng_state,
+    save_checkpoint,
+)
 from final_project.config import ModelConfig, TrainingConfig
 from final_project.generate import (
     generate_samples_from_checkpoint,
@@ -835,6 +840,20 @@ class CheckpointTests(unittest.TestCase):
 
         def load_state_dict(self, state_dict):
             raise AssertionError("An empty scaler state must not be loaded.")
+
+    def test_cuda_rng_state_is_moved_to_cpu_before_restore(self):
+        expected_state = torch.tensor([1, 2, 3], dtype=torch.uint8)
+        mapped_state = SimpleNamespace(cpu=lambda: expected_state)
+
+        with (
+            patch("torch.cuda.is_available", return_value=True),
+            patch("torch.cuda.set_rng_state_all") as set_rng_state_all,
+        ):
+            restore_checkpoint_rng_state(
+                {"rng_state": {"cuda": [mapped_state]}},
+            )
+
+        set_rng_state_all.assert_called_once_with([expected_state])
 
     def test_fresh_training_protects_existing_checkpoints(self):
         with tempfile.TemporaryDirectory() as temporary_dir:
