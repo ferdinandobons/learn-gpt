@@ -161,6 +161,11 @@ system?
   retry protection make the run fail closed.
 - Show that CUDA FP16 stores the GradScaler and that every new checkpoint stores
   a dataset fingerprint.
+- Compare the readable per-head attention path with the optional fused QKV
+  path, emphasizing that execution changes while the causal contract and
+  parameter count remain the same.
+- Separate `log_interval` from `eval_interval`: the first reports progress,
+  while the second performs validation, diagnostics, and checkpoint writes.
 - Trigger a synthetic CUDA-style overflow test: the scale backs off and the
   exact same batch/step is retried, while persistent overflow fails closed.
 - Live success check: repository tests pass and the Lesson 42 sample can be

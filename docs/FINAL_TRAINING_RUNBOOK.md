@@ -209,7 +209,8 @@ throttling. Keep the computer on a hard surface with clear airflow and allow
 This profile uses the same data, architecture, schedule, effective batch, and
 45,000-step target as the MPS experiment. Only backend-specific execution
 changes: CUDA uses FP16 autocast plus a checkpointed GradScaler, a monolithic
-output projection, and no MPS-style gradient retries. A transient FP16
+output projection, fused all-head QKV attention, vectorized pinned-memory
+batches, and no MPS-style gradient retries. A transient FP16
 overflow lowers the scale and repeats the exact same batch and training step;
 after eight unsuccessful backoffs the run stops before an optimizer update.
 
@@ -229,10 +230,12 @@ model; it is the first short phase of the same run:
   --num-transformer-blocks 6 `
   --dropout 0.0 `
   --use-scaled-dot-product-attention `
+  --fused-attention `
   --output-chunk-size 0 `
   --batch-size 4 `
   --gradient-accumulation-steps 8 `
   --training-steps 20 `
+  --log-interval 5 `
   --eval-interval 250 `
   --eval-batches 20 `
   --base-learning-rate 3e-4 `
@@ -258,12 +261,15 @@ files exist. Then continue the same run to the total target:
   --data-dir data\processed\fineweb_edu_experiment_1g `
   --checkpoint-path checkpoints\learngpt-cuda-18m-stable-1g.pt `
   --resume-checkpoint-path checkpoints\learngpt-cuda-18m-stable-1g-latest.pt `
-  --training-steps 45000
+  --training-steps 45000 `
+  --log-interval 50
 ```
 
 The smoke phase is still evaluated and checkpointed at its final step. Keeping
 the production evaluation settings here means the resumed 45,000-step run does
-not inherit a short-test cadence.
+not inherit a short-test cadence. Lightweight logs do not run validation or
+write a checkpoint: the smoke prints one every 5 steps and the complete run
+overrides the restored setting to one every 50 steps.
 
 The resume command reads architecture, optimizer, schedule, mixed-precision
 mode, GradScaler, RNG state, and dataset fingerprint from the checkpoint. Keep
@@ -297,6 +303,11 @@ machine because no software-only test can certify an unavailable GPU.
 | `amp_overflows` | cumulative CUDA overflows; a small stable count can be healthy, persistent growth is not |
 | `tok/s` | measured throughput, useful for comparing configurations |
 | `context_loss_gain` | shuffled-context loss minus true-context loss; a positive trend means context helps |
+
+`--log-interval` controls inexpensive progress lines. `--eval-interval`
+separately controls averaged loss, context diagnostics, and atomic checkpoint
+writes. Keeping the former shorter than the latter provides visibility without
+turning every terminal update into expensive evaluation work.
 
 `context_js` is observational and may be near zero early in a healthy run. Do
 not stop on one noisy evaluation. Stop on a non-finite loss or non-AMP gradient,

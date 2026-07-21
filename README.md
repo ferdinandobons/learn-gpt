@@ -18,6 +18,7 @@ Tags:
 `causal-self-attention`, `multi-head-attention`, `layernorm`, `gelu`,
 `adamw`, `gradient-accumulation`, `checkpointing`, `text-generation`,
 `apple-silicon`, `mps`, `cuda`, `cpu`, `mixed-precision`, `torch-compile`,
+`fused-attention`,
 `machine-learning`, `deep-learning`, `education`, `study-project`.
 
 The course is maintained as one English guide:
@@ -25,6 +26,8 @@ The course is maintained as one English guide:
 - [course_en.md](course_en.md)
 - [How to train runbook](docs/FINAL_TRAINING_RUNBOOK.md) for the canonical
   macOS/MPS and Windows/CUDA workflow.
+- [CUDA training optimizations](CUDA_TRAINING_OPTIMIZATIONS.md) for measured
+  fused-attention, batching, logging, and VRAM tradeoffs on NVIDIA hardware.
 - [Video series guide](docs/VIDEO_SERIES_GUIDE.md) for teaching the 42
   checkpoints and the final experiment.
 - [Model memory and training limits](docs/MODEL_MEMORY_AND_TRAINING_LIMITS.md)
@@ -44,8 +47,8 @@ The course is maintained as one English guide:
 - AdamW optimizer groups, gradient accumulation, learning-rate scheduling,
   gradient clipping, GPT-style initialization, atomic best/latest checkpoints,
   resume support, chunked vocabulary projection, MPS gradient-integrity checks,
-  target-aware context diagnostics, optional mixed precision, and optional
-  `torch.compile`.
+  target-aware context diagnostics, optional mixed precision, fused multi-head
+  QKV attention, lightweight progress logging, and optional `torch.compile`.
 
 ## Project Layout
 
@@ -53,6 +56,7 @@ The course is maintained as one English guide:
 LearnGPT/
   README.md
   course_en.md
+  CUDA_TRAINING_OPTIMIZATIONS.md
 
   docs/
     FINAL_TRAINING_RUNBOOK.md
@@ -501,11 +505,19 @@ uses FP16 autocast with a checkpointed GradScaler and zero MPS-style gradient
 retries. A transient FP16 overflow lowers the scale and repeats the exact same
 batch and step, up to eight times, before failing closed.
 
+The canonical CUDA command also enables `--fused-attention`, which projects Q,
+K, and V for every head together and runs one batched SDPA call per block.
+`--log-interval` prints inexpensive progress between the less frequent
+validation and checkpoint events controlled by `--eval-interval`.
+
 Follow the exact two-phase PowerShell procedure in
 [How to Train Runbook — Windows NVIDIA CUDA](docs/FINAL_TRAINING_RUNBOOK.md#6-windows-nvidia-cuda-smoke-gate-and-complete-run).
 It runs a 20-step gate with the real architecture, then resumes that same
 checkpoint to step 45,000. The section also includes 4, 6, and 8 GiB VRAM
 profiles and the matching generation command.
+
+For the larger measured NVIDIA profile and its throughput/VRAM evidence, read
+[CUDA training optimizations](CUDA_TRAINING_OPTIMIZATIONS.md).
 
 This backend path is code-reviewed and covered by CPU-side checkpoint tests,
 including GradScaler state and overflow backoff/retry. The final hardware gate
@@ -568,7 +580,8 @@ The training CLI prints the Python and PyTorch runtime, selected device,
 dataset size, model and training configuration, validation loss, learning
 rate, raw pre-clipping gradient norm, retry count, target-aware context
 diagnostics, CUDA AMP retry/overflow counts, tokens per second, and estimated
-remaining time.
+remaining time. `--log-interval N` prints lightweight step metrics every `N`
+updates without triggering validation or a checkpoint write.
 
 ## Publishing Checkpoints
 

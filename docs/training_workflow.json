@@ -90,7 +90,7 @@
         "id": "cuda",
         "label": "Windows + NVIDIA",
         "backend": "CUDA",
-        "description": "Windows PowerShell with an NVIDIA GPU and the pinned CUDA 12.6 PyTorch wheel."
+        "description": "Windows PowerShell with an NVIDIA GPU, the pinned CUDA 12.6 PyTorch wheel, fused all-head attention, and FP16 mixed precision."
       }
     ],
     "steps": [
@@ -179,7 +179,7 @@
           "cuda": {
             "label": "First 20 steps of the final CUDA run",
             "language": "powershell",
-            "code": ".\\.venv\\Scripts\\python.exe -B -m final_project.training `\n  --device cuda `\n  --data-dir data\\processed\\fineweb_edu_experiment_1g `\n  --checkpoint-path checkpoints\\learngpt-cuda-18m-stable-1g.pt `\n  --encoding-name gpt2 `\n  --seed 1337 `\n  --context-size 256 `\n  --embedding-size 256 `\n  --num-heads 4 `\n  --num-transformer-blocks 6 `\n  --dropout 0.0 `\n  --use-scaled-dot-product-attention `\n  --output-chunk-size 0 `\n  --batch-size 4 `\n  --gradient-accumulation-steps 8 `\n  --training-steps 20 `\n  --eval-interval 250 `\n  --eval-batches 20 `\n  --base-learning-rate 3e-4 `\n  --min-learning-rate 3e-5 `\n  --warmup-steps 1000 `\n  --decay-steps 45000 `\n  --weight-decay 0.05 `\n  --gradient-clip 1.0 `\n  --max-grad-norm-before-clip 100 `\n  --gradient-retry-attempts 0 `\n  --context-sensitivity-contexts 32 `\n  --mixed-precision `\n  --precision-dtype float16"
+            "code": ".\\.venv\\Scripts\\python.exe -B -m final_project.training `\n  --device cuda `\n  --data-dir data\\processed\\fineweb_edu_experiment_1g `\n  --checkpoint-path checkpoints\\learngpt-cuda-18m-stable-1g.pt `\n  --encoding-name gpt2 `\n  --seed 1337 `\n  --context-size 256 `\n  --embedding-size 256 `\n  --num-heads 4 `\n  --num-transformer-blocks 6 `\n  --dropout 0.0 `\n  --use-scaled-dot-product-attention `\n  --fused-attention `\n  --output-chunk-size 0 `\n  --batch-size 4 `\n  --gradient-accumulation-steps 8 `\n  --training-steps 20 `\n  --log-interval 5 `\n  --eval-interval 250 `\n  --eval-batches 20 `\n  --base-learning-rate 3e-4 `\n  --min-learning-rate 3e-5 `\n  --warmup-steps 1000 `\n  --decay-steps 45000 `\n  --weight-decay 0.05 `\n  --gradient-clip 1.0 `\n  --max-grad-norm-before-clip 100 `\n  --gradient-retry-attempts 0 `\n  --context-sensitivity-contexts 32 `\n  --mixed-precision `\n  --precision-dtype float16"
           }
         },
         "check": "Loss is finite, the first loss is near 10.82, and best/latest checkpoint files are created."
@@ -197,7 +197,7 @@
           "cuda": {
             "label": "Continue the validated CUDA run to step 45,000",
             "language": "powershell",
-            "code": ".\\.venv\\Scripts\\python.exe -B -m final_project.training `\n  --device cuda `\n  --data-dir data\\processed\\fineweb_edu_experiment_1g `\n  --checkpoint-path checkpoints\\learngpt-cuda-18m-stable-1g.pt `\n  --resume-checkpoint-path checkpoints\\learngpt-cuda-18m-stable-1g-latest.pt `\n  --training-steps 45000"
+            "code": ".\\.venv\\Scripts\\python.exe -B -m final_project.training `\n  --device cuda `\n  --data-dir data\\processed\\fineweb_edu_experiment_1g `\n  --checkpoint-path checkpoints\\learngpt-cuda-18m-stable-1g.pt `\n  --resume-checkpoint-path checkpoints\\learngpt-cuda-18m-stable-1g-latest.pt `\n  --training-steps 45000 `\n  --log-interval 50"
           }
         },
         "check": "Validation loss trends downward, retries normally remain zero, and the latest checkpoint advances every evaluation interval."
@@ -230,7 +230,7 @@
       "cuda": {
         "label": "Resume an interrupted CUDA run",
         "language": "powershell",
-        "code": ".\\.venv\\Scripts\\python.exe -B -m final_project.training `\n  --device cuda `\n  --data-dir data\\processed\\fineweb_edu_experiment_1g `\n  --checkpoint-path checkpoints\\learngpt-cuda-18m-stable-1g.pt `\n  --resume-checkpoint-path checkpoints\\learngpt-cuda-18m-stable-1g-latest.pt `\n  --training-steps 45000"
+        "code": ".\\.venv\\Scripts\\python.exe -B -m final_project.training `\n  --device cuda `\n  --data-dir data\\processed\\fineweb_edu_experiment_1g `\n  --checkpoint-path checkpoints\\learngpt-cuda-18m-stable-1g.pt `\n  --resume-checkpoint-path checkpoints\\learngpt-cuda-18m-stable-1g-latest.pt `\n  --training-steps 45000 `\n  --log-interval 50"
       }
     },
     "parameterGroups": [
@@ -274,6 +274,8 @@
           { "name": "--gradient-retry-attempts", "value": "3 MPS / 0 CUDA", "why": "MPS can retry an invalid raw gradient; CUDA handles transient FP16 overflow separately." },
           { "name": "--context-sensitivity-contexts", "value": "32", "why": "Checks whether correct context eventually beats shuffled context." },
           { "name": "--output-chunk-size", "value": "32768 MPS / 0 CUDA", "why": "MPS chunks the large vocabulary projection to preserve correct gradients; CUDA uses one projection." },
+          { "name": "--fused-attention", "value": "CUDA", "why": "Combines all heads into one QKV projection and one batched SDPA call per block; legacy checkpoints retain separate heads." },
+          { "name": "--log-interval", "value": "50 CUDA / optional MPS", "why": "Prints lightweight progress without running validation, context diagnostics, or checkpoint writes." },
           { "name": "--mixed-precision", "value": "CUDA only", "why": "CUDA uses FP16 autocast and a resumable GradScaler; the controlled MPS profile intentionally disables it." }
         ]
       }
@@ -307,6 +309,11 @@
       "title": "How to train runbook",
       "path": "docs/FINAL_TRAINING_RUNBOOK.md",
       "description": "Exact macOS/MPS, Windows/CUDA, smoke, resume, monitoring, and generation commands."
+    },
+    {
+      "title": "CUDA optimization evidence",
+      "path": "CUDA_TRAINING_OPTIMIZATIONS.md",
+      "description": "Measured fused-attention throughput, VRAM tradeoffs, lightweight logging, and a larger NVIDIA training profile."
     },
     {
       "title": "Video series guide",
