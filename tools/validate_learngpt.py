@@ -384,6 +384,9 @@ def check_markdown_basics(project_dir: Path, errors: list[str]) -> None:
 
 def check_course_index(project_dir: Path, errors: list[str]) -> None:
     english_course = read_text(project_dir / "course_en.md")
+    lesson_headings = list(
+        re.finditer(r"^## Lesson (\d{2}) - .+$", english_course, flags=re.MULTILINE)
+    )
 
     for lesson_number in lesson_numbers_from_study(project_dir):
         lesson = f"{lesson_number:02d}"
@@ -391,6 +394,52 @@ def check_course_index(project_dir: Path, errors: list[str]) -> None:
             errors.append(f"course_en.md does not contain index item Lesson {lesson}")
         if not re.search(rf"^## Lesson {lesson} - ", english_course, flags=re.MULTILINE):
             errors.append(f"course_en.md does not contain section ## Lesson {lesson}")
+
+    required_subsections = (
+        "### What we built",
+        "### Why it matters",
+        "### Syntax and logic",
+    )
+    for index, heading in enumerate(lesson_headings):
+        lesson = heading.group(1)
+        end = (
+            lesson_headings[index + 1].start()
+            if index + 1 < len(lesson_headings)
+            else english_course.find("\n## Controlled Training from Scratch", heading.start())
+        )
+        if end == -1:
+            end = len(english_course)
+        body = english_course[heading.end() : end]
+
+        subsection_positions = []
+        for subsection in required_subsections:
+            occurrences = [
+                match.start()
+                for match in re.finditer(
+                    rf"^{re.escape(subsection)}$",
+                    body,
+                    flags=re.MULTILINE,
+                )
+            ]
+            if len(occurrences) != 1:
+                errors.append(
+                    f"Lesson {lesson}: expected exactly one {subsection!r}, "
+                    f"found {len(occurrences)}"
+                )
+            subsection_positions.append(occurrences[0] if occurrences else -1)
+
+        if all(position >= 0 for position in subsection_positions):
+            if subsection_positions != sorted(subsection_positions):
+                errors.append(
+                    f"Lesson {lesson}: required teaching subsections are out of order"
+                )
+
+            what_start, why_start, _ = subsection_positions
+            what_body = body[what_start:why_start]
+            if not re.search(r"^```(?:python|bash|text)$", what_body, flags=re.MULTILINE):
+                errors.append(
+                    f"Lesson {lesson}: 'What we built' must contain a code block"
+                )
 
 
 def check_study_scripts(project_dir: Path, errors: list[str]) -> None:
