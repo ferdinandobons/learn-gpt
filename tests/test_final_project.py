@@ -282,6 +282,10 @@ class DatasetValidationTests(unittest.TestCase):
                     encoding_name="cl100k_base",
                 )
 
+            # NumPy memmaps keep the files open. Release them before rewriting
+            # the fixture so this lifecycle is valid on Windows as well as on
+            # POSIX systems.
+            del train, validation
             self.write_dataset(data_dir, complete=False)
             with self.assertRaisesRegex(ValueError, "incomplete"):
                 load_training_and_validation_data(data_dir)
