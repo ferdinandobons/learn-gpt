@@ -30,7 +30,10 @@ sys.path.append(str(PROJECT_DIR))
 
 from study.snapshots.lesson_42.config import GenerationConfig, ModelConfig, TrainingConfig
 from study.snapshots.lesson_42.device import get_default_device
-from study.snapshots.lesson_42.generate import generate_text_from_checkpoint
+from study.snapshots.lesson_42.generate import (
+    configure_utf8_stdout,
+    generate_text_from_checkpoint,
+)
 from study.snapshots.lesson_42.model import LanguageModel
 from study.snapshots.lesson_42.tokenizer import (
     DEFAULT_ENCODING_NAME,
@@ -45,6 +48,7 @@ from study.snapshots.lesson_42.training import (
 
 
 def main():
+    configure_utf8_stdout()
     torch.manual_seed(42)
 
     device = get_default_device()

@@ -7,6 +7,7 @@ are enough to execute the complete teaching path.
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 import subprocess
 import sys
@@ -19,12 +20,16 @@ def main() -> None:
     if len(lessons) != 42:
         raise RuntimeError(f"Expected 42 lesson scripts, found {len(lessons)}.")
 
+    environment = os.environ.copy()
+    environment["PYTHONIOENCODING"] = "utf-8"
+
     for lesson in lessons:
         relative_path = lesson.relative_to(project_dir)
         print(f"RUN {relative_path}", flush=True)
         subprocess.run(
             [sys.executable, "-B", str(lesson)],
             cwd=project_dir,
+            env=environment,
             check=True,
         )
 

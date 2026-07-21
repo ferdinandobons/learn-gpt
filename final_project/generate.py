@@ -9,6 +9,7 @@ File purpose:
 
 import argparse
 from pathlib import Path
+import sys
 
 import torch
 
@@ -17,6 +18,13 @@ from .config import ModelConfig
 from .device import get_default_device, resolve_device
 from .model import LanguageModel
 from .tokenizer import DEFAULT_ENCODING_NAME, decode, encode
+
+
+def configure_utf8_stdout():
+    """Make arbitrary BPE output printable on Windows and redirected consoles."""
+    reconfigure = getattr(sys.stdout, "reconfigure", None)
+    if reconfigure is not None:
+        reconfigure(encoding="utf-8", errors="replace")
 
 
 def load_model_from_checkpoint(checkpoint_path, device=None, compile_model=False):
@@ -177,6 +185,7 @@ def parse_args():
 
 
 def main():
+    configure_utf8_stdout()
     args = parse_args()
     device = resolve_device(args.device)
     top_k = None if args.no_top_k else args.top_k
