@@ -144,6 +144,99 @@ class MultiHeadAttention(nn.Module):
         return projected_embeddings, attention_weights_by_head
 
 
+class FusedMultiHeadAttention(nn.Module):
+    """Compute all attention heads with one QKV projection and one SDPA call."""
+
+    def __init__(
+        self,
+        embedding_size,
+        head_size,
+        context_size,
+        num_heads,
+        dropout,
+        bias=False,
+        use_scaled_dot_product_attention=False,
+    ):
+        super().__init__()
+
+        self.embedding_size = embedding_size
+        self.head_size = head_size
+        self.num_heads = num_heads
+        self.dropout = dropout
+        self.use_scaled_dot_product_attention = use_scaled_dot_product_attention
+        self.query_key_value = nn.Linear(
+            embedding_size,
+            3 * embedding_size,
+            bias=False,
+        )
+        self.output_projection = nn.Linear(
+            embedding_size,
+            embedding_size,
+            bias=bias,
+        )
+        self.output_dropout = nn.Dropout(dropout)
+        self.attention_dropout = nn.Dropout(dropout)
+        self.register_buffer(
+            "causal_mask",
+            torch.tril(torch.ones(context_size, context_size)),
+        )
+
+    def _split_heads(self, projection):
+        batch_size, context_size, _ = projection.shape
+        return projection.view(
+            batch_size,
+            context_size,
+            self.num_heads,
+            self.head_size,
+        ).transpose(1, 2)
+
+    def forward(self, embeddings):
+        current_context_size = embeddings.shape[1]
+        query_key_value = self.query_key_value(embeddings)
+        queries, keys, values = query_key_value.split(
+            self.embedding_size,
+            dim=-1,
+        )
+        queries = self._split_heads(queries)
+        keys = self._split_heads(keys)
+        values = self._split_heads(values)
+
+        if self.use_scaled_dot_product_attention:
+            attended_embeddings = F.scaled_dot_product_attention(
+                queries,
+                keys,
+                values,
+                dropout_p=self.dropout if self.training else 0.0,
+                is_causal=True,
+            )
+            attention_weights = None
+        else:
+            attention_scores = queries @ keys.transpose(-2, -1)
+            attention_scores = attention_scores / math.sqrt(self.head_size)
+            causal_mask = self.causal_mask[
+                :current_context_size,
+                :current_context_size,
+            ]
+            attention_scores = attention_scores.masked_fill(
+                causal_mask == 0,
+                float("-inf"),
+            )
+            attention_weights = F.softmax(attention_scores, dim=-1)
+            attention_weights = self.attention_dropout(attention_weights)
+            attended_embeddings = attention_weights @ values
+
+        batch_size = embeddings.shape[0]
+        attended_embeddings = (
+            attended_embeddings.transpose(1, 2)
+            .contiguous()
+            .view(batch_size, current_context_size, self.embedding_size)
+        )
+        projected_embeddings = self.output_projection(attended_embeddings)
+        projected_embeddings = self.output_dropout(projected_embeddings)
+
+        return projected_embeddings, attention_weights
+
+
 class FeedForward(nn.Module):
     def __init__(self, embedding_size, dropout, bias=False):
         super().__init__()
@@ -180,11 +273,15 @@ class TransformerBlock(nn.Module):
         dropout,
         bias=False,
         use_scaled_dot_product_attention=False,
+        fused_attention=False,
     ):
         super().__init__()
 
         self.attention_layer_norm = LayerNorm(embedding_size, bias=bias)
-        self.multi_head_attention = MultiHeadAttention(
+        attention_class = (
+            FusedMultiHeadAttention if fused_attention else MultiHeadAttention
+        )
+        self.multi_head_attention = attention_class(
             embedding_size=embedding_size,
             head_size=head_size,
             context_size=context_size,
@@ -225,6 +322,7 @@ class LanguageModel(nn.Module):
         bias=False,
         tie_weights=True,
         use_scaled_dot_product_attention=False,
+        fused_attention=False,
         output_chunk_size=32768,
     ):
         super().__init__()
@@ -266,6 +364,7 @@ class LanguageModel(nn.Module):
                     dropout=dropout,
                     bias=bias,
                     use_scaled_dot_product_attention=use_scaled_dot_product_attention,
+                    fused_attention=fused_attention,
                 )
                 for _ in range(num_transformer_blocks)
             ]
