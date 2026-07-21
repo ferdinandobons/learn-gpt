@@ -23,6 +23,10 @@ Tags:
 The course is maintained as one English guide:
 
 - [course_en.md](course_en.md)
+- [Final training runbook](docs/FINAL_TRAINING_RUNBOOK.md) for the canonical
+  macOS/MPS and Windows/CUDA workflow.
+- [Video series guide](docs/VIDEO_SERIES_GUIDE.md) for teaching the 42
+  checkpoints and the final experiment.
 
 ## What This Project Contains
 
@@ -47,8 +51,15 @@ LearnGPT/
   README.md
   course_en.md
 
+  docs/
+    FINAL_TRAINING_RUNBOOK.md
+    VIDEO_SERIES_GUIDE.md
+    training_workflow.json
+    verified_runs/
+
   data/
     README.md
+    study_sample.txt     # tracked, small, and used by lessons
     raw/                 # ignored by Git
     processed/           # ignored by Git
 
@@ -69,6 +80,7 @@ LearnGPT/
     generate.py
     quality.py
     requirements.txt
+    requirements-common.txt
 
   tools/
     validate_learngpt.py
@@ -83,7 +95,8 @@ tracked by Git.
 
 ## Quick Start: Study The Course
 
-Create and activate a local virtual environment:
+Use Python 3.12 or newer; Python 3.13 is the recommended and CI-tested version.
+Create a local virtual environment on macOS or Linux:
 
 ```bash
 python -m venv .venv
@@ -96,6 +109,19 @@ Install dependencies:
 ```bash
 python -m pip install -r final_project/requirements.txt
 ```
+
+On Windows PowerShell, use the environment interpreter directly. For ordinary
+CPU study runs, install the common dependencies and the CPU wheel explicitly:
+
+```powershell
+py -3.13 -m venv .venv
+.\.venv\Scripts\python.exe -m pip install --upgrade pip setuptools wheel
+.\.venv\Scripts\python.exe -m pip install -r final_project\requirements-common.txt
+.\.venv\Scripts\python.exe -m pip install torch==2.12.1 --index-url https://download.pytorch.org/whl/cpu
+```
+
+If this machine will train with NVIDIA CUDA, install the CUDA wheel from the
+backend section below instead of the CPU-wheel command.
 
 Validate the repository structure:
 
@@ -121,9 +147,18 @@ Run the final lesson smoke test:
 python -B study/lessons/42_final_project.py
 ```
 
+Run the complete clean-clone teaching gate:
+
+```bash
+python -B tools/run_all_lessons.py
+```
+
 Read the course while running the numbered lesson scripts. The Markdown files
 explain the new code introduced by each lesson, while `study/snapshots/` keeps
-the complete code state for that lesson.
+the complete code state for that lesson. Lessons use the tracked
+`data/study_sample.txt`; the 10 GiB corpus is required only for real training.
+GitHub Actions repeats the validator, regression suite, and all 42 lessons on
+both Linux and Windows.
 
 ## PyTorch Installation By Backend
 
@@ -168,18 +203,26 @@ Metal device even when the Mac supports MPS.
 <summary>NVIDIA CUDA PyTorch install</summary>
 
 Choose the CUDA wheel that matches your machine from the PyTorch install
-selector. For example, with CUDA 12.8:
+selector. The controlled Windows profile pins PyTorch 2.12.1 and uses the
+CUDA 12.6 wheel:
 
-```bash
-python -m pip install torch --index-url https://download.pytorch.org/whl/cu128
-python -m pip install datasets numpy tiktoken
+```powershell
+.\.venv\Scripts\python.exe -m pip uninstall -y torch
+.\.venv\Scripts\python.exe -m pip install torch==2.12.1 --index-url https://download.pytorch.org/whl/cu126
+.\.venv\Scripts\python.exe -m pip install -r final_project\requirements-common.txt
 ```
+
+The uninstall makes a CPU-to-CUDA transition unambiguous: pip otherwise treats
+an already installed CPU build with the same version number as satisfied.
 
 Verify CUDA:
 
-```bash
-python -c "import torch; print(torch.cuda.is_available()); print(torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'no cuda device')"
+```powershell
+.\.venv\Scripts\python.exe -c "import torch; print(torch.version.cuda); print(torch.cuda.is_available()); print(torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'no cuda device')"
 ```
+
+See the [final training runbook](docs/FINAL_TRAINING_RUNBOOK.md) if the
+official selector requires a different wheel index for the installed driver.
 
 </details>
 
@@ -189,8 +232,8 @@ python -c "import torch; print(torch.cuda.is_available()); print(torch.cuda.get_
 Use this when you do not have a GPU backend available:
 
 ```bash
-python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
-python -m pip install datasets numpy tiktoken
+python -m pip install torch==2.12.1 --index-url https://download.pytorch.org/whl/cpu
+python -m pip install -r final_project/requirements-common.txt
 ```
 
 Verify CPU:
@@ -206,6 +249,11 @@ python -c "import torch; print(torch.__version__); print(torch.ones(1).device)"
 The final project trains on
 [FineWeb-Edu](https://huggingface.co/datasets/HuggingFaceFW/fineweb-edu) using
 the GPT-2 BPE tokenizer. The dataset is not committed to the repository.
+
+The canonical, fully explained workflow is the
+[final training runbook](docs/FINAL_TRAINING_RUNBOOK.md). The commands below
+are a compact reference; keep the runbook open for setup, monitoring, resume,
+Windows PowerShell, and troubleshooting.
 
 Prepare about 10 GB of tokenized data:
 
@@ -224,10 +272,11 @@ data/processed/fineweb_edu/
   meta.json
 ```
 
-Validate that the local data exists:
+Validate the canonical local data:
 
 ```bash
-python -B tools/validate_learngpt.py --require-data
+python -B tools/validate_learngpt.py \
+  --training-data-dir data/processed/fineweb_edu
 ```
 
 Choose one training backend. Expand only the section that matches your machine.
@@ -252,6 +301,7 @@ python -m final_project.training \
   --device mps \
   --data-dir data/processed/fineweb_edu \
   --checkpoint-path /tmp/learngpt-mps-smoke.pt \
+  --overwrite-checkpoints \
   --context-size 8 \
   --embedding-size 16 \
   --num-heads 4 \
@@ -335,7 +385,7 @@ steps:
 caffeinate -i .venv/bin/python -B -m final_project.training \
   --device mps \
   --data-dir data/processed/fineweb_edu_experiment_1g \
-  --checkpoint-path checkpoints/learngpt-mps-18m-stable-1g.pt \
+  --checkpoint-path checkpoints/learngpt-mps-18m-stable-1g-v2.pt \
   --encoding-name gpt2 \
   --seed 1337 \
   --context-size 256 \
@@ -370,10 +420,12 @@ will stop before step 1 if the gradients do not agree. During training,
 normal result. A persistent integrity failure aborts the run before the
 optimizer can consume the bad gradient.
 
-A real 100-step MPS integration run of this architecture and dataset passed
-the startup parity check, used zero retries, reduced validation loss from
-`10.834` to `7.697`, reduced the raw gradient norm from `4.238` to `0.773`, and
-finished with `context_loss_gain=+0.378` at about 4,111 tokens per second.
+A complete 45,000-step MPS run passed the startup parity check and used zero
+retries at its saved evaluations. The best checkpoint occurred at step 42,750
+with validation loss `4.2894`; the latest checkpoint reached step 45,000 with
+validation loss `4.4524`, raw gradient norm `2.3872`, and
+`context_loss_gain=+6.1914`. The machine-readable result and a seeded sample
+are recorded in `docs/verified_runs/mps-18m-1g-45000.json`.
 
 `context_js` remains an observational measure of how much the output
 distribution varies across contexts. A value near zero early in training is
@@ -396,8 +448,8 @@ pressure.
 Training writes two atomic checkpoints:
 
 ```text
-checkpoints/learngpt-mps-18m-stable-1g.pt         # best validation loss
-checkpoints/learngpt-mps-18m-stable-1g-latest.pt  # latest evaluated step
+checkpoints/learngpt-mps-18m-stable-1g-v2.pt         # best validation loss
+checkpoints/learngpt-mps-18m-stable-1g-v2-latest.pt  # latest evaluated step
 ```
 
 If the terminal or Mac is interrupted, resume only this new, verified run. The
@@ -407,21 +459,22 @@ step count remains the total target, not 45,000 additional steps:
 caffeinate -i .venv/bin/python -B -m final_project.training \
   --device mps \
   --data-dir data/processed/fineweb_edu_experiment_1g \
-  --checkpoint-path checkpoints/learngpt-mps-18m-stable-1g.pt \
-  --resume-checkpoint-path checkpoints/learngpt-mps-18m-stable-1g-latest.pt \
+  --checkpoint-path checkpoints/learngpt-mps-18m-stable-1g-v2.pt \
+  --resume-checkpoint-path checkpoints/learngpt-mps-18m-stable-1g-v2-latest.pt \
   --training-steps 45000
 ```
 
-Generate:
+Generate reproducibly:
 
 ```bash
 .venv/bin/python -B -m final_project.generate \
   --device mps \
-  --checkpoint-path checkpoints/learngpt-mps-18m-stable-1g.pt \
+  --checkpoint-path checkpoints/learngpt-mps-18m-stable-1g-v2.pt \
   --prompt "Once upon a time" \
   --max-new-tokens 120 \
   --temperature 0.9 \
-  --top-k 50
+  --top-k 50 \
+  --seed 1337
 ```
 
 This run trains a small base language model. Its job is to continue prompts in
@@ -437,55 +490,23 @@ environment before training with `--device mps`.
 <details>
 <summary>NVIDIA CUDA training</summary>
 
-Check that PyTorch can see CUDA:
+The Windows/CUDA path trains the same controlled model as MPS: context 256,
+embedding width 256, 4 heads, 6 blocks, the seeded 1 GiB subset, 8,192
+effective tokens per optimizer step, and a total target of 45,000 steps. CUDA
+uses FP16 autocast with a checkpointed GradScaler and zero MPS-style gradient
+retries. A transient FP16 overflow lowers the scale and repeats the exact same
+batch and step, up to eight times, before failing closed.
 
-```bash
-python -c "import torch; print(torch.cuda.is_available()); print(torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'no cuda device')"
-```
+Follow the exact two-phase PowerShell procedure in
+[Final Training Runbook — Windows NVIDIA CUDA](docs/FINAL_TRAINING_RUNBOOK.md#6-windows-nvidia-cuda-smoke-gate-and-complete-run).
+It runs a 20-step gate with the real architecture, then resumes that same
+checkpoint to step 45,000. The section also includes 4, 6, and 8 GiB VRAM
+profiles and the matching generation command.
 
-Train:
-
-```bash
-python -m final_project.training \
-  --device cuda \
-  --data-dir data/processed/fineweb_edu \
-  --checkpoint-path checkpoints/learngpt-cuda.pt \
-  --context-size 128 \
-  --embedding-size 256 \
-  --num-heads 4 \
-  --num-transformer-blocks 4 \
-  --batch-size 8 \
-  --gradient-accumulation-steps 4 \
-  --training-steps 1000 \
-  --eval-interval 100 \
-  --eval-batches 10 \
-  --mixed-precision \
-  --precision-dtype float16
-```
-
-Resume:
-
-```bash
-python -m final_project.training \
-  --device cuda \
-  --data-dir data/processed/fineweb_edu \
-  --checkpoint-path checkpoints/learngpt-cuda.pt \
-  --resume-checkpoint-path checkpoints/learngpt-cuda-latest.pt \
-  --mixed-precision \
-  --precision-dtype float16
-```
-
-Generate:
-
-```bash
-python -m final_project.generate \
-  --device cuda \
-  --checkpoint-path checkpoints/learngpt-cuda.pt \
-  --prompt "Once upon a time" \
-  --max-new-tokens 120 \
-  --temperature 0.9 \
-  --top-k 50
-```
+This backend path is code-reviewed and covered by CPU-side checkpoint tests,
+including GradScaler state and overflow backoff/retry. The final hardware gate
+must still run on the target NVIDIA machine before a long job is considered
+verified.
 
 </details>
 
@@ -520,7 +541,8 @@ python -m final_project.training \
   --device cpu \
   --data-dir data/processed/fineweb_edu \
   --checkpoint-path checkpoints/learngpt-cpu.pt \
-  --resume-checkpoint-path checkpoints/learngpt-cpu-latest.pt
+  --resume-checkpoint-path checkpoints/learngpt-cpu-latest.pt \
+  --training-steps 200
 ```
 
 Generate:
@@ -532,7 +554,8 @@ python -m final_project.generate \
   --prompt "Once upon a time" \
   --max-new-tokens 120 \
   --temperature 0.9 \
-  --top-k 50
+  --top-k 50 \
+  --seed 1337
 ```
 
 </details>
@@ -540,7 +563,8 @@ python -m final_project.generate \
 The training CLI prints the Python and PyTorch runtime, selected device,
 dataset size, model and training configuration, validation loss, learning
 rate, raw pre-clipping gradient norm, retry count, target-aware context
-diagnostics, tokens per second, and estimated remaining time.
+diagnostics, CUDA AMP retry/overflow counts, tokens per second, and estimated
+remaining time.
 
 ## Publishing Checkpoints
 

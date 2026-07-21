@@ -209,6 +209,7 @@ class GenerationConfig:
     temperature: float = 0.9
     top_k: int | None = 50
     num_samples: int = 1
+    seed: int = 1337
 
     def __post_init__(self):
         if self.generated_tokens < 0:
@@ -222,6 +223,9 @@ class GenerationConfig:
 
         if self.num_samples < 1:
             raise ValueError("num_samples must be at least 1.")
+
+        if self.seed < 0:
+            raise ValueError("seed cannot be negative.")
 
     def to_checkpoint_dict(self):
         return asdict(self)

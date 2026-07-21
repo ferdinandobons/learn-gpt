@@ -18,7 +18,7 @@ import torch
 
 
 PROJECT_DIR = Path(__file__).resolve().parents[2]
-DATASET_PATH = PROJECT_DIR / "data" / "raw" / "fineweb_edu_sample.txt"
+DATASET_PATH = PROJECT_DIR / "data" / "study_sample.txt"
 
 sys.path.append(str(PROJECT_DIR))
 
@@ -59,7 +59,7 @@ def main():
     token_embeddings = model.token_embedding_table(input_tensor)
     logits, loss = model(input_tensor, target_tensor)
 
-    print("Input form:")
+    print("Input shape:")
     print(input_tensor.shape)
     print()
 
@@ -75,11 +75,11 @@ def main():
     print(EMBEDDING_SIZE)
     print()
 
-    print("Token embeddings form:")
+    print("Token embeddings shape:")
     print(token_embeddings.shape)
     print()
 
-    print("Logits form:")
+    print("Logits shape:")
     print(logits.shape)
     print()
 

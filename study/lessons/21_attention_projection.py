@@ -18,7 +18,7 @@ import torch
 
 
 PROJECT_DIR = Path(__file__).resolve().parents[2]
-DATASET_PATH = PROJECT_DIR / "data" / "raw" / "fineweb_edu_sample.txt"
+DATASET_PATH = PROJECT_DIR / "data" / "study_sample.txt"
 
 sys.path.append(str(PROJECT_DIR))
 
@@ -84,7 +84,7 @@ def main():
 
     max_difference = (projected_embeddings - model_attention_output).abs().max()
 
-    print("Input form:")
+    print("Input shape:")
     print(input_tensor.shape)
     print()
 
@@ -92,24 +92,24 @@ def main():
     print(repr(decode(input_tensor[0].tolist(), id_to_char)))
     print()
 
-    print("Form embeddings before multi-head attention:")
+    print("Shape embeddings before multi-head attention:")
     print(embeddings.shape)
     print()
 
-    print("Output form of each head:")
+    print("Output shape of each head:")
     for index, head_output in enumerate(head_outputs):
         print(f"head {index}: {head_output.shape}")
     print()
 
-    print("Form after head concatenation:")
+    print("Shape after head concatenation:")
     print(concatenated_embeddings.shape)
     print()
 
-    print("Form after output_projection:")
+    print("Shape after output_projection:")
     print(projected_embeddings.shape)
     print()
 
-    print("Form logits after output_head:")
+    print("Shape logits after output_head:")
     print(logits.shape)
     print()
 

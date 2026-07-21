@@ -14,7 +14,7 @@ from pathlib import Path
 
 
 PROJECT_DIR = Path(__file__).resolve().parents[2]
-DATASET_PATH = PROJECT_DIR / "data" / "raw" / "fineweb_edu_sample.txt"
+DATASET_PATH = PROJECT_DIR / "data" / "study_sample.txt"
 
 
 def create_vocabulary(text):
@@ -70,7 +70,7 @@ def main():
     print("Original text:")
     print(sample)
     print()
-    print("Numeri:")
+    print("Token IDs:")
     print(token_ids)
     print()
     print("Reconstructed text:")

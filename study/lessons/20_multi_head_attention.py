@@ -18,7 +18,7 @@ import torch
 
 
 PROJECT_DIR = Path(__file__).resolve().parents[2]
-DATASET_PATH = PROJECT_DIR / "data" / "raw" / "fineweb_edu_sample.txt"
+DATASET_PATH = PROJECT_DIR / "data" / "study_sample.txt"
 
 sys.path.append(str(PROJECT_DIR))
 
@@ -79,7 +79,7 @@ def main():
     multi_head_embeddings, _ = model.multi_head_attention(embeddings)
     logits, loss = model(input_tensor, target_tensor)
 
-    print("Input form:")
+    print("Input shape:")
     print(input_tensor.shape)
     print()
 
@@ -95,16 +95,16 @@ def main():
     print(HEAD_SIZE)
     print()
 
-    print("Form embeddings before multi-head attention:")
+    print("Shape embeddings before multi-head attention:")
     print(embeddings.shape)
     print()
 
-    print("Output form of each head:")
+    print("Output shape of each head:")
     for index, head_output in enumerate(head_outputs):
         print(f"head {index}: {head_output.shape}")
     print()
 
-    print("Form attention weights of each head:")
+    print("Shape attention weights of each head:")
     for index, attention_weights in enumerate(attention_weights_by_head):
         print(f"head {index}: {attention_weights.shape}")
     print()
@@ -117,11 +117,11 @@ def main():
     print(attention_weights_by_head[0][0].sum(dim=-1))
     print()
 
-    print("Form after head concatenation:")
+    print("Shape after head concatenation:")
     print(multi_head_embeddings.shape)
     print()
 
-    print("Logits form:")
+    print("Logits shape:")
     print(logits.shape)
     print()
 

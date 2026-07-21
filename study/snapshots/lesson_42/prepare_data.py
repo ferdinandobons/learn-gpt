@@ -13,6 +13,7 @@ import argparse
 import json
 import os
 import sys
+import tempfile
 import time
 from pathlib import Path
 
@@ -25,7 +26,7 @@ DEFAULT_DATASET_CONFIG = "sample-10BT"
 DEFAULT_ENCODING_NAME = "gpt2"
 DEFAULT_TARGET_GB = 10.0
 DEFAULT_VALIDATION_RATIO = 0.01
-DEFAULT_HF_HOME = "/private/tmp/learngpt_huggingface"
+DEFAULT_HF_HOME = Path(tempfile.gettempdir()) / "learngpt_huggingface"
 
 
 def parse_args():
@@ -130,7 +131,7 @@ def prepare_dataset(args):
     next_progress_bytes = progress_bytes
     start_time = time.time()
 
-    os.environ.setdefault("HF_HOME", DEFAULT_HF_HOME)
+    os.environ.setdefault("HF_HOME", str(DEFAULT_HF_HOME))
     os.environ.setdefault("HF_DATASETS_CACHE", str(Path(DEFAULT_HF_HOME) / "datasets"))
 
     from datasets import load_dataset

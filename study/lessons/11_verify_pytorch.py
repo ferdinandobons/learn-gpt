@@ -14,7 +14,7 @@ import torch
 
 
 def main():
-    print("Versione PyTorch:")
+    print("PyTorch version:")
     print(torch.__version__)
     print()
 
@@ -25,7 +25,7 @@ def main():
 
     tensor = torch.tensor(token_ids)
 
-    print("Tensore:")
+    print("Tensor:")
     print(tensor)
     print()
 
@@ -37,7 +37,7 @@ def main():
     print(tensor[0])
     print()
 
-    print("Seconda colonna:")
+    print("Second column:")
     print(tensor[:, 1])
     print()
 

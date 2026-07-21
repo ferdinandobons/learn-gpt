@@ -14,7 +14,7 @@ from pathlib import Path
 
 
 PROJECT_DIR = Path(__file__).resolve().parents[2]
-DATASET_PATH = PROJECT_DIR / "data" / "raw" / "fineweb_edu_sample.txt"
+DATASET_PATH = PROJECT_DIR / "data" / "study_sample.txt"
 
 
 def main():

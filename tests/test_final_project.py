@@ -6,15 +6,22 @@ from pathlib import Path
 import tempfile
 from types import SimpleNamespace
 import unittest
+from unittest.mock import patch
 
 import numpy as np
 import torch
 from torch import nn
 
-from final_project.batching import load_training_and_validation_data
+from final_project.batching import (
+    create_dataset_fingerprint,
+    load_training_and_validation_data,
+)
 from final_project.checkpoint import load_checkpoint, load_checkpoint_payload, save_checkpoint
 from final_project.config import ModelConfig, TrainingConfig
-from final_project.generate import load_model_from_checkpoint
+from final_project.generate import (
+    generate_samples_from_checkpoint,
+    load_model_from_checkpoint,
+)
 from final_project.model import (
     GPT_INITIALIZATION_STD,
     LanguageModel,
@@ -27,6 +34,8 @@ from final_project.training import (
     get_learning_rate,
     get_latest_checkpoint_path,
     train_model,
+    validate_checkpoint_start,
+    validate_resume_dataset,
 )
 
 
@@ -277,6 +286,32 @@ class DatasetValidationTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "incomplete"):
                 load_training_and_validation_data(data_dir)
 
+    def test_dataset_fingerprint_is_path_independent_and_content_sensitive(self):
+        with tempfile.TemporaryDirectory() as temporary_dir:
+            root = Path(temporary_dir)
+            first_dir = root / "first"
+            second_dir = root / "second"
+            first_dir.mkdir()
+            second_dir.mkdir()
+            self.write_dataset(first_dir)
+            self.write_dataset(second_dir)
+
+            first = create_dataset_fingerprint(first_dir)
+            second = create_dataset_fingerprint(second_dir)
+            self.assertEqual(first["value"], second["value"])
+
+            changed = np.memmap(
+                second_dir / "train.bin",
+                dtype=np.uint16,
+                mode="r+",
+            )
+            changed[17] += 1
+            changed.flush()
+            del changed
+
+            modified = create_dataset_fingerprint(second_dir)
+            self.assertNotEqual(first["value"], modified["value"])
+
 
 class ExperimentalSubsetTests(unittest.TestCase):
     def write_source_dataset(self, data_dir):
@@ -412,6 +447,49 @@ class ContextSensitivityTests(unittest.TestCase):
 
 
 class GradientIntegrityTests(unittest.TestCase):
+    class FakeOverflowGradientScaler:
+        def __init__(self, overflows=1):
+            self.current_scale = 65_536.0
+            self.found_inf = False
+            self.overflows_remaining = overflows
+
+        def is_enabled(self):
+            return True
+
+        def scale(self, loss):
+            return loss
+
+        def unscale_(self, optimizer):
+            self.found_inf = False
+            if self.overflows_remaining == 0:
+                return
+            for group in optimizer.param_groups:
+                for parameter in group["params"]:
+                    if parameter.grad is not None:
+                        parameter.grad.reshape(-1)[0] = float("inf")
+                        self.found_inf = True
+                        self.overflows_remaining -= 1
+                        return
+            raise AssertionError("The overflow test found no gradient.")
+
+        def step(self, optimizer):
+            if not self.found_inf:
+                optimizer.step()
+
+        def update(self):
+            if self.found_inf:
+                self.current_scale *= 0.5
+            self.found_inf = False
+
+        def get_scale(self):
+            return self.current_scale
+
+        def state_dict(self):
+            return {"scale": self.current_scale, "growth_tracker": 0}
+
+        def load_state_dict(self, state_dict):
+            self.current_scale = state_dict["scale"]
+
     def test_retry_configuration_requires_a_raw_norm_limit(self):
         with self.assertRaisesRegex(
             ValueError,
@@ -461,8 +539,624 @@ class GradientIntegrityTests(unittest.TestCase):
         for initial, current in zip(initial_parameters, model.parameters()):
             self.assertTrue(torch.equal(initial, current))
 
+    def test_training_rejects_nonfinite_loss_before_an_update(self):
+        class NonFiniteLossModel(nn.Module):
+            def __init__(self):
+                super().__init__()
+                self.weight = nn.Parameter(torch.tensor(1.0))
+
+            def forward(self, input_ids, target_ids=None):
+                logits = self.weight * torch.ones(
+                    (*input_ids.shape, 32),
+                    device=input_ids.device,
+                )
+                if target_ids is None:
+                    return logits
+                finite_zero_gradient = self.weight * 0.0
+                loss = finite_zero_gradient + torch.tensor(
+                    float("inf"),
+                    device=input_ids.device,
+                )
+                return logits, loss
+
+        model = NonFiniteLossModel()
+        initial_weight = model.weight.detach().clone()
+        optimizer = torch.optim.AdamW(model.parameters(), lr=1e-3)
+        training_data = np.arange(128, dtype=np.int64) % 32
+        validation_data = np.arange(64, dtype=np.int64) % 32
+
+        with tempfile.TemporaryDirectory() as temporary_dir:
+            with self.assertRaisesRegex(RuntimeError, "Non-finite training loss"):
+                train_model(
+                    model=model,
+                    optimizer=optimizer,
+                    training_data=training_data,
+                    validation_data=validation_data,
+                    batch_size=1,
+                    context_size=8,
+                    training_steps=1,
+                    eval_interval=1,
+                    eval_batches=1,
+                    checkpoint_path=Path(temporary_dir) / "best.pt",
+                    model_config={"vocabulary_size": 32},
+                    tokenizer_config={"encoding_name": "gpt2"},
+                    base_learning_rate=1e-3,
+                    min_learning_rate=1e-4,
+                    warmup_steps=0,
+                    decay_steps=1,
+                    gradient_clip=None,
+                    max_grad_norm_before_clip=None,
+                    gradient_retry_attempts=0,
+                    device="cpu",
+                )
+
+        self.assertTrue(torch.equal(initial_weight, model.weight.detach()))
+
+    def test_training_rejects_nonfinite_evaluation_before_checkpointing(self):
+        class NonFiniteEvaluationModel(nn.Module):
+            def __init__(self):
+                super().__init__()
+                self.weight = nn.Parameter(torch.tensor(1.0))
+
+            def forward(self, input_ids, target_ids=None):
+                logits = self.weight * torch.ones(
+                    (*input_ids.shape, 32),
+                    device=input_ids.device,
+                )
+                if target_ids is None:
+                    return logits
+                loss_value = float("inf") if not self.training else 1.0
+                loss = self.weight * 0.0 + torch.tensor(
+                    loss_value,
+                    device=input_ids.device,
+                )
+                return logits, loss
+
+        model = NonFiniteEvaluationModel()
+        optimizer = torch.optim.SGD(model.parameters(), lr=1e-3)
+        training_data = np.arange(128, dtype=np.int64) % 32
+        validation_data = np.arange(64, dtype=np.int64) % 32
+
+        with tempfile.TemporaryDirectory() as temporary_dir:
+            checkpoint_path = Path(temporary_dir) / "best.pt"
+            with self.assertRaisesRegex(RuntimeError, "Non-finite training loss"):
+                train_model(
+                    model=model,
+                    optimizer=optimizer,
+                    training_data=training_data,
+                    validation_data=validation_data,
+                    batch_size=1,
+                    context_size=8,
+                    training_steps=1,
+                    eval_interval=1,
+                    eval_batches=1,
+                    checkpoint_path=checkpoint_path,
+                    model_config={"vocabulary_size": 32},
+                    tokenizer_config={"encoding_name": "gpt2"},
+                    base_learning_rate=1e-3,
+                    min_learning_rate=1e-4,
+                    warmup_steps=0,
+                    decay_steps=1,
+                    gradient_clip=None,
+                    max_grad_norm_before_clip=None,
+                    gradient_retry_attempts=0,
+                    device="cpu",
+                )
+
+            self.assertFalse(checkpoint_path.exists())
+            self.assertFalse(get_latest_checkpoint_path(checkpoint_path).exists())
+
+    def test_cuda_amp_overflow_retries_same_step_and_reduces_scale(self):
+        torch.manual_seed(123)
+        config = make_model_config(vocabulary_size=32)
+        model = LanguageModel(**config.to_model_kwargs())
+        initial_parameters = [
+            parameter.detach().clone() for parameter in model.parameters()
+        ]
+        optimizer = configure_optimizer(
+            model,
+            learning_rate=1e-3,
+            weight_decay=0.1,
+            device="cpu",
+        )
+        training_data = np.arange(512, dtype=np.int64) % config.vocabulary_size
+        validation_data = np.arange(256, dtype=np.int64) % config.vocabulary_size
+        scaler = self.FakeOverflowGradientScaler()
+
+        with tempfile.TemporaryDirectory() as temporary_dir:
+            with patch(
+                "final_project.training.create_gradient_scaler",
+                return_value=scaler,
+            ):
+                history, _ = train_model(
+                    model=model,
+                    optimizer=optimizer,
+                    training_data=training_data,
+                    validation_data=validation_data,
+                    batch_size=2,
+                    context_size=config.context_size,
+                    training_steps=1,
+                    eval_interval=1,
+                    eval_batches=1,
+                    checkpoint_path=Path(temporary_dir) / "best.pt",
+                    model_config=config.to_checkpoint_dict(),
+                    tokenizer_config={"encoding_name": "gpt2"},
+                    base_learning_rate=1e-3,
+                    min_learning_rate=1e-4,
+                    warmup_steps=0,
+                    decay_steps=1,
+                    gradient_clip=1.0,
+                    max_grad_norm_before_clip=100.0,
+                    gradient_retry_attempts=0,
+                    mixed_precision=True,
+                    precision_dtype="float16",
+                    device="cpu",
+                )
+
+        self.assertEqual(history[0]["amp_overflow_retries"], 1)
+        self.assertEqual(history[0]["amp_overflow_count"], 1)
+        self.assertEqual(scaler.get_scale(), 32_768.0)
+        self.assertTrue(
+            any(
+                not torch.equal(initial, current)
+                for initial, current in zip(initial_parameters, model.parameters())
+            )
+        )
+
+    def test_cuda_amp_retry_still_rejects_a_finite_unsafe_gradient(self):
+        torch.manual_seed(123)
+        config = make_model_config(vocabulary_size=32)
+        model = LanguageModel(**config.to_model_kwargs())
+        initial_parameters = [
+            parameter.detach().clone() for parameter in model.parameters()
+        ]
+        optimizer = configure_optimizer(
+            model,
+            learning_rate=1e-3,
+            weight_decay=0.1,
+            device="cpu",
+        )
+        training_data = np.arange(512, dtype=np.int64) % config.vocabulary_size
+        validation_data = np.arange(256, dtype=np.int64) % config.vocabulary_size
+        scaler = self.FakeOverflowGradientScaler()
+
+        with tempfile.TemporaryDirectory() as temporary_dir:
+            with patch(
+                "final_project.training.create_gradient_scaler",
+                return_value=scaler,
+            ):
+                with self.assertRaisesRegex(
+                    RuntimeError,
+                    "Gradient integrity check failed",
+                ):
+                    train_model(
+                        model=model,
+                        optimizer=optimizer,
+                        training_data=training_data,
+                        validation_data=validation_data,
+                        batch_size=2,
+                        context_size=config.context_size,
+                        training_steps=1,
+                        eval_interval=1,
+                        eval_batches=1,
+                        checkpoint_path=Path(temporary_dir) / "best.pt",
+                        model_config=config.to_checkpoint_dict(),
+                        tokenizer_config={"encoding_name": "gpt2"},
+                        base_learning_rate=1e-3,
+                        min_learning_rate=1e-4,
+                        warmup_steps=0,
+                        decay_steps=1,
+                        gradient_clip=1.0,
+                        max_grad_norm_before_clip=1e-12,
+                        gradient_retry_attempts=0,
+                        mixed_precision=True,
+                        precision_dtype="float16",
+                        device="cpu",
+                    )
+
+        self.assertEqual(scaler.get_scale(), 32_768.0)
+        for initial, current in zip(initial_parameters, model.parameters()):
+            self.assertTrue(torch.equal(initial, current))
+
+    def test_cuda_amp_persistent_overflow_fails_without_update(self):
+        torch.manual_seed(123)
+        config = make_model_config(vocabulary_size=32)
+        model = LanguageModel(**config.to_model_kwargs())
+        initial_parameters = [
+            parameter.detach().clone() for parameter in model.parameters()
+        ]
+        optimizer = configure_optimizer(
+            model,
+            learning_rate=1e-3,
+            weight_decay=0.1,
+            device="cpu",
+        )
+        training_data = np.arange(512, dtype=np.int64) % config.vocabulary_size
+        validation_data = np.arange(256, dtype=np.int64) % config.vocabulary_size
+        scaler = self.FakeOverflowGradientScaler(overflows=20)
+
+        with tempfile.TemporaryDirectory() as temporary_dir:
+            with patch(
+                "final_project.training.create_gradient_scaler",
+                return_value=scaler,
+            ):
+                with self.assertRaisesRegex(
+                    RuntimeError,
+                    "CUDA AMP overflow persisted",
+                ):
+                    train_model(
+                        model=model,
+                        optimizer=optimizer,
+                        training_data=training_data,
+                        validation_data=validation_data,
+                        batch_size=2,
+                        context_size=config.context_size,
+                        training_steps=1,
+                        eval_interval=1,
+                        eval_batches=1,
+                        checkpoint_path=Path(temporary_dir) / "best.pt",
+                        model_config=config.to_checkpoint_dict(),
+                        tokenizer_config={"encoding_name": "gpt2"},
+                        base_learning_rate=1e-3,
+                        min_learning_rate=1e-4,
+                        warmup_steps=0,
+                        decay_steps=1,
+                        gradient_clip=1.0,
+                        max_grad_norm_before_clip=100.0,
+                        gradient_retry_attempts=0,
+                        mixed_precision=True,
+                        precision_dtype="float16",
+                        device="cpu",
+                    )
+
+        self.assertEqual(len(optimizer.state), 0)
+        for initial, current in zip(initial_parameters, model.parameters()):
+            self.assertTrue(torch.equal(initial, current))
+
 
 class CheckpointTests(unittest.TestCase):
+    class FakeGradientScaler:
+        def __init__(self, scale):
+            self.scale = scale
+
+        def state_dict(self):
+            return {"scale": self.scale, "growth_tracker": 7}
+
+        def load_state_dict(self, state_dict):
+            self.scale = state_dict["scale"]
+
+    class FakeDisabledGradientScaler:
+        def state_dict(self):
+            return {}
+
+        def load_state_dict(self, state_dict):
+            raise AssertionError("An empty scaler state must not be loaded.")
+
+    def test_fresh_training_protects_existing_checkpoints(self):
+        with tempfile.TemporaryDirectory() as temporary_dir:
+            checkpoint_path = Path(temporary_dir) / "model.pt"
+            checkpoint_path.write_bytes(b"existing")
+
+            with self.assertRaisesRegex(FileExistsError, "would overwrite"):
+                validate_checkpoint_start(checkpoint_path)
+
+            validate_checkpoint_start(
+                checkpoint_path,
+                overwrite_checkpoints=True,
+            )
+
+    def test_resume_requires_one_complete_checkpoint_family(self):
+        with tempfile.TemporaryDirectory() as temporary_dir:
+            checkpoint_path = Path(temporary_dir) / "model.pt"
+            latest_path = get_latest_checkpoint_path(checkpoint_path)
+            checkpoint_path.write_bytes(b"best")
+            latest_path.write_bytes(b"latest")
+
+            validate_checkpoint_start(
+                checkpoint_path=checkpoint_path,
+                resume_checkpoint_path=latest_path,
+            )
+
+            other_latest = Path(temporary_dir) / "other-latest.pt"
+            other_latest.write_bytes(b"other")
+            with self.assertRaisesRegex(ValueError, "same family"):
+                validate_checkpoint_start(
+                    checkpoint_path=checkpoint_path,
+                    resume_checkpoint_path=other_latest,
+                )
+
+            checkpoint_path.unlink()
+            with self.assertRaisesRegex(FileNotFoundError, "existing best and latest"):
+                validate_checkpoint_start(
+                    checkpoint_path=checkpoint_path,
+                    resume_checkpoint_path=latest_path,
+                )
+
+    def test_resume_matches_uninterrupted_training_with_dropout(self):
+        config = make_model_config(vocabulary_size=32)
+        config.dropout = 0.2
+        training_data = np.arange(512, dtype=np.int64) % config.vocabulary_size
+        validation_data = np.arange(256, dtype=np.int64) % config.vocabulary_size
+
+        def create_model_and_optimizer(seed):
+            torch.manual_seed(seed)
+            model = LanguageModel(**config.to_model_kwargs())
+            optimizer = configure_optimizer(
+                model,
+                learning_rate=1e-3,
+                weight_decay=0.1,
+                device="cpu",
+            )
+            return model, optimizer
+
+        def run(model, optimizer, checkpoint_path, training_steps, resume=None):
+            return train_model(
+                model=model,
+                optimizer=optimizer,
+                training_data=training_data,
+                validation_data=validation_data,
+                batch_size=2,
+                context_size=config.context_size,
+                training_steps=training_steps,
+                eval_interval=2,
+                eval_batches=2,
+                checkpoint_path=checkpoint_path,
+                model_config=config.to_checkpoint_dict(),
+                tokenizer_config={"encoding_name": "gpt2"},
+                base_learning_rate=1e-3,
+                min_learning_rate=1e-4,
+                warmup_steps=1,
+                decay_steps=4,
+                gradient_clip=1.0,
+                max_grad_norm_before_clip=100.0,
+                gradient_retry_attempts=0,
+                resume_checkpoint_path=resume,
+                device="cpu",
+            )
+
+        with tempfile.TemporaryDirectory() as temporary_dir:
+            temporary_dir = Path(temporary_dir)
+            uninterrupted_path = temporary_dir / "uninterrupted.pt"
+            split_path = temporary_dir / "split.pt"
+
+            uninterrupted_model, uninterrupted_optimizer = (
+                create_model_and_optimizer(123)
+            )
+            run(
+                uninterrupted_model,
+                uninterrupted_optimizer,
+                uninterrupted_path,
+                training_steps=4,
+            )
+
+            split_model, split_optimizer = create_model_and_optimizer(123)
+            run(
+                split_model,
+                split_optimizer,
+                split_path,
+                training_steps=2,
+            )
+            resumed_model, resumed_optimizer = create_model_and_optimizer(999)
+            run(
+                resumed_model,
+                resumed_optimizer,
+                split_path,
+                training_steps=4,
+                resume=get_latest_checkpoint_path(split_path),
+            )
+
+            uninterrupted_payload = load_checkpoint_payload(
+                get_latest_checkpoint_path(uninterrupted_path),
+                device="cpu",
+            )
+            resumed_payload = load_checkpoint_payload(
+                get_latest_checkpoint_path(split_path),
+                device="cpu",
+            )
+
+        self.assertEqual(uninterrupted_payload["step"], 4)
+        self.assertEqual(resumed_payload["step"], 4)
+        for name, parameter in uninterrupted_payload["model_state_dict"].items():
+            self.assertTrue(
+                torch.equal(parameter, resumed_payload["model_state_dict"][name]),
+                msg=f"Parameter differs after resume: {name}",
+            )
+        self.assertTrue(
+            torch.equal(
+                uninterrupted_payload["rng_state"]["cpu"],
+                resumed_payload["rng_state"]["cpu"],
+            )
+        )
+
+    def test_resume_rejects_a_different_dataset_fingerprint(self):
+        checkpoint = {"dataset_fingerprint": {"value": "first"}}
+        current = {"value": "second"}
+
+        with self.assertRaisesRegex(RuntimeError, "different token files"):
+            validate_resume_dataset(checkpoint, current)
+
+        self.assertEqual(
+            validate_resume_dataset(
+                checkpoint,
+                current,
+                allow_data_change=True,
+            ),
+            "changed-by-user",
+        )
+
+    def test_checkpoint_restores_gradient_scaler_state(self):
+        torch.manual_seed(123)
+        config = make_model_config()
+        model = LanguageModel(**config.to_model_kwargs())
+        optimizer = configure_optimizer(
+            model,
+            learning_rate=1e-3,
+            weight_decay=0.1,
+            device="cpu",
+        )
+        saved_scaler = self.FakeGradientScaler(scale=4096.0)
+
+        with tempfile.TemporaryDirectory() as temporary_dir:
+            checkpoint_path = Path(temporary_dir) / "scaler.pt"
+            save_checkpoint(
+                checkpoint_path=checkpoint_path,
+                model=model,
+                optimizer=optimizer,
+                model_config=config.to_checkpoint_dict(),
+                step=1,
+                losses={"training": 1.0, "validation": 1.0},
+                tokenizer_config={"encoding_name": "gpt2"},
+                gradient_scaler=saved_scaler,
+            )
+
+            restored_scaler = self.FakeGradientScaler(scale=1.0)
+            load_checkpoint(
+                checkpoint_path,
+                model=model,
+                optimizer=optimizer,
+                device="cpu",
+                gradient_scaler=restored_scaler,
+            )
+
+        self.assertEqual(restored_scaler.scale, 4096.0)
+
+    def test_checkpoint_ignores_disabled_gradient_scaler_state(self):
+        torch.manual_seed(123)
+        config = make_model_config()
+        model = LanguageModel(**config.to_model_kwargs())
+        optimizer = configure_optimizer(
+            model,
+            learning_rate=1e-3,
+            weight_decay=0.1,
+            device="cpu",
+        )
+        disabled_scaler = self.FakeDisabledGradientScaler()
+
+        with tempfile.TemporaryDirectory() as temporary_dir:
+            checkpoint_path = Path(temporary_dir) / "disabled-scaler.pt"
+            save_checkpoint(
+                checkpoint_path=checkpoint_path,
+                model=model,
+                optimizer=optimizer,
+                model_config=config.to_checkpoint_dict(),
+                step=1,
+                losses={"training": 1.0, "validation": 1.0},
+                tokenizer_config={"encoding_name": "gpt2"},
+                gradient_scaler=disabled_scaler,
+            )
+            payload = load_checkpoint_payload(checkpoint_path, device="cpu")
+            self.assertIsNone(payload["gradient_scaler_state_dict"])
+            load_checkpoint(
+                checkpoint_path,
+                model=model,
+                optimizer=optimizer,
+                device="cpu",
+                gradient_scaler=disabled_scaler,
+            )
+
+    def test_generation_seed_reproduces_the_same_sample(self):
+        torch.manual_seed(123)
+        config = make_model_config(vocabulary_size=50_257)
+        model = LanguageModel(**config.to_model_kwargs())
+        optimizer = configure_optimizer(
+            model,
+            learning_rate=1e-3,
+            weight_decay=0.1,
+            device="cpu",
+        )
+
+        with tempfile.TemporaryDirectory() as temporary_dir:
+            checkpoint_path = Path(temporary_dir) / "generation.pt"
+            save_checkpoint(
+                checkpoint_path=checkpoint_path,
+                model=model,
+                optimizer=optimizer,
+                model_config=config.to_checkpoint_dict(),
+                step=1,
+                losses={"training": 1.0, "validation": 1.0},
+                tokenizer_config={"encoding_name": "gpt2"},
+            )
+            first, _ = generate_samples_from_checkpoint(
+                checkpoint_path=checkpoint_path,
+                prompt_text="The",
+                max_new_tokens=8,
+                num_samples=2,
+                temperature=0.8,
+                top_k=40,
+                device="cpu",
+                seed=777,
+            )
+            second, _ = generate_samples_from_checkpoint(
+                checkpoint_path=checkpoint_path,
+                prompt_text="The",
+                max_new_tokens=8,
+                num_samples=2,
+                temperature=0.8,
+                top_k=40,
+                device="cpu",
+                seed=777,
+            )
+
+        self.assertEqual(first, second)
+
+    def test_generation_seed_is_independent_of_loader_rng_consumption(self):
+        torch.manual_seed(123)
+        config = make_model_config(vocabulary_size=50_257)
+        model = LanguageModel(**config.to_model_kwargs())
+        optimizer = configure_optimizer(
+            model,
+            learning_rate=1e-3,
+            weight_decay=0.1,
+            device="cpu",
+        )
+
+        with tempfile.TemporaryDirectory() as temporary_dir:
+            checkpoint_path = Path(temporary_dir) / "generation-loader-rng.pt"
+            save_checkpoint(
+                checkpoint_path=checkpoint_path,
+                model=model,
+                optimizer=optimizer,
+                model_config=config.to_checkpoint_dict(),
+                step=1,
+                losses={"training": 1.0, "validation": 1.0},
+                tokenizer_config={"encoding_name": "gpt2"},
+            )
+            original_loader = load_model_from_checkpoint
+            loader_calls = 0
+
+            def noisy_loader(*args, **kwargs):
+                nonlocal loader_calls
+                loader_calls += 1
+                torch.rand(loader_calls * 17)
+                return original_loader(*args, **kwargs)
+
+            with patch(
+                "final_project.generate.load_model_from_checkpoint",
+                side_effect=noisy_loader,
+            ):
+                first, _ = generate_samples_from_checkpoint(
+                    checkpoint_path=checkpoint_path,
+                    prompt_text="The",
+                    max_new_tokens=8,
+                    num_samples=1,
+                    temperature=0.8,
+                    top_k=40,
+                    device="cpu",
+                    seed=777,
+                )
+                second, _ = generate_samples_from_checkpoint(
+                    checkpoint_path=checkpoint_path,
+                    prompt_text="The",
+                    max_new_tokens=8,
+                    num_samples=1,
+                    temperature=0.8,
+                    top_k=40,
+                    device="cpu",
+                    seed=777,
+                )
+
+        self.assertEqual(first, second)
+
     def test_legacy_bias_checkpoint_still_loads_for_generation(self):
         torch.manual_seed(123)
         config = make_model_config()

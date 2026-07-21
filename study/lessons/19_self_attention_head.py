@@ -19,7 +19,7 @@ import torch.nn.functional as F
 
 
 PROJECT_DIR = Path(__file__).resolve().parents[2]
-DATASET_PATH = PROJECT_DIR / "data" / "raw" / "fineweb_edu_sample.txt"
+DATASET_PATH = PROJECT_DIR / "data" / "study_sample.txt"
 
 sys.path.append(str(PROJECT_DIR))
 
@@ -84,7 +84,7 @@ def main():
 
     logits, loss = model(input_tensor, target_tensor)
 
-    print("Input form:")
+    print("Input shape:")
     print(input_tensor.shape)
     print()
 
@@ -92,23 +92,23 @@ def main():
     print(repr(decode(input_tensor[0].tolist(), id_to_char)))
     print()
 
-    print("Form embeddings before attention:")
+    print("Shape embeddings before attention:")
     print(embeddings.shape)
     print()
 
-    print("Key form:")
+    print("Key shape:")
     print(keys.shape)
     print()
 
-    print("Form queries:")
+    print("Shape queries:")
     print(queries.shape)
     print()
 
-    print("Form values:")
+    print("Shape values:")
     print(values.shape)
     print()
 
-    print("Attention scores form:")
+    print("Attention scores shape:")
     print(attention_scores.shape)
     print()
 
@@ -116,7 +116,7 @@ def main():
     print(causal_mask)
     print()
 
-    print("Attention weights form:")
+    print("Attention weights shape:")
     print(attention_weights.shape)
     print()
 
@@ -128,11 +128,11 @@ def main():
     print(attention_weights[0].sum(dim=-1))
     print()
 
-    print("Form embeddings after attention:")
+    print("Shape embeddings after attention:")
     print(attended_embeddings.shape)
     print()
 
-    print("Logits form:")
+    print("Logits shape:")
     print(logits.shape)
     print()
 

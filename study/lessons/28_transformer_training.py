@@ -18,7 +18,7 @@ import torch
 
 
 PROJECT_DIR = Path(__file__).resolve().parents[2]
-DATASET_PATH = PROJECT_DIR / "data" / "raw" / "fineweb_edu_sample.txt"
+DATASET_PATH = PROJECT_DIR / "data" / "study_sample.txt"
 
 sys.path.append(str(PROJECT_DIR))
 
@@ -94,7 +94,7 @@ def main():
         optimizer.step()
 
         if step == 1 or step % PRINT_EVERY == 0:
-            print(f"Step {step:02d} - loss batch corrente: {loss.item():.4f}")
+            print(f"Step {step:02d} - current batch loss: {loss.item():.4f}")
 
     _, final_loss = model(check_input, check_target)
     first_parameter_after = next(model.parameters()).detach()

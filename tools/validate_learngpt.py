@@ -16,7 +16,9 @@ from __future__ import annotations
 
 import argparse
 import ast
+import json
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -39,6 +41,7 @@ EXPECTED_ROOT_ENTRIES = {
     "README.md",
     "course_en.md",
     "data",
+    "docs",
     "final_project",
     "study",
     "tests",
@@ -126,6 +129,16 @@ ITALIAN_CODE_MARKERS = {
     "non può",
     "non è",
 }
+
+ITALIAN_PUBLIC_PATTERN = re.compile(
+    r"\b(?:aggiunto|attenzione|caratteri|codice|contesto|corretto|corrente|"
+    r"dati|dimensione|dopo|errore|esegui|esempio|esempi|futuro|indice|"
+    r"lezione|migliore|modello|nessuno|numeri|numerici|perché|posizione|"
+    r"prima|processato|quindi|risultato|salvato|seconda|stampa|stesso|"
+    r"tensore|testo|trovato|tutti|ultima|valore|verificato|versione)\b|"
+    r"[àèéìòù]",
+    flags=re.IGNORECASE,
+)
 
 ITALIAN_COURSE_PATTERN = re.compile(
     r"\b(?:aggiornati|causale|codice|configurazione|contesto|corso|dati|"
@@ -252,18 +265,62 @@ def check_required_structure(
     if not data_readme.exists():
         errors.append(f"missing data guide: {data_readme}")
 
+    study_sample = project_dir / "data" / "study_sample.txt"
+    if not study_sample.exists():
+        errors.append(f"missing tracked study sample: {study_sample}")
+    else:
+        sample_text = read_text(study_sample)
+        if len(sample_text) < 2_000:
+            errors.append("data/study_sample.txt must contain at least 2,000 characters")
+        if ITALIAN_PUBLIC_PATTERN.search(sample_text):
+            errors.append("data/study_sample.txt must remain English-only")
+
     if not require_data:
         return
 
-    sample_path = project_dir / "data" / "raw" / "fineweb_edu_sample.txt"
-    if not sample_path.exists():
-        errors.append(f"missing shared text sample: {sample_path}")
-
     processed_data_dir = project_dir / "data" / "processed" / "fineweb_edu"
-    for filename in ["train.bin", "val.bin", "meta.json"]:
-        data_path = processed_data_dir / filename
-        if not data_path.exists():
-            errors.append(f"missing processed FineWeb-Edu dataset: {data_path}")
+    check_training_data_directory(processed_data_dir, errors)
+
+
+def check_training_data_directory(data_dir: Path, errors: list[str]) -> None:
+    if not data_dir.is_absolute():
+        data_dir = data_dir.resolve()
+
+    metadata_path = data_dir / "meta.json"
+    train_path = data_dir / "train.bin"
+    validation_path = data_dir / "val.bin"
+    for path in (metadata_path, train_path, validation_path):
+        if not path.exists():
+            errors.append(f"missing prepared training data: {path}")
+    if not all(path.exists() for path in (metadata_path, train_path, validation_path)):
+        return
+
+    try:
+        metadata = json.loads(read_text(metadata_path))
+    except (json.JSONDecodeError, OSError) as error:
+        errors.append(f"invalid dataset metadata {metadata_path}: {error}")
+        return
+
+    if metadata.get("complete") is not True:
+        errors.append(f"dataset metadata is not complete: {metadata_path}")
+    if metadata.get("dtype") != "uint16":
+        errors.append(f"dataset dtype must be uint16: {metadata_path}")
+    if metadata.get("encoding_name") != "gpt2":
+        errors.append(f"dataset encoding must be gpt2: {metadata_path}")
+
+    counters = metadata.get("counters") or {}
+    for split_name, path in (("train", train_path), ("val", validation_path)):
+        token_count = counters.get(f"{split_name}_tokens")
+        if not isinstance(token_count, int) or token_count < 1:
+            errors.append(
+                f"dataset metadata needs a positive {split_name}_tokens count: "
+                f"{metadata_path}"
+            )
+            continue
+        if path.stat().st_size != token_count * 2:
+            errors.append(
+                f"{path} size does not match {split_name}_tokens in meta.json"
+            )
 
 
 def check_markdown_basics(project_dir: Path, errors: list[str]) -> None:
@@ -271,6 +328,8 @@ def check_markdown_basics(project_dir: Path, errors: list[str]) -> None:
         "README.md",
         "course_en.md",
         "data/README.md",
+        "docs/FINAL_TRAINING_RUNBOOK.md",
+        "docs/VIDEO_SERIES_GUIDE.md",
         "study/snapshots/README.md",
     ]
 
@@ -294,6 +353,9 @@ def check_markdown_basics(project_dir: Path, errors: list[str]) -> None:
         for reference in FORBIDDEN_PUBLIC_REFERENCES:
             if reference in text:
                 errors.append(f"{name} still contains legacy reference: {reference}")
+
+        if ITALIAN_PUBLIC_PATTERN.search(text):
+            errors.append(f"{name} must remain English-only")
 
     english_course = read_text(project_dir / "course_en.md")
     if "## Source Map" not in english_course:
@@ -360,6 +422,40 @@ def check_study_scripts(project_dir: Path, errors: list[str]) -> None:
             if '"snapshots"' in line and f'"lesson_{lesson}"' not in line:
                 errors.append(f"{script}: DATASET_PATH does not point to lesson_{lesson}")
 
+        if (
+            lesson <= "35"
+            and "DATASET_PATH =" in text
+            and '"study_sample.txt"' not in text
+        ):
+            errors.append(f"{script}: must use the tracked data/study_sample.txt")
+
+        if "/private/tmp" in text:
+            errors.append(f"{script}: contains a non-portable /private/tmp path")
+
+    lesson_20_model = read_text(snapshots_dir(project_dir) / "lesson_20" / "model.py")
+    lesson_21_model = read_text(snapshots_dir(project_dir) / "lesson_21" / "model.py")
+    if "output_projection" in lesson_20_model:
+        errors.append("lesson_20 must stop at multi-head concatenation")
+    if "output_projection" not in lesson_21_model:
+        errors.append("lesson_21 must introduce the attention output projection")
+
+    lesson_36_scripts = list(lessons_dir(project_dir).glob("36_*.py"))
+    if lesson_36_scripts:
+        lesson_36_text = read_text(lesson_36_scripts[0])
+        for required_term in (
+            "get_vocabulary_size",
+            "load_training_and_validation_data",
+            "Optimizer groups",
+        ):
+            if required_term not in lesson_36_text:
+                errors.append(f"lesson 36 must demonstrate {required_term}")
+
+    lesson_42_scripts = list(lessons_dir(project_dir).glob("42_*.py"))
+    if lesson_42_scripts:
+        lesson_42_text = read_text(lesson_42_scripts[0])
+        if "data/processed" in lesson_42_text or '"processed"' in lesson_42_text:
+            errors.append("lesson 42 smoke test must not require processed training data")
+
 
 def check_english_code_identifiers(project_dir: Path, errors: list[str]) -> None:
     for path in project_python_files(project_dir):
@@ -384,6 +480,8 @@ def check_python_text_is_english(project_dir: Path, errors: list[str]) -> None:
         found = sorted(marker for marker in ITALIAN_CODE_MARKERS if marker in text)
         if found:
             errors.append(f"{path}: Italian public text remains: {found}")
+        if ITALIAN_PUBLIC_PATTERN.search(text):
+            errors.append(f"{path}: Italian public text remains")
 
 
 def check_models(project_dir: Path, errors: list[str]) -> None:
@@ -447,12 +545,12 @@ def check_final_project_snapshot(project_dir: Path, errors: list[str]) -> None:
     final_files = {
         path.name
         for path in final_dir.iterdir()
-        if path.suffix == ".py" or path.name == "requirements.txt"
+        if path.suffix == ".py" or path.name.startswith("requirements")
     }
     snapshot_files = {
         path.name
         for path in snapshot_dir.iterdir()
-        if path.suffix == ".py" or path.name == "requirements.txt"
+        if path.suffix == ".py" or path.name.startswith("requirements")
     }
 
     if final_files != snapshot_files:
@@ -484,6 +582,119 @@ def check_no_pycache(project_dir: Path, errors: list[str]) -> None:
         errors.append(f"__pycache__ directory present: {path}")
 
 
+def check_operational_guides(project_dir: Path, errors: list[str]) -> None:
+    runbook_path = project_dir / "docs" / "FINAL_TRAINING_RUNBOOK.md"
+    video_guide_path = project_dir / "docs" / "VIDEO_SERIES_GUIDE.md"
+    workflow_path = project_dir / "docs" / "training_workflow.json"
+
+    for path in (runbook_path, video_guide_path, workflow_path):
+        if not path.exists():
+            errors.append(f"missing operational guide: {path}")
+    if not all(path.exists() for path in (runbook_path, video_guide_path, workflow_path)):
+        return
+
+    runbook = read_text(runbook_path)
+    required_runbook_terms = (
+        "Windows PowerShell",
+        "Apple Silicon MPS",
+        "--training-steps 45000",
+        "--context-size 256",
+        "--num-transformer-blocks 6",
+        "--training-data-dir",
+        "--resume-checkpoint-path",
+        "--seed 1337",
+        "dataset fingerprint",
+        "amp_overflows",
+        "base language model",
+    )
+    for term in required_runbook_terms:
+        if term not in runbook:
+            errors.append(f"final training runbook is missing: {term}")
+    for stale_term in (
+        "cu128",
+        "learngpt-cuda.pt",
+        "--context-size 128",
+        "--eval-interval 20",
+    ):
+        if stale_term in runbook:
+            errors.append(f"final training runbook contains stale profile: {stale_term}")
+
+    video_guide = read_text(video_guide_path)
+    for episode in range(1, 11):
+        if f"## Episode {episode} " not in video_guide:
+            errors.append(f"video series guide is missing Episode {episode}")
+
+    try:
+        workflow = json.loads(read_text(workflow_path))
+    except json.JSONDecodeError as error:
+        errors.append(f"invalid training workflow JSON: {error}")
+        return
+
+    model = workflow.get("model") or {}
+    expected_model = {
+        "parameters": 17_716_049,
+        "contextSize": 256,
+        "embeddingSize": 256,
+        "heads": 4,
+        "blocks": 6,
+        "vocabularySize": 50_257,
+        "effectiveTokensPerStep": 8_192,
+        "trainingSteps": 45_000,
+    }
+    for name, expected_value in expected_model.items():
+        if model.get(name) != expected_value:
+            errors.append(
+                f"training workflow model.{name} must be {expected_value}"
+            )
+
+    steps = workflow.get("steps") or []
+    if [step.get("number") for step in steps] != list(range(1, 11)):
+        errors.append("training workflow must contain consecutive steps 1 through 10")
+    if not workflow.get("healthSignals") or not workflow.get("stopSignals"):
+        errors.append("training workflow must define healthSignals and stopSignals")
+    for resource in workflow.get("resources") or []:
+        resource_path = project_dir / resource.get("path", "")
+        if not resource_path.is_file():
+            errors.append(f"training workflow resource does not exist: {resource_path}")
+
+    verified_run_path = (
+        project_dir / "docs" / "verified_runs" / "mps-18m-1g-45000.json"
+    )
+    try:
+        verified_run = json.loads(read_text(verified_run_path))
+    except (json.JSONDecodeError, OSError) as error:
+        errors.append(f"invalid verified run manifest: {error}")
+        return
+
+    source_revision = verified_run.get("sourceRevisionAtTraining", "")
+    if not re.fullmatch(r"[0-9a-f]{40}", source_revision):
+        errors.append("verified run sourceRevisionAtTraining must be a full Git SHA")
+        return
+
+    try:
+        shallow_result = subprocess.run(
+            ["git", "rev-parse", "--is-shallow-repository"],
+            cwd=project_dir,
+            capture_output=True,
+            check=False,
+            text=True,
+        )
+    except FileNotFoundError:
+        return
+
+    if shallow_result.returncode == 0 and shallow_result.stdout.strip() == "false":
+        commit_result = subprocess.run(
+            ["git", "cat-file", "-e", f"{source_revision}^{{commit}}"],
+            cwd=project_dir,
+            capture_output=True,
+            check=False,
+        )
+        if commit_result.returncode != 0:
+            errors.append(
+                "verified run sourceRevisionAtTraining does not resolve to a commit"
+            )
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Validate LearnGPT structure, lessons, snapshots, and docs.",
@@ -492,6 +703,13 @@ def parse_args() -> argparse.Namespace:
         "--require-data",
         action="store_true",
         help="Also check local untracked datasets.",
+    )
+    parser.add_argument(
+        "--training-data-dir",
+        type=Path,
+        action="append",
+        default=[],
+        help="Validate one prepared token directory; may be supplied more than once.",
     )
 
     return parser.parse_args()
@@ -511,6 +729,10 @@ def main() -> None:
     check_final_project_snapshot(project_dir, errors)
     check_english_code_identifiers(project_dir, errors)
     check_python_text_is_english(project_dir, errors)
+    check_operational_guides(project_dir, errors)
+    for data_dir in args.training_data_dir:
+        resolved_data_dir = data_dir if data_dir.is_absolute() else project_dir / data_dir
+        check_training_data_directory(resolved_data_dir, errors)
     check_no_pycache(project_dir, errors)
 
     if errors:

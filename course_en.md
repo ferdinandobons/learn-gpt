@@ -64,7 +64,7 @@ direction, while LearnGPT keeps the implementation deliberately explicit.
 33. [Lesson 33 - Best Checkpoint](#lesson-33---best-checkpoint)
 34. [Lesson 34 - Optimizer and Scheduler](#lesson-34---optimizer-and-scheduler)
 35. [Lesson 35 - Dropout and Weight Tying](#lesson-35---dropout-and-weight-tying)
-36. [Lesson 36 - Optimizer Groups](#lesson-36---optimizer-groups)
+36. [Lesson 36 - Production Data and Optimizer Groups](#lesson-36---production-data-and-optimizer-groups)
 37. [Lesson 37 - Gradient Accumulation](#lesson-37---gradient-accumulation)
 38. [Lesson 38 - Configuration and Resume](#lesson-38---configuration-and-resume)
 39. [Lesson 39 - Last-Token Output Head](#lesson-39---last-token-output-head)
@@ -83,17 +83,33 @@ Run every command from the repository root with the project environment:
 Replace the filename with the lesson you want to study. `-B` prevents Python
 from creating `__pycache__` directories in the teaching tree.
 
+On Windows PowerShell, replace `.venv/bin/python` with
+`.\.venv\Scripts\python.exe`. Lessons 01–35 use the tracked
+`data/study_sample.txt`, and Lesson 42 builds a small in-memory BPE dataset, so
+the teaching path works before the real FineWeb-Edu corpus is downloaded.
+
 Run the final smoke test with:
 
 ```bash
 .venv/bin/python -B study/lessons/42_final_project.py
 ```
 
+Run all 42 lessons in sequence with:
+
+```bash
+.venv/bin/python -B tools/run_all_lessons.py
+```
+
 Validate the complete structure with:
 
 ```bash
-.venv/bin/python -B tools/validate_learngpt.py --require-data
+.venv/bin/python -B tools/validate_learngpt.py
 ```
+
+When you are ready for the controlled 17.7M-parameter experiment, switch to
+the [final training runbook](docs/FINAL_TRAINING_RUNBOOK.md). The
+[video series guide](docs/VIDEO_SERIES_GUIDE.md) groups the checkpoints into a
+recording-ready narrative without duplicating the operational commands.
 
 ## How Study Snapshots Work
 
@@ -385,9 +401,16 @@ C -> 4C -> GELU -> C
 ```
 
 Attention mixes positions; the feed-forward network transforms the features at
-each position.
+each position. This checkpoint also exposes the second pre-LayerNorm and
+feed-forward residual explicitly so their tensor path can be inspected before
+it is packaged into a reusable block.
 
 ## Lesson 25 - Transformer Block
+
+The operations introduced separately in Lessons 22–24 are collected into one
+`TransformerBlock` class. The lesson compares the manual sequence with
+`TransformerBlock.forward`; the new idea is the reusable boundary, not a new
+mathematical operation.
 
 A complete block contains two pre-normalized residual branches:
 
@@ -429,11 +452,14 @@ evaluation mode. It does not update model parameters.
 
 ## Lesson 30 - Checkpoint
 
-A checkpoint stores model parameters, optimizer state, configuration, training
-step, metrics, tokenizer metadata, and random-number state.
+At this stage, a checkpoint stores model parameters, optimizer state, model
+configuration, training step, losses, and tokenizer metadata. It is the first
+minimal restartable artifact in the course.
 
-Checkpoint writes are atomic: a temporary file is replaced only after the save
-finishes successfully.
+The final Lesson 42 implementation extends this foundation with atomic writes,
+random-number state, best validation state, runtime metadata, dataset identity,
+and the CUDA GradScaler. Those final guarantees are deliberately not attributed
+to the earlier snapshot.
 
 ## Lesson 31 - Generate from a Checkpoint
 
@@ -475,10 +501,18 @@ Dropout is active only during training. Weight tying reuses the token embedding
 matrix as the output-head weight matrix, reducing parameters and sharing the
 input-output token representation.
 
-## Lesson 36 - Optimizer Groups
+## Lesson 36 - Production Data and Optimizer Groups
 
-Matrix-shaped parameters receive weight decay; bias and normalization vectors
-do not. This mirrors the optimizer grouping used in mature GPT training code.
+This checkpoint is the explicit boundary between small teaching data and the
+real runtime. It replaces the character vocabulary with GPT-2 BPE, replaces
+in-memory Python token lists with `uint16` memmaps, makes batching and
+generation device-aware, and carries tokenizer metadata through checkpoints.
+The lesson script creates temporary token files from the tracked study sample
+so every transition can be demonstrated without the 10 GiB corpus.
+
+It also divides AdamW parameters into two groups: matrix-shaped parameters
+receive weight decay, while bias and normalization vectors do not. CUDA may
+select fused AdamW when PyTorch exposes it.
 
 ## Lesson 37 - Gradient Accumulation
 
@@ -490,9 +524,13 @@ effective tokens per update = batch size x context size x accumulation steps
 
 ## Lesson 38 - Configuration and Resume
 
-Dataclasses collect model, training, and generation settings. Resume restores
-model state, optimizer state, random-number state, architecture, tokenizer, and
-the saved schedule.
+Dataclasses collect model, training, and generation settings. The lesson
+reconstructs the architecture and schedule from those explicit configurations,
+then restores model and optimizer state and continues at the next step.
+
+Lesson 42 completes the resume contract by loading saved configurations,
+restoring CPU/CUDA/MPS random-number state, restoring the CUDA GradScaler,
+checking the dataset fingerprint, and preserving best/latest checkpoint state.
 
 `training_steps` is the total target step, not the number of extra steps.
 
@@ -500,9 +538,9 @@ the saved schedule.
 
 Training needs logits for every position. Generation needs only the final
 position, so the output head processes `[batch_size, 1, embedding_size]` when no
-targets are provided. The final training path also projects the 50,257-token
-vocabulary in chunks. Concatenating the chunks gives the same logits and loss,
-while avoiding the unstable monolithic MPS output-projection backward path.
+targets are provided. This checkpoint is only about avoiding unused vocabulary
+projections during inference. Chunked training projection is introduced by the
+guarded final runtime in Lesson 42.
 
 ## Lesson 40 - Scaled Dot-Product Attention
 
@@ -533,7 +571,13 @@ clipping alone cannot make a corrupted gradient direction correct.
 
 ## Lesson 42 - Final Project
 
-The final lesson assembles the complete pipeline:
+The final lesson assembles the complete pipeline. Its executable script uses
+the tracked study text, a compact model, and three steps so it remains a
+self-contained integration smoke test. It proves that the modules connect; it
+does not claim to reproduce the final model quality.
+
+The separate controlled experiment uses the same final modules with the seeded
+1 GiB subset, 17.7M parameters, and 45,000 steps:
 
 ```text
 prepare data -> load memmaps -> configure model -> train -> evaluate
@@ -590,7 +634,7 @@ This is the controlled full run:
 caffeinate -i .venv/bin/python -B -m final_project.training \
   --device mps \
   --data-dir data/processed/fineweb_edu_experiment_1g \
-  --checkpoint-path checkpoints/learngpt-mps-18m-stable-1g.pt \
+  --checkpoint-path checkpoints/learngpt-mps-18m-stable-1g-v2.pt \
   --encoding-name gpt2 \
   --seed 1337 \
   --context-size 256 \
@@ -625,10 +669,12 @@ self-check passed. During training, `grad_norm` is the raw norm before clipping
 and `grad_retries=0` is the normal value. If all three retries fail, training
 stops without applying that optimizer update.
 
-The verified 100-step MPS integration run passed that self-check with zero
-retries. Validation loss moved from `10.834` to `7.697`, raw gradient norm from
-`4.238` to `0.773`, and `context_loss_gain` reached `+0.378` at about 4,111
-tokens per second.
+The complete verified 45,000-step MPS run passed that self-check and used zero
+retries at its saved evaluations. The best checkpoint occurred at step 42,750
+with validation loss `4.2894`; the latest checkpoint reached step 45,000 with
+validation loss `4.4524`, raw gradient norm `2.3872`, and
+`context_loss_gain=+6.1914`. The exact result is recorded in
+`docs/verified_runs/mps-18m-1g-45000.json`.
 
 The context diagnostics have different meanings:
 
@@ -654,19 +700,20 @@ memory pressure.
 ## Testing a Checkpoint
 
 Training saves the best validation checkpoint at
-`checkpoints/learngpt-mps-18m-stable-1g.pt` and the most recent evaluated state
-at `checkpoints/learngpt-mps-18m-stable-1g-latest.pt`. Generate several samples
+`checkpoints/learngpt-mps-18m-stable-1g-v2.pt` and the most recent evaluated state
+at `checkpoints/learngpt-mps-18m-stable-1g-v2-latest.pt`. Generate several samples
 from the best checkpoint after the complete run:
 
 ```bash
 .venv/bin/python -B -m final_project.generate \
   --device mps \
-  --checkpoint-path checkpoints/learngpt-mps-18m-stable-1g.pt \
+  --checkpoint-path checkpoints/learngpt-mps-18m-stable-1g-v2.pt \
   --prompt "The purpose of education is" \
   --max-new-tokens 120 \
   --temperature 0.8 \
   --top-k 40 \
-  --num-samples 3
+  --num-samples 3 \
+  --seed 1337
 ```
 
 This is a small base language model trained for next-token prediction. A
@@ -675,9 +722,14 @@ their content, but it is not yet an instruction-following assistant. Reliable
 question answering requires a later instruction-tuning stage with curated
 prompt-response examples.
 
-If a valid run is interrupted, resume its `stable-1g-latest.pt` checkpoint and
+If a valid run is interrupted, resume its `stable-1g-v2-latest.pt` checkpoint and
 keep `--training-steps 45000`; that value is the total target. Never resume the
 older affected checkpoints.
+
+The runbook contains the equivalent Windows/CUDA profile, a short hardware
+gate, VRAM adjustments, dataset fingerprint behavior, checkpoint overwrite
+protection, CUDA FP16 same-step overflow retries, and the exact interpretation
+of every printed metric.
 
 ## Final Mental Model
 

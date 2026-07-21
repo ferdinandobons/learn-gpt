@@ -15,7 +15,7 @@ import sys
 
 
 PROJECT_DIR = Path(__file__).resolve().parents[2]
-DATASET_PATH = PROJECT_DIR / "data" / "raw" / "fineweb_edu_sample.txt"
+DATASET_PATH = PROJECT_DIR / "data" / "study_sample.txt"
 
 sys.path.append(str(PROJECT_DIR))
 
@@ -33,7 +33,7 @@ def main():
     reconstructed_text = decode(token_ids, id_to_char)
 
     print("Number of different characters:", len(char_to_id))
-    print("First 30 issues:")
+    print("First 30 token IDs:")
     print(token_ids[:30])
     print()
     print("Is the reconstructed text the same as the original?")

@@ -13,13 +13,14 @@ File purpose:
 from pathlib import Path
 import random
 import sys
+import tempfile
 
 import torch
 
 
 PROJECT_DIR = Path(__file__).resolve().parents[2]
-DATASET_PATH = PROJECT_DIR / "data" / "raw" / "fineweb_edu_sample.txt"
-CHECKPOINT_PATH = Path("/private/tmp/learngpt_lesson_33/best_checkpoint.pt")
+DATASET_PATH = PROJECT_DIR / "data" / "study_sample.txt"
+CHECKPOINT_PATH = Path(tempfile.gettempdir()) / "learngpt_lesson_33" / "best_checkpoint.pt"
 
 sys.path.append(str(PROJECT_DIR))
 

@@ -18,7 +18,7 @@ import torch
 
 
 PROJECT_DIR = Path(__file__).resolve().parents[2]
-DATASET_PATH = PROJECT_DIR / "data" / "raw" / "fineweb_edu_sample.txt"
+DATASET_PATH = PROJECT_DIR / "data" / "study_sample.txt"
 
 sys.path.append(str(PROJECT_DIR))
 
@@ -63,7 +63,7 @@ def main():
     embeddings = token_embeddings + position_embeddings
     logits, loss = model(input_tensor, target_tensor)
 
-    print("Input form:")
+    print("Input shape:")
     print(input_tensor.shape)
     print()
 
@@ -75,19 +75,19 @@ def main():
     print(positions)
     print()
 
-    print("Token embeddings form:")
+    print("Token embeddings shape:")
     print(token_embeddings.shape)
     print()
 
-    print("Form position embeddings:")
+    print("Shape position embeddings:")
     print(position_embeddings.shape)
     print()
 
-    print("Form summed embeddings:")
+    print("Shape summed embeddings:")
     print(embeddings.shape)
     print()
 
-    print("Logits form:")
+    print("Logits shape:")
     print(logits.shape)
     print()
 
@@ -97,7 +97,7 @@ def main():
 
     first_token_id = input_tensor[0, 0].item()
     first_token_embedding = token_embeddings[0, 0]
-    prima_position_embedding = position_embeddings[0]
+    first_position_embedding = position_embeddings[0]
     first_summed_embedding = embeddings[0, 0]
 
     print("First token:")
@@ -109,10 +109,10 @@ def main():
     print()
 
     print("Position embedding at position 0:")
-    print(prima_position_embedding)
+    print(first_position_embedding)
     print()
 
-    print("Amount used by the model for the first token:")
+    print("Summed token and position embedding used by the model:")
     print(first_summed_embedding)
 
 

@@ -15,7 +15,7 @@ import sys
 
 
 PROJECT_DIR = Path(__file__).resolve().parents[2]
-DATASET_PATH = PROJECT_DIR / "data" / "raw" / "fineweb_edu_sample.txt"
+DATASET_PATH = PROJECT_DIR / "data" / "study_sample.txt"
 
 sys.path.append(str(PROJECT_DIR))
 
@@ -35,7 +35,7 @@ def main():
     validation_data = token_ids[split_index:]
 
     print("Total characters in text:", len(text))
-    print("Token numerici totali:", len(token_ids))
+    print("Total numeric tokens:", len(token_ids))
     print("Token training:", len(training_data))
     print("Token validation:", len(validation_data))
     print()

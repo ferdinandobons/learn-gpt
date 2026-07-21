@@ -18,7 +18,7 @@ import torch
 
 
 PROJECT_DIR = Path(__file__).resolve().parents[2]
-DATASET_PATH = PROJECT_DIR / "data" / "raw" / "fineweb_edu_sample.txt"
+DATASET_PATH = PROJECT_DIR / "data" / "study_sample.txt"
 
 sys.path.append(str(PROJECT_DIR))
 
@@ -85,7 +85,7 @@ def main():
     block_difference = (manual_block_output - block_output).abs().max()
     logits_difference = (manual_logits - logits).abs().max()
 
-    print("Input form:")
+    print("Input shape:")
     print(input_tensor.shape)
     print()
 
@@ -93,35 +93,35 @@ def main():
     print(repr(decode(input_tensor[0].tolist(), id_to_char)))
     print()
 
-    print("Form embeddings as input to the TransformerBlock:")
+    print("Shape embeddings as input to the TransformerBlock:")
     print(embeddings.shape)
     print()
 
-    print("attention_input form:")
+    print("attention_input shape:")
     print(attention_input.shape)
     print()
 
-    print("attention_output form:")
+    print("attention_output shape:")
     print(attention_output.shape)
     print()
 
-    print("Form after residual attention:")
+    print("Shape after residual attention:")
     print(residual_after_attention.shape)
     print()
 
-    print("feed_forward_input form:")
+    print("feed_forward_input shape:")
     print(feed_forward_input.shape)
     print()
 
-    print("feed_forward_output form:")
+    print("feed_forward_output shape:")
     print(feed_forward_output.shape)
     print()
 
-    print("Output form of the TransformerBlock:")
+    print("Output shape of the TransformerBlock:")
     print(block_output.shape)
     print()
 
-    print("Logits form:")
+    print("Logits shape:")
     print(logits.shape)
     print()
 

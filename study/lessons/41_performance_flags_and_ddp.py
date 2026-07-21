@@ -80,7 +80,7 @@ def main():
     print(get_device_report())
     print()
 
-    print("Flag performance:")
+    print("Performance flags:")
     print("compile_model:", training_config.compile_model)
     print("mixed_precision:", training_config.mixed_precision)
     print("precision_dtype:", training_config.precision_dtype)

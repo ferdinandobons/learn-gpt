@@ -12,13 +12,14 @@ File purpose:
 
 from pathlib import Path
 import sys
+import tempfile
 
 import numpy as np
 import torch
 
 
 PROJECT_DIR = Path(__file__).resolve().parents[2]
-CHECKPOINT_PATH = Path("/private/tmp/learngpt_lesson_38/checkpoint.pt")
+CHECKPOINT_PATH = Path(tempfile.gettempdir()) / "learngpt_lesson_37" / "checkpoint.pt"
 sys.path.append(str(PROJECT_DIR))
 
 from study.snapshots.lesson_37.model import LanguageModel

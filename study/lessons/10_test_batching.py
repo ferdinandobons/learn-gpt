@@ -16,7 +16,7 @@ import sys
 
 
 PROJECT_DIR = Path(__file__).resolve().parents[2]
-DATASET_PATH = PROJECT_DIR / "data" / "raw" / "fineweb_edu_sample.txt"
+DATASET_PATH = PROJECT_DIR / "data" / "study_sample.txt"
 
 sys.path.append(str(PROJECT_DIR))
 
@@ -45,7 +45,7 @@ def main():
         context_size=CONTEXT_SIZE,
     )
 
-    print("Input form:")
+    print("Input shape:")
     print(input_tensor.shape)
     print()
 

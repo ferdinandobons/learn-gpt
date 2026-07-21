@@ -18,7 +18,7 @@ import torch
 
 
 PROJECT_DIR = Path(__file__).resolve().parents[2]
-DATASET_PATH = PROJECT_DIR / "data" / "raw" / "fineweb_edu_sample.txt"
+DATASET_PATH = PROJECT_DIR / "data" / "study_sample.txt"
 
 sys.path.append(str(PROJECT_DIR))
 
@@ -76,7 +76,7 @@ def main():
 
     max_difference = (manual_logits - logits).abs().max()
 
-    print("Input form:")
+    print("Input shape:")
     print(input_tensor.shape)
     print()
 
@@ -84,19 +84,19 @@ def main():
     print(repr(decode(input_tensor[0].tolist(), id_to_char)))
     print()
 
-    print("Form embeddings:")
+    print("Shape embeddings:")
     print(embeddings.shape)
     print()
 
-    print("attention_output form:")
+    print("attention_output shape:")
     print(attention_output.shape)
     print()
 
-    print("Form after residual connection:")
+    print("Shape after residual connection:")
     print(residual_embeddings.shape)
     print()
 
-    print("Logits form:")
+    print("Logits shape:")
     print(logits.shape)
     print()
 

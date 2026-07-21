@@ -49,11 +49,14 @@ def generate_text_from_checkpoint(
     top_k=None,
     device=None,
     compile_model=False,
+    seed=None,
 ):
     device = device or get_default_device()
 
     if max_new_tokens < 0:
         raise ValueError("max_new_tokens cannot be negative.")
+    if seed is not None and seed < 0:
+        raise ValueError("seed cannot be negative.")
 
     model, checkpoint = load_model_from_checkpoint(
         checkpoint_path=checkpoint_path,
@@ -71,6 +74,10 @@ def generate_text_from_checkpoint(
         raise ValueError("prompt_text must produce at least one token.")
 
     input_ids = torch.tensor([prompt_ids], dtype=torch.long, device=device)
+    if seed is not None:
+        # Seed sampling after model construction/loading so implementation
+        # details in the loader cannot consume part of the sampling stream.
+        torch.manual_seed(seed)
 
     with torch.inference_mode():
         generated_ids = model.generate(
@@ -97,9 +104,12 @@ def generate_samples_from_checkpoint(
     top_k=None,
     device=None,
     compile_model=False,
+    seed=None,
 ):
     if num_samples < 1:
         raise ValueError("num_samples must be at least 1.")
+    if seed is not None and seed < 0:
+        raise ValueError("seed cannot be negative.")
 
     device = device or get_default_device()
     model, checkpoint = load_model_from_checkpoint(
@@ -115,6 +125,10 @@ def generate_samples_from_checkpoint(
     prompt_ids = encode(prompt_text, encoding_name=encoding_name)
     if len(prompt_ids) == 0:
         raise ValueError("prompt_text must produce at least one token.")
+    if seed is not None:
+        # One seed controls the complete ordered sample set and is independent
+        # of random numbers consumed while reconstructing the model.
+        torch.manual_seed(seed)
 
     samples = []
     for _ in range(num_samples):
@@ -150,6 +164,12 @@ def parse_args():
     parser.add_argument("--top-k", type=int, default=50)
     parser.add_argument("--no-top-k", action="store_true")
     parser.add_argument("--num-samples", type=int, default=1)
+    parser.add_argument(
+        "--seed",
+        type=int,
+        default=None,
+        help="Optional sampling seed for reproducible generated text.",
+    )
     parser.add_argument("--device", default="auto", choices=["auto", "cpu", "cuda", "mps"])
     parser.add_argument("--compile-model", action="store_true")
 
@@ -170,6 +190,7 @@ def main():
         top_k=top_k,
         device=device,
         compile_model=args.compile_model,
+        seed=args.seed,
     )
 
     for index, sample in enumerate(samples, start=1):

@@ -12,22 +12,31 @@ File purpose:
 
 from pathlib import Path
 import sys
+import tempfile
 
+import numpy as np
 import torch
 
 
 PROJECT_DIR = Path(__file__).resolve().parents[2]
-DATA_DIR = PROJECT_DIR / "data" / "processed" / "fineweb_edu"
-CHECKPOINT_PATH = Path("/private/tmp/learngpt_final_project/best_checkpoint.pt")
+STUDY_DATA_PATH = PROJECT_DIR / "data" / "study_sample.txt"
+CHECKPOINT_PATH = (
+    Path(tempfile.gettempdir())
+    / "learngpt_final_project"
+    / "best_checkpoint.pt"
+)
 
 sys.path.append(str(PROJECT_DIR))
 
-from study.snapshots.lesson_42.batching import load_training_and_validation_data
 from study.snapshots.lesson_42.config import GenerationConfig, ModelConfig, TrainingConfig
 from study.snapshots.lesson_42.device import get_default_device
 from study.snapshots.lesson_42.generate import generate_text_from_checkpoint
 from study.snapshots.lesson_42.model import LanguageModel
-from study.snapshots.lesson_42.tokenizer import DEFAULT_ENCODING_NAME, get_vocabulary_size
+from study.snapshots.lesson_42.tokenizer import (
+    DEFAULT_ENCODING_NAME,
+    encode,
+    get_vocabulary_size,
+)
 from study.snapshots.lesson_42.training import (
     configure_optimizer,
     maybe_compile_model,
@@ -39,7 +48,14 @@ def main():
     torch.manual_seed(42)
 
     device = get_default_device()
-    training_data, validation_data = load_training_and_validation_data(DATA_DIR)
+    study_text = STUDY_DATA_PATH.read_text(encoding="utf-8")
+    token_ids = np.asarray(
+        encode(study_text, encoding_name=DEFAULT_ENCODING_NAME),
+        dtype=np.uint16,
+    )
+    split_index = int(len(token_ids) * 0.9)
+    training_data = token_ids[:split_index]
+    validation_data = token_ids[split_index:]
 
     tokenizer_config = {"encoding_name": DEFAULT_ENCODING_NAME}
     model_config = ModelConfig(
@@ -136,7 +152,6 @@ def main():
     print(f"{history[-1]['context_loss_gain']:+.4f}")
     print()
 
-    torch.manual_seed(123)
     generated_text, checkpoint = generate_text_from_checkpoint(
         checkpoint_path=best_checkpoint_path,
         prompt_text=generation_config.prompt_text,
@@ -145,6 +160,7 @@ def main():
         top_k=generation_config.top_k,
         device=device,
         compile_model=training_config.compile_model,
+        seed=generation_config.seed,
     )
 
     print("Loaded checkpoint step:")

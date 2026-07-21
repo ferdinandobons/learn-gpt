@@ -12,6 +12,7 @@ File purpose:
 
 from pathlib import Path
 import sys
+import tempfile
 
 import numpy as np
 
@@ -19,12 +20,20 @@ import numpy as np
 PROJECT_DIR = Path(__file__).resolve().parents[2]
 sys.path.append(str(PROJECT_DIR))
 
-from study.snapshots.lesson_36.batching import create_batch
+from study.snapshots.lesson_36.batching import (
+    create_batch,
+    load_training_and_validation_data,
+)
 from study.snapshots.lesson_36.model import LanguageModel
+from study.snapshots.lesson_36.tokenizer import (
+    DEFAULT_ENCODING_NAME,
+    decode,
+    encode,
+    get_vocabulary_size,
+)
 from study.snapshots.lesson_36.training import configure_optimizer
 
 
-VOCABULARY_SIZE = 100
 CONTEXT_SIZE = 8
 EMBEDDING_SIZE = 16
 NUM_HEADS = 4
@@ -35,15 +44,27 @@ LEARNING_RATE = 0.001
 
 
 def main():
-    data = np.arange(CONTEXT_SIZE + 1, dtype=np.uint16)
-    input_tensor, target_tensor = create_batch(
-        data=data,
-        batch_size=2,
-        context_size=CONTEXT_SIZE,
-    )
+    text = (PROJECT_DIR / "data" / "study_sample.txt").read_text(encoding="utf-8")
+    token_ids = np.asarray(encode(text, DEFAULT_ENCODING_NAME), dtype=np.uint16)
+    split_index = int(len(token_ids) * 0.9)
+
+    with tempfile.TemporaryDirectory(prefix="learngpt_lesson_36_") as temporary_dir:
+        data_dir = Path(temporary_dir)
+        token_ids[:split_index].tofile(data_dir / "train.bin")
+        token_ids[split_index:].tofile(data_dir / "val.bin")
+        training_data, validation_data = load_training_and_validation_data(data_dir)
+        input_tensor, target_tensor = create_batch(
+            data=training_data,
+            batch_size=2,
+            context_size=CONTEXT_SIZE,
+        )
+        training_token_count = len(training_data)
+        validation_token_count = len(validation_data)
+        del training_data
+        del validation_data
 
     model = LanguageModel(
-        vocabulary_size=VOCABULARY_SIZE,
+        vocabulary_size=get_vocabulary_size(DEFAULT_ENCODING_NAME),
         context_size=CONTEXT_SIZE,
         embedding_size=EMBEDDING_SIZE,
         head_size=HEAD_SIZE,
@@ -56,7 +77,17 @@ def main():
         weight_decay=WEIGHT_DECAY,
     )
 
-    print("Batch created from the only valid window:")
+    print("Tokenizer:", DEFAULT_ENCODING_NAME)
+    print("GPT-2 BPE vocabulary size:", get_vocabulary_size(DEFAULT_ENCODING_NAME))
+    print("First decoded tokens:", repr(decode(token_ids[:12], DEFAULT_ENCODING_NAME)))
+    print()
+
+    print("Memmapped token splits:")
+    print("training tokens:", training_token_count)
+    print("validation tokens:", validation_token_count)
+    print()
+
+    print("Batch created from the memmapped training split:")
     print("input_tensor shape:", tuple(input_tensor.shape))
     print("target_tensor shape:", tuple(target_tensor.shape))
     print()

@@ -1,0 +1,115 @@
+{
+  "version": 1,
+  "title": "From the first lesson to a complete training run",
+  "summary": "Learn the components on a tracked study sample, validate the repository, prepare a reproducible FineWeb-Edu subset, pass a backend smoke test, run the controlled 17.7M-parameter experiment, and evaluate the best checkpoint with seeded prompts.",
+  "model": {
+    "name": "LearnGPT controlled 18M",
+    "parameters": 17716049,
+    "contextSize": 256,
+    "embeddingSize": 256,
+    "heads": 4,
+    "blocks": 6,
+    "vocabularySize": 50257,
+    "effectiveTokensPerStep": 8192,
+    "trainingSteps": 45000,
+    "totalTokenPositions": 368640000,
+    "dataset": "Reproducible 1 GiB subset of the canonical 10 GiB FineWeb-Edu preparation"
+  },
+  "steps": [
+    {
+      "number": 1,
+      "title": "Study the 42 checkpoints",
+      "action": "Run the numbered scripts against data/study_sample.txt while reading course_en.md.",
+      "success": "Every lesson runs without downloading the real training corpus, and each tensor shape has a clear role."
+    },
+    {
+      "number": 2,
+      "title": "Verify the environment",
+      "action": "Create the virtual environment, install the pinned dependencies, and verify CPU, MPS, or CUDA availability.",
+      "success": "PyTorch imports and the selected backend creates a tensor on the requested device."
+    },
+    {
+      "number": 3,
+      "title": "Run the repository gates",
+      "action": "Run the validator, regression tests, and the final self-contained lesson smoke test.",
+      "success": "Structure, English-only content, snapshot alignment, checkpoint logic, and the compact final pipeline all pass."
+    },
+    {
+      "number": 4,
+      "title": "Prepare the canonical corpus",
+      "action": "Stream and tokenize 10 GiB of FineWeb-Edu with GPT-2 BPE into train.bin, val.bin, and meta.json.",
+      "success": "meta.json reports complete=true, uint16 data, GPT-2 encoding, and byte counts that match both token files."
+    },
+    {
+      "number": 5,
+      "title": "Create the controlled subset",
+      "action": "Derive the seeded 1 GiB experiment without modifying the canonical 10 GiB source.",
+      "success": "The subset metadata records seed 1337, chunk size 65536, exact split sizes, and a complete result."
+    },
+    {
+      "number": 6,
+      "title": "Pass a backend smoke test",
+      "action": "Run a short fresh job with the final architecture and a disposable checkpoint name before committing hours to training.",
+      "success": "Initial loss is near ln(50257), gradients are finite, an evaluation is printed, and best/latest checkpoints load."
+    },
+    {
+      "number": 7,
+      "title": "Run the controlled training",
+      "action": "Start from random GPT-style initialization with a new checkpoint path and the documented 45,000-step profile.",
+      "success": "Validation loss trends downward, MPS gradients stay within the integrity limit, transient CUDA FP16 overflows retry the same step, and checkpoints are written atomically."
+    },
+    {
+      "number": 8,
+      "title": "Monitor the right signals",
+      "action": "Read training loss, validation loss, raw gradient norm, MPS retries, CUDA AMP retries and overflows, throughput, ETA, and target-aware context loss gain together.",
+      "success": "Retries normally remain zero, any CUDA overflow count stabilizes, loss improves over many evaluations, and correct contexts eventually outperform shuffled contexts."
+    },
+    {
+      "number": 9,
+      "title": "Resume safely when needed",
+      "action": "Resume from the latest checkpoint with the same data fingerprint and a total target of 45,000 steps.",
+      "success": "Model, optimizer, random state, schedule, mixed-precision scaler, dataset identity, and next step are restored."
+    },
+    {
+      "number": 10,
+      "title": "Evaluate the best checkpoint",
+      "action": "Generate several seeded continuations from the best validation checkpoint and compare prompt sensitivity.",
+      "success": "The model produces plausible English continuations that react to context, without being presented as an instruction-following assistant."
+    }
+  ],
+  "healthSignals": [
+    "The first loss is close to 10.82, the random baseline for a 50,257-token vocabulary.",
+    "MPS reports a successful repeated-gradient and CPU-parity self-check before step 1.",
+    "grad_norm is finite and grad_retries normally remains 0.",
+    "On CUDA, amp_retries normally remains 0; a small stable amp_overflows count means transient FP16 overflow was retried safely.",
+    "Validation loss improves as a trend even when individual evaluations fluctuate.",
+    "context_loss_gain becomes positive as the correct context becomes more useful than shuffled context.",
+    "Different prompts produce meaningfully different seeded continuations."
+  ],
+  "stopSignals": [
+    "A non-finite loss or a non-AMP gradient appears.",
+    "The MPS startup parity check fails.",
+    "The raw gradient guard exhausts all retries.",
+    "CUDA exhausts eight same-step AMP retries or amp_overflows keeps growing persistently.",
+    "Validation loss persistently worsens while training loss keeps falling.",
+    "The operating system reports sustained thermal or memory pressure.",
+    "A resume command reports a dataset fingerprint mismatch."
+  ],
+  "resources": [
+    {
+      "title": "Final training runbook",
+      "path": "docs/FINAL_TRAINING_RUNBOOK.md",
+      "description": "Exact macOS/MPS, Windows/CUDA, smoke, resume, monitoring, and generation commands."
+    },
+    {
+      "title": "Video series guide",
+      "path": "docs/VIDEO_SERIES_GUIDE.md",
+      "description": "An episode plan that turns the 42 checkpoints and final experiment into a teachable narrative."
+    },
+    {
+      "title": "Verified run manifest",
+      "path": "docs/verified_runs/mps-18m-1g-45000.json",
+      "description": "Metrics and a seeded generation sample from the completed 45,000-step MPS run."
+    }
+  ]
+}

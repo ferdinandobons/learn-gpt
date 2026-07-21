@@ -88,9 +88,17 @@ def save_checkpoint(
     training_config=None,
     best_validation_loss=None,
     runtime_metadata=None,
+    gradient_scaler=None,
+    dataset_fingerprint=None,
 ):
     checkpoint_path = Path(checkpoint_path)
     checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
+    gradient_scaler_state = None
+    if gradient_scaler is not None:
+        # A disabled GradScaler returns an empty dictionary. Store that as
+        # ``None`` so a later, intentional FP16 resume does not try to load an
+        # invalid empty state into an enabled scaler.
+        gradient_scaler_state = gradient_scaler.state_dict() or None
 
     checkpoint = {
         "model_state_dict": unwrap_model(model).state_dict(),
@@ -101,6 +109,8 @@ def save_checkpoint(
         "tokenizer_config": tokenizer_config,
         "training_config": training_config,
         "best_validation_loss": best_validation_loss,
+        "gradient_scaler_state_dict": gradient_scaler_state,
+        "dataset_fingerprint": dataset_fingerprint,
         "rng_state": capture_rng_state(),
         "runtime": runtime_metadata or {"torch_version": str(torch.__version__)},
     }
@@ -122,6 +132,7 @@ def load_checkpoint(
     optimizer=None,
     device=None,
     restore_rng_state=True,
+    gradient_scaler=None,
 ):
     checkpoint = load_checkpoint_payload(checkpoint_path, device=device)
     model_state_dict = canonicalize_model_state_dict(
@@ -131,6 +142,10 @@ def load_checkpoint(
 
     if optimizer is not None and "optimizer_state_dict" in checkpoint:
         optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
+
+    scaler_state = checkpoint.get("gradient_scaler_state_dict")
+    if gradient_scaler is not None and scaler_state:
+        gradient_scaler.load_state_dict(scaler_state)
 
     if restore_rng_state:
         restore_checkpoint_rng_state(checkpoint)

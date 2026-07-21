@@ -15,7 +15,7 @@ import sys
 
 
 PROJECT_DIR = Path(__file__).resolve().parents[2]
-DATASET_PATH = PROJECT_DIR / "data" / "raw" / "fineweb_edu_sample.txt"
+DATASET_PATH = PROJECT_DIR / "data" / "study_sample.txt"
 
 sys.path.append(str(PROJECT_DIR))
 
@@ -50,7 +50,7 @@ def main():
     print(repr(decode(target_tokens, id_to_char)))
     print()
 
-    print("Esempi di previsione:")
+    print("Next-token prediction examples:")
     for position in range(CONTEXT_SIZE):
         context = input_tokens[:position + 1]
         next_token = target_tokens[position]

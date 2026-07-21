@@ -1,0 +1,75 @@
+Learning begins with a question. A student notices a pattern, tests an idea, and
+compares the result with the original prediction. A useful lesson does not hide
+the difficult step. It names each assumption, shows the evidence, and explains
+why the conclusion follows. When an experiment fails, the failure becomes new
+information rather than wasted effort.
+
+Writing a computer program follows the same rhythm. Text is transformed into
+symbols, symbols become numbers, and numbers are arranged into batches. A model
+receives a short context and tries to predict the next token. The prediction is
+compared with the target, the error is measured, and gradients show how the
+parameters should change. Repeating this loop turns a random network into a
+small language model.
+
+A map is valuable because it preserves relationships. Roads connect towns,
+rivers cross valleys, and a scale links a distance on paper to a distance in
+the world. A model also builds relationships. Token embeddings describe what
+appears in the context, position embeddings describe where it appears, and
+self-attention lets each position gather relevant information from earlier
+positions.
+
+Causal attention respects time. The first token cannot read the future, while
+the final token may use everything that came before it. A triangular mask makes
+this rule explicit. Every row of the attention matrix represents one query,
+and every allowed column represents a key that the query may inspect. Softmax
+turns the allowed scores into weights that sum to one.
+
+Several attention heads can study different relationships at the same time.
+One head may react to nearby punctuation, another may track a repeated subject,
+and another may connect a definition with a later example. Their outputs are
+concatenated and projected back to the embedding width. A feed-forward network
+then transforms the features at each position independently.
+
+Residual connections keep an unchanged path through every Transformer block.
+Layer normalization controls the scale of the features, attention exchanges
+information between positions, and the feed-forward network refines each
+position. Because the input and output shapes match, the same block can be
+repeated many times without changing the interface.
+
+Training quality cannot be judged from one number. Training loss shows how the
+model fits sampled batches, while validation loss estimates performance on
+held-out tokens. The raw gradient norm can reveal an unstable backward pass.
+Generated samples reveal repetition, broken words, and whether different
+prompts produce different continuations. Each signal answers a different
+question, so they should be read together.
+
+A checkpoint is more than a file of weights. A complete training checkpoint
+records the model configuration, optimizer state, schedule, tokenizer, random
+state, current step, and recent metrics. The best checkpoint preserves the
+lowest validation loss. The latest checkpoint preserves the newest evaluated
+step and is the normal place from which to resume an interrupted run.
+
+Reproducibility makes an explanation testable. A seed fixes the random choices,
+a dataset fingerprint identifies the exact token files, and a command records
+the model and optimizer settings. Two people can then discuss the same
+experiment instead of two runs that only look similar. Reproducibility does not
+guarantee a good result, but it makes the result possible to investigate.
+
+Small models are useful teachers. Their tensors fit on a personal computer,
+their training loop can be inspected, and mistakes become visible quickly.
+They do not contain the knowledge or instruction tuning of large assistants.
+Their basic task is simpler: given a context, assign probabilities to the next
+token and sample a plausible continuation.
+
+Hardware changes the fastest safe implementation, not the mathematical goal.
+A CPU is the universal reference. An NVIDIA GPU can use CUDA and mixed
+precision. Apple silicon can use Metal through MPS. Every backend still computes
+embeddings, causal attention, logits, cross-entropy loss, gradients, and an
+optimizer update. Backend-specific safeguards protect that shared computation.
+
+A final training run should start only after a smoke test passes. The data must
+be complete, the tokenizer must match, the initial loss should be near the
+random baseline, gradients must be finite, and a checkpoint must be writable.
+During the long run, loss should trend downward even though individual points
+fluctuate. After training, several seeded prompts provide a repeatable quality
+check and a clear ending for the experiment.

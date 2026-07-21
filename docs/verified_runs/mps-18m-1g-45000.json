@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 1,
+  "runName": "learngpt-mps-18m-stable-1g",
+  "sourceRevisionAtTraining": "84249257f3fd9e402869602e59b9e5f7f8d3520a",
+  "backend": "mps",
+  "pythonVersion": "3.13.12",
+  "torchVersion": "2.12.1",
+  "dataset": {
+    "name": "HuggingFaceFW/fineweb-edu",
+    "config": "sample-10BT",
+    "encoding": "gpt2",
+    "subsetBytes": 1073741824,
+    "subsetSeed": 1337,
+    "subsetChunkTokens": 65536
+  },
+  "model": {
+    "parameters": 17716049,
+    "vocabularySize": 50257,
+    "contextSize": 256,
+    "embeddingSize": 256,
+    "heads": 4,
+    "blocks": 6,
+    "dropout": 0.0,
+    "outputChunkSize": 32768
+  },
+  "training": {
+    "steps": 45000,
+    "batchSize": 4,
+    "gradientAccumulationSteps": 8,
+    "effectiveTokensPerStep": 8192,
+    "baseLearningRate": 0.0003,
+    "minLearningRate": 0.00003,
+    "warmupSteps": 1000,
+    "weightDecay": 0.05,
+    "gradientClip": 1.0,
+    "maxGradNormBeforeClip": 100.0,
+    "gradientRetryAttempts": 3
+  },
+  "bestCheckpoint": {
+    "step": 42750,
+    "trainingLoss": 4.491658902168274,
+    "validationLoss": 4.289361476898193,
+    "rawGradientNorm": 2.4985833168029785,
+    "gradientRetries": 0,
+    "contextLossGain": 6.236316204071045
+  },
+  "latestCheckpoint": {
+    "step": 45000,
+    "trainingLoss": 4.465768218040466,
+    "validationLoss": 4.452388072013855,
+    "rawGradientNorm": 2.3872220516204834,
+    "gradientRetries": 0,
+    "contextLossGain": 6.191420078277588
+  },
+  "generationCheck": {
+    "checkpoint": "best",
+    "device": "cpu",
+    "seed": 1337,
+    "prompt": "The purpose of education is",
+    "maxNewTokens": 80,
+    "temperature": 0.8,
+    "topK": 40,
+    "output": "The purpose of education is to assess and promote educational attainment to the students, to assess and develop the skills needed for all students or students of all ages. This approach is to develop the skills to evaluate and evaluate the skills they need within the school. The goal of education is to develop the skills to assess and identify and assess the needs and needs of all participants for all age groups.\nIn the schools we are all of"
+  },
+  "notes": [
+    "The checkpoints and dataset are local artifacts and are intentionally not committed.",
+    "This is a base next-token model, not an instruction-tuned assistant.",
+    "The validation minimum occurred before the final step, which is why evaluation uses the best checkpoint and resume uses the latest checkpoint."
+  ]
+}

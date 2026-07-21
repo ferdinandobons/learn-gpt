@@ -18,7 +18,7 @@ import torch
 
 
 PROJECT_DIR = Path(__file__).resolve().parents[2]
-DATASET_PATH = PROJECT_DIR / "data" / "raw" / "fineweb_edu_sample.txt"
+DATASET_PATH = PROJECT_DIR / "data" / "study_sample.txt"
 
 sys.path.append(str(PROJECT_DIR))
 
@@ -80,7 +80,7 @@ def main():
     first_token_before = embeddings[0, 0]
     first_token_after = normalized_embeddings[0, 0]
 
-    print("Input form:")
+    print("Input shape:")
     print(input_tensor.shape)
     print()
 
@@ -88,11 +88,11 @@ def main():
     print(repr(decode(input_tensor[0].tolist(), id_to_char)))
     print()
 
-    print("Form embeddings before LayerNorm:")
+    print("Shape embeddings before LayerNorm:")
     print(embeddings.shape)
     print()
 
-    print("Form embeddings after LayerNorm:")
+    print("Shape embeddings after LayerNorm:")
     print(normalized_embeddings.shape)
     print()
 
@@ -114,15 +114,15 @@ def main():
     print(first_token_after.std(unbiased=False).item())
     print()
 
-    print("attention_output form:")
+    print("attention_output shape:")
     print(attention_output.shape)
     print()
 
-    print("Form after residual connection:")
+    print("Shape after residual connection:")
     print(residual_embeddings.shape)
     print()
 
-    print("Logits form:")
+    print("Logits shape:")
     print(logits.shape)
     print()
 

@@ -7,6 +7,7 @@ File purpose:
 - Create training batches from memmapped token arrays.
 """
 
+import hashlib
 import json
 from pathlib import Path
 
@@ -52,6 +53,65 @@ def validate_dataset_metadata(metadata, encoding_name=None, require_complete=Tru
             "Tokenizer mismatch: dataset uses "
             f"{prepared_encoding!r}, but training requested {encoding_name!r}."
         )
+
+
+def hash_file(path, chunk_size=8 * 1024 * 1024):
+    """Return a content hash without loading a complete token file into RAM."""
+    digest = hashlib.sha256()
+
+    with Path(path).open("rb") as file:
+        while chunk := file.read(chunk_size):
+            digest.update(chunk)
+
+    return digest.hexdigest()
+
+
+def create_dataset_fingerprint(data_dir=DEFAULT_DATA_DIR):
+    """Create a path-independent identity for one prepared token dataset."""
+    data_dir = Path(data_dir)
+    metadata = load_dataset_metadata(data_dir)
+    validate_dataset_metadata(metadata, require_complete=True)
+
+    ignored_metadata_keys = {
+        "elapsed_seconds",
+        "source_data_dir",
+        "train_path",
+        "val_path",
+    }
+    stable_metadata = {
+        key: value
+        for key, value in metadata.items()
+        if key not in ignored_metadata_keys
+    }
+    metadata_bytes = json.dumps(
+        stable_metadata,
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=True,
+    ).encode("utf-8")
+    train_path = data_dir / "train.bin"
+    validation_path = data_dir / "val.bin"
+    if not train_path.exists() or not validation_path.exists():
+        raise FileNotFoundError(
+            f"Prepared dataset is incomplete in {data_dir}: train.bin and val.bin are required."
+        )
+
+    fingerprint = {
+        "algorithm": "sha256-content-v1",
+        "metadata_sha256": hashlib.sha256(metadata_bytes).hexdigest(),
+        "train_sha256": hash_file(train_path),
+        "val_sha256": hash_file(validation_path),
+        "train_bytes": train_path.stat().st_size,
+        "val_bytes": validation_path.stat().st_size,
+    }
+    identity_bytes = json.dumps(
+        fingerprint,
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode("utf-8")
+    fingerprint["value"] = hashlib.sha256(identity_bytes).hexdigest()
+
+    return fingerprint
 
 
 def load_training_and_validation_data(

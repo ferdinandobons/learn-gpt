@@ -65,11 +65,6 @@ class MultiHeadAttention(nn.Module):
                 for _ in range(num_heads)
             ]
         )
-        self.output_projection = nn.Linear(
-            in_features=num_heads * head_size,
-            out_features=embedding_size,
-        )
-
     def forward(self, embeddings):
         attended_outputs = []
         attention_weights_by_head = []
@@ -80,9 +75,8 @@ class MultiHeadAttention(nn.Module):
             attention_weights_by_head.append(attention_weights)
 
         concatenated_embeddings = torch.cat(attended_outputs, dim=-1)
-        projected_embeddings = self.output_projection(concatenated_embeddings)
 
-        return projected_embeddings, attention_weights_by_head
+        return concatenated_embeddings, attention_weights_by_head
 
 
 

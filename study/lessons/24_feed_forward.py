@@ -18,7 +18,7 @@ import torch
 
 
 PROJECT_DIR = Path(__file__).resolve().parents[2]
-DATASET_PATH = PROJECT_DIR / "data" / "raw" / "fineweb_edu_sample.txt"
+DATASET_PATH = PROJECT_DIR / "data" / "study_sample.txt"
 
 sys.path.append(str(PROJECT_DIR))
 
@@ -83,7 +83,7 @@ def main():
 
     max_difference = (manual_logits - logits).abs().max()
 
-    print("Input form:")
+    print("Input shape:")
     print(input_tensor.shape)
     print()
 
@@ -91,35 +91,35 @@ def main():
     print(repr(decode(input_tensor[0].tolist(), id_to_char)))
     print()
 
-    print("Form embeddings:")
+    print("Shape embeddings:")
     print(embeddings.shape)
     print()
 
-    print("Form after residual attention:")
+    print("Shape after residual attention:")
     print(residual_after_attention.shape)
     print()
 
-    print("Feedforward input form:")
+    print("Feedforward input shape:")
     print(feed_forward_input.shape)
     print()
 
-    print("Form after before Linear of the feed-forward:")
+    print("Shape after the first feed-forward Linear layer:")
     print(feed_forward_hidden.shape)
     print()
 
-    print("Form after GELU:")
+    print("Shape after GELU:")
     print(feed_forward_activated.shape)
     print()
 
-    print("Feed-forward output form:")
+    print("Feed-forward output shape:")
     print(feed_forward_output.shape)
     print()
 
-    print("Form after residual connection of the feed-forward:")
+    print("Shape after residual connection of the feed-forward:")
     print(residual_after_feed_forward.shape)
     print()
 
-    print("Logits form:")
+    print("Logits shape:")
     print(logits.shape)
     print()
 
@@ -127,11 +127,11 @@ def main():
     print(feed_forward_input[0, 0])
     print()
 
-    print("First 8 values ​​of the first token after first Linear:")
+    print("First 8 values of the first token after the first Linear layer:")
     print(feed_forward_hidden[0, 0, :8])
     print()
 
-    print("Top 8 values ​​of the first token after GELU:")
+    print("First 8 values of the first token after GELU:")
     print(feed_forward_activated[0, 0, :8])
     print()
 

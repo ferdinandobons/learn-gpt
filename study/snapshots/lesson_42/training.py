@@ -18,7 +18,12 @@ import time
 
 import torch
 
-from .batching import DEFAULT_DATA_DIR, create_batch, load_training_and_validation_data
+from .batching import (
+    DEFAULT_DATA_DIR,
+    create_batch,
+    create_dataset_fingerprint,
+    load_training_and_validation_data,
+)
 from .checkpoint import (
     capture_rng_state,
     load_checkpoint,
@@ -38,6 +43,9 @@ from .device import (
 from .model import LanguageModel
 from .quality import estimate_context_sensitivity
 from .tokenizer import DEFAULT_ENCODING_NAME, get_vocabulary_size
+
+
+CUDA_AMP_OVERFLOW_RETRY_ATTEMPTS = 8
 
 
 def configure_optimizer(
@@ -123,6 +131,101 @@ def create_gradient_scaler(device, mixed_precision, precision_dtype):
     return torch.amp.GradScaler("cuda", enabled=use_scaler)
 
 
+def validate_checkpoint_start(
+    checkpoint_path,
+    resume_checkpoint_path=None,
+    overwrite_checkpoints=False,
+):
+    """Protect existing runs from accidental fresh-training overwrites."""
+    checkpoint_path = Path(checkpoint_path)
+
+    if resume_checkpoint_path is not None:
+        if overwrite_checkpoints:
+            raise ValueError(
+                "--overwrite-checkpoints cannot be combined with "
+                "--resume-checkpoint-path."
+            )
+        resume_checkpoint_path = Path(resume_checkpoint_path)
+        latest_checkpoint_path = get_latest_checkpoint_path(checkpoint_path)
+        if resume_checkpoint_path.resolve() != latest_checkpoint_path.resolve():
+            raise ValueError(
+                "--resume-checkpoint-path must be the -latest checkpoint from "
+                "the same family as --checkpoint-path. Branching into a new "
+                "checkpoint family is intentionally not implicit."
+            )
+        missing_paths = [
+            path
+            for path in (checkpoint_path, latest_checkpoint_path)
+            if not path.exists()
+        ]
+        if missing_paths:
+            raise FileNotFoundError(
+                "A safe resume requires both the existing best and latest "
+                "checkpoints from one family. Missing: "
+                + ", ".join(str(path) for path in missing_paths)
+            )
+        return
+
+    existing_paths = [
+        path
+        for path in (checkpoint_path, get_latest_checkpoint_path(checkpoint_path))
+        if path.exists()
+    ]
+    if existing_paths and not overwrite_checkpoints:
+        names = ", ".join(str(path) for path in existing_paths)
+        raise FileExistsError(
+            "Fresh training would overwrite an existing checkpoint: "
+            f"{names}. Choose a new --checkpoint-path or explicitly pass "
+            "--overwrite-checkpoints."
+        )
+
+
+def validate_resume_dataset(
+    checkpoint,
+    dataset_fingerprint,
+    allow_data_change=False,
+):
+    """Reject a resume against different token files unless explicitly allowed."""
+    saved_fingerprint = checkpoint.get("dataset_fingerprint")
+    if saved_fingerprint is None or dataset_fingerprint is None:
+        return "unverified"
+
+    if saved_fingerprint.get("value") == dataset_fingerprint.get("value"):
+        return "matched"
+
+    if not allow_data_change:
+        raise RuntimeError(
+            "The resume checkpoint was created from different token files. "
+            "Use the original --data-dir, or pass --allow-data-change only for "
+            "an intentional non-reproducible continuation."
+        )
+
+    return "changed-by-user"
+
+
+def get_runtime_metadata(device):
+    metadata = {
+        "python_version": platform.python_version(),
+        "torch_version": str(torch.__version__),
+        "device": str(device),
+        "platform": platform.platform(),
+        "machine": platform.machine(),
+    }
+
+    if get_device_type(device) == "cuda":
+        properties = torch.cuda.get_device_properties(device)
+        metadata.update(
+            {
+                "cuda_version": str(torch.version.cuda),
+                "cuda_device_name": properties.name,
+                "cuda_device_memory_bytes": int(properties.total_memory),
+                "cudnn_version": torch.backends.cudnn.version(),
+            }
+        )
+
+    return metadata
+
+
 def restore_rng_state(rng_state):
     restore_checkpoint_rng_state({"rng_state": rng_state})
 
@@ -152,6 +255,12 @@ def get_gradient_norm(model):
         error_if_nonfinite=True,
     )
     return float(gradient_norm.detach().cpu().item())
+
+
+def is_nonfinite_gradient_error(error):
+    """Identify the non-finite norm error produced after AMP unscaling."""
+    message = str(error).lower()
+    return "non-finite" in message or "nonfinite" in message
 
 
 def get_gradient_signature(model):
@@ -436,7 +545,12 @@ def estimate_loss(
                     precision_dtype=precision_dtype,
                 ):
                     _, loss = model(input_tensor, target_tensor)
-                split_losses.append(loss.item())
+                loss_value = float(loss.detach().item())
+                if not math.isfinite(loss_value):
+                    raise RuntimeError(
+                        f"Non-finite {split_name} loss during evaluation."
+                    )
+                split_losses.append(loss_value)
 
             losses_by_split[split_name] = sum(split_losses) / len(split_losses)
     finally:
@@ -472,6 +586,8 @@ def train_model(
     resume_checkpoint_path=None,
     training_config=None,
     runtime_metadata=None,
+    dataset_fingerprint=None,
+    allow_data_change=False,
     mixed_precision=False,
     precision_dtype="float16",
     device=None,
@@ -533,29 +649,7 @@ def train_model(
     best_checkpoint_path = None
     latest_checkpoint_path = get_latest_checkpoint_path(checkpoint_path)
     start_step = 1
-
-    if resume_checkpoint_path is not None:
-        checkpoint = load_checkpoint(
-            checkpoint_path=resume_checkpoint_path,
-            model=model,
-            optimizer=optimizer,
-            device=device,
-        )
-        start_step = int(checkpoint.get("step", 0)) + 1
-        saved_best_validation_loss = checkpoint.get("best_validation_loss")
-        if saved_best_validation_loss is not None:
-            best_validation_loss = float(saved_best_validation_loss)
-        best_checkpoint_path = (
-            Path(checkpoint_path)
-            if Path(checkpoint_path).exists()
-            else Path(resume_checkpoint_path)
-        )
-
-    if start_step > training_steps:
-        raise ValueError(
-            "The resume checkpoint is already at or beyond training_steps. "
-            "Choose a larger total --training-steps value."
-        )
+    amp_overflow_count = 0
 
     scaler = create_gradient_scaler(
         device=device,
@@ -566,6 +660,58 @@ def train_model(
     if scaler.is_enabled() and gradient_retry_attempts:
         raise ValueError(
             "gradient retries are not supported with a CUDA gradient scaler."
+        )
+
+    if resume_checkpoint_path is not None:
+        checkpoint = load_checkpoint(
+            checkpoint_path=resume_checkpoint_path,
+            model=model,
+            optimizer=optimizer,
+            device=device,
+            gradient_scaler=scaler,
+        )
+        if (
+            print_progress
+            and scaler.is_enabled()
+            and not checkpoint.get("gradient_scaler_state_dict")
+        ):
+            print(
+                "Warning: this legacy CUDA checkpoint has no GradScaler state; "
+                "mixed-precision scaling starts from the current default.",
+                flush=True,
+            )
+        dataset_status = validate_resume_dataset(
+            checkpoint=checkpoint,
+            dataset_fingerprint=dataset_fingerprint,
+            allow_data_change=allow_data_change,
+        )
+        if print_progress and dataset_status == "unverified":
+            print(
+                "Warning: this legacy checkpoint has no dataset fingerprint; "
+                "the resume dataset identity cannot be verified.",
+                flush=True,
+            )
+        elif print_progress and dataset_status == "changed-by-user":
+            print(
+                "Warning: resuming with different token files because "
+                "--allow-data-change was explicitly set.",
+                flush=True,
+            )
+        start_step = int(checkpoint.get("step", 0)) + 1
+        saved_best_validation_loss = checkpoint.get("best_validation_loss")
+        if saved_best_validation_loss is not None:
+            best_validation_loss = float(saved_best_validation_loss)
+        amp_overflow_count = int(
+            (checkpoint.get("losses") or {}).get("amp_overflow_count", 0)
+        )
+        best_checkpoint_path = (
+            Path(checkpoint_path) if Path(checkpoint_path).exists() else None
+        )
+
+    if start_step > training_steps:
+        raise ValueError(
+            "The resume checkpoint is already at or beyond training_steps. "
+            "Choose a larger total --training-steps value."
         )
 
     mps_self_check = run_mps_gradient_self_check(
@@ -617,11 +763,18 @@ def train_model(
         total_loss = 0.0
         grad_norm = None
         gradient_retries = 0
+        amp_overflow_retries = 0
+        attempt_limit = (
+            CUDA_AMP_OVERFLOW_RETRY_ATTEMPTS
+            if scaler.is_enabled()
+            else gradient_retry_attempts
+        )
 
-        for attempt in range(gradient_retry_attempts + 1):
+        for attempt in range(attempt_limit + 1):
             restore_rng_state(backward_rng_state)
             optimizer.zero_grad(set_to_none=not use_persistent_gradients)
             total_loss = 0.0
+            amp_overflow_detected = False
 
             for input_tensor, target_tensor in batches:
                 with get_autocast_context(
@@ -632,19 +785,38 @@ def train_model(
                     _, loss = model(input_tensor, target_tensor)
                     loss = loss / gradient_accumulation_steps
 
-                total_loss += loss.item()
+                loss_value = float(loss.detach().item())
+                if not math.isfinite(loss_value):
+                    optimizer.zero_grad(set_to_none=not use_persistent_gradients)
+                    raise RuntimeError(
+                        f"Non-finite training loss at step {step}. "
+                        "No optimizer update was applied."
+                    )
+                total_loss += loss_value
                 scaler.scale(loss).backward()
 
             gradient_integrity_error = None
-            if gradient_clip is not None or max_grad_norm_before_clip is not None:
+            if (
+                scaler.is_enabled()
+                or gradient_clip is not None
+                or max_grad_norm_before_clip is not None
+            ):
                 scaler.unscale_(optimizer)
                 try:
                     grad_norm = get_gradient_norm(model)
                 except RuntimeError as error:
-                    gradient_integrity_error = str(error)
+                    if scaler.is_enabled() and is_nonfinite_gradient_error(error):
+                        # GradScaler already recorded the overflow in
+                        # unscale_(). Back off the scale, then repeat this same
+                        # batch and training step so 45,000 steps still means
+                        # 45,000 successful optimizer updates.
+                        amp_overflow_detected = True
+                    else:
+                        gradient_integrity_error = str(error)
 
             if (
                 gradient_integrity_error is None
+                and not amp_overflow_detected
                 and max_grad_norm_before_clip is not None
                 and grad_norm is not None
                 and grad_norm > max_grad_norm_before_clip
@@ -654,7 +826,11 @@ def train_model(
                     f"limit {max_grad_norm_before_clip:.6g}"
                 )
 
-            if gradient_integrity_error is None and gradient_clip is not None:
+            if (
+                gradient_integrity_error is None
+                and not amp_overflow_detected
+                and gradient_clip is not None
+            ):
                 try:
                     torch.nn.utils.clip_grad_norm_(
                         model.parameters(),
@@ -664,11 +840,32 @@ def train_model(
                 except RuntimeError as error:
                     gradient_integrity_error = str(error)
 
+            if amp_overflow_detected:
+                if attempt == attempt_limit:
+                    raise RuntimeError(
+                        f"CUDA AMP overflow persisted at step {step} after "
+                        f"{attempt + 1} attempt(s). No optimizer update was applied."
+                    )
+
+                previous_scale = scaler.get_scale()
+                scaler.step(optimizer)
+                scaler.update()
+                amp_overflow_retries += 1
+                amp_overflow_count += 1
+                if print_progress:
+                    print(
+                        f"step={step} CUDA AMP overflow retry "
+                        f"{amp_overflow_retries}/{attempt_limit}: "
+                        f"scale {previous_scale:.0f} -> {scaler.get_scale():.0f}",
+                        flush=True,
+                    )
+                continue
+
             if gradient_integrity_error is None:
-                gradient_retries = attempt
+                gradient_retries = attempt if not scaler.is_enabled() else 0
                 break
 
-            if attempt == gradient_retry_attempts:
+            if scaler.is_enabled() or attempt == gradient_retry_attempts:
                 raise RuntimeError(
                     f"Gradient integrity check failed at step {step} after "
                     f"{attempt + 1} attempt(s): {gradient_integrity_error}. "
@@ -718,6 +915,8 @@ def train_model(
                 "validation": losses["validation"],
                 "grad_norm": grad_norm,
                 "gradient_retries": gradient_retries,
+                "amp_overflow_retries": amp_overflow_retries,
+                "amp_overflow_count": amp_overflow_count,
                 "tokens_per_second": tokens_per_second,
                 "eta_seconds": eta_seconds,
             }
@@ -742,6 +941,8 @@ def train_model(
                     "lr={learning_rate:.2e} "
                     "grad_norm={grad_norm} "
                     "grad_retries={gradient_retries} "
+                    "amp_retries={amp_overflow_retries} "
+                    "amp_overflows={amp_overflow_count} "
                     "tok/s={tokens_per_second:.0f} "
                     "eta={eta}".format(
                         step=step,
@@ -752,6 +953,8 @@ def train_model(
                         learning_rate=learning_rate,
                         grad_norm=grad_norm_text,
                         gradient_retries=gradient_retries,
+                        amp_overflow_retries=amp_overflow_retries,
+                        amp_overflow_count=amp_overflow_count,
                         tokens_per_second=tokens_per_second,
                         eta=format_duration(eta_seconds),
                     ),
@@ -782,6 +985,8 @@ def train_model(
             checkpoint_losses = dict(losses)
             checkpoint_losses["grad_norm"] = grad_norm
             checkpoint_losses["gradient_retries"] = gradient_retries
+            checkpoint_losses["amp_overflow_retries"] = amp_overflow_retries
+            checkpoint_losses["amp_overflow_count"] = amp_overflow_count
             for metric_name in (
                 "context_js_divergence",
                 "context_logit_std",
@@ -803,6 +1008,8 @@ def train_model(
                 training_config=training_config,
                 best_validation_loss=best_validation_loss,
                 runtime_metadata=runtime_metadata,
+                gradient_scaler=scaler,
+                dataset_fingerprint=dataset_fingerprint,
             )
 
             if is_best_checkpoint:
@@ -817,6 +1024,8 @@ def train_model(
                     training_config=training_config,
                     best_validation_loss=best_validation_loss,
                     runtime_metadata=runtime_metadata,
+                    gradient_scaler=scaler,
+                    dataset_fingerprint=dataset_fingerprint,
                 )
 
     return history, best_checkpoint_path
@@ -873,8 +1082,40 @@ def parse_args():
     parser.add_argument("--gradient-accumulation-steps", type=int, default=4)
     parser.add_argument("--context-sensitivity-contexts", type=int, default=0)
 
-    parser.add_argument("--compile-model", action="store_true")
-    parser.add_argument("--mixed-precision", action="store_true")
+    parser.add_argument(
+        "--overwrite-checkpoints",
+        action="store_true",
+        help="Allow a fresh run to replace existing best/latest checkpoint files.",
+    )
+    parser.add_argument(
+        "--allow-data-change",
+        action="store_true",
+        help="Allow resume with token files that differ from the checkpoint fingerprint.",
+    )
+
+    compile_group = parser.add_mutually_exclusive_group()
+    compile_group.add_argument(
+        "--compile-model",
+        dest="compile_model",
+        action="store_true",
+    )
+    compile_group.add_argument(
+        "--no-compile-model",
+        dest="compile_model",
+        action="store_false",
+    )
+    precision_group = parser.add_mutually_exclusive_group()
+    precision_group.add_argument(
+        "--mixed-precision",
+        dest="mixed_precision",
+        action="store_true",
+    )
+    precision_group.add_argument(
+        "--no-mixed-precision",
+        dest="mixed_precision",
+        action="store_false",
+    )
+    parser.set_defaults(compile_model=None, mixed_precision=None)
     parser.add_argument(
         "--precision-dtype",
         default="float16",
@@ -888,6 +1129,13 @@ def main():
     args = parse_args()
     device = resolve_device(args.device)
     checkpoint_preview = None
+    validate_checkpoint_start(
+        checkpoint_path=args.checkpoint_path,
+        resume_checkpoint_path=args.resume_checkpoint_path,
+        overwrite_checkpoints=args.overwrite_checkpoints,
+    )
+    if args.allow_data_change and args.resume_checkpoint_path is None:
+        raise ValueError("--allow-data-change requires --resume-checkpoint-path.")
 
     if args.resume_checkpoint_path is not None:
         checkpoint_preview = load_checkpoint_payload(
@@ -933,9 +1181,10 @@ def main():
         if args.gradient_retry_attempts is not None:
             training_config.gradient_retry_attempts = args.gradient_retry_attempts
         training_config.resume_from_checkpoint = True
-        training_config.compile_model = args.compile_model
-        if args.mixed_precision:
-            training_config.mixed_precision = True
+        if args.compile_model is not None:
+            training_config.compile_model = args.compile_model
+        if args.mixed_precision is not None:
+            training_config.mixed_precision = args.mixed_precision
             training_config.precision_dtype = args.precision_dtype
         training_config.__post_init__()
     else:
@@ -962,13 +1211,15 @@ def main():
             gradient_accumulation_steps=args.gradient_accumulation_steps,
             context_sensitivity_contexts=args.context_sensitivity_contexts,
             resume_from_checkpoint=args.resume_checkpoint_path is not None,
-            compile_model=args.compile_model,
-            mixed_precision=args.mixed_precision,
+            compile_model=bool(args.compile_model),
+            mixed_precision=bool(args.mixed_precision),
             precision_dtype=args.precision_dtype,
         )
 
     checkpoint_preview = None
     torch.manual_seed(training_config.seed)
+    print(f"Fingerprinting prepared token files in {args.data_dir}...", flush=True)
+    dataset_fingerprint = create_dataset_fingerprint(args.data_dir)
     training_data, validation_data = load_training_and_validation_data(
         args.data_dir,
         encoding_name=encoding_name,
@@ -985,11 +1236,7 @@ def main():
         weight_decay=training_config.weight_decay,
         device=device,
     )
-    runtime_metadata = {
-        "python_version": platform.python_version(),
-        "torch_version": str(torch.__version__),
-        "device": str(device),
-    }
+    runtime_metadata = get_runtime_metadata(device)
 
     print("LearnGPT training")
     print(json.dumps(
@@ -999,6 +1246,7 @@ def main():
             "checkpoint_path": str(args.checkpoint_path),
             "train_tokens": int(len(training_data)),
             "val_tokens": int(len(validation_data)),
+            "dataset_fingerprint": dataset_fingerprint["value"],
             "runtime": runtime_metadata,
             "model_config": model_config.to_checkpoint_dict(),
             "training_config": training_config.to_checkpoint_dict(),
@@ -1032,6 +1280,8 @@ def main():
         resume_checkpoint_path=args.resume_checkpoint_path,
         training_config=training_config.to_checkpoint_dict(),
         runtime_metadata=runtime_metadata,
+        dataset_fingerprint=dataset_fingerprint,
+        allow_data_change=args.allow_data_change,
         mixed_precision=training_config.mixed_precision,
         precision_dtype=training_config.precision_dtype,
         device=device,

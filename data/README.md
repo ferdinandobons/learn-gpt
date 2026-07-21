@@ -1,7 +1,14 @@
 # Data
 
-This repository does not include datasets, processed binary files, checkpoints,
-or model outputs.
+The repository includes `data/study_sample.txt`, a small original English text
+written for LearnGPT. Lessons 01–35 use it so the complete teaching path runs
+from a clean clone without downloading a training corpus. It is not the final
+training corpus. The first GPT-2 BPE lesson may still download and cache the
+small tokenizer vocabulary files through `tiktoken` if they are not already on
+the machine.
+
+Large datasets, processed binary files, checkpoints, and model outputs are not
+committed.
 
 To prepare FineWeb-Edu locally, install the final project dependencies and run:
 
@@ -41,3 +48,15 @@ python -B -m final_project.prepare_subset \
 The generated `train.bin`, `val.bin`, and `meta.json` are also ignored by Git.
 `meta.json` records the source dataset, seed, chunk size, and exact token
 counts so that the experiment can be recreated.
+
+Validate the exact directory before training:
+
+```bash
+python -B tools/validate_learngpt.py \
+  --training-data-dir data/processed/fineweb_edu_experiment_1g
+```
+
+Every new training checkpoint stores a path-independent SHA-256 fingerprint of
+`meta.json`, `train.bin`, and `val.bin`. Resume fails if the selected token
+files differ. Full preparation, PowerShell equivalents, and backend commands
+are in `docs/FINAL_TRAINING_RUNBOOK.md`.
