@@ -107,7 +107,7 @@ Validate the complete structure with:
 ```
 
 When you are ready for the controlled 17.7M-parameter experiment, switch to
-the [final training runbook](docs/FINAL_TRAINING_RUNBOOK.md). The
+the [how to train runbook](docs/FINAL_TRAINING_RUNBOOK.md). The
 [video series guide](docs/VIDEO_SERIES_GUIDE.md) groups the checkpoints into a
 recording-ready narrative without duplicating the operational commands.
 

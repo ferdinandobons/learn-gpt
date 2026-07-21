@@ -658,7 +658,7 @@ def check_operational_guides(project_dir: Path, errors: list[str]) -> None:
     )
     for term in required_runbook_terms:
         if term not in runbook:
-            errors.append(f"final training runbook is missing: {term}")
+            errors.append(f"how-to-train runbook is missing: {term}")
     for stale_term in (
         "cu128",
         "learngpt-cuda.pt",
@@ -666,7 +666,7 @@ def check_operational_guides(project_dir: Path, errors: list[str]) -> None:
         "--eval-interval 20",
     ):
         if stale_term in runbook:
-            errors.append(f"final training runbook contains stale profile: {stale_term}")
+            errors.append(f"how-to-train runbook contains stale profile: {stale_term}")
 
     video_guide = read_text(video_guide_path)
     for episode in range(1, 11):
@@ -678,6 +678,9 @@ def check_operational_guides(project_dir: Path, errors: list[str]) -> None:
     except json.JSONDecodeError as error:
         errors.append(f"invalid training workflow JSON: {error}")
         return
+
+    if workflow.get("version") != 2:
+        errors.append("training workflow version must be 2")
 
     model = workflow.get("model") or {}
     expected_model = {
@@ -701,6 +704,22 @@ def check_operational_guides(project_dir: Path, errors: list[str]) -> None:
         errors.append("training workflow must contain consecutive steps 1 through 10")
     if not workflow.get("healthSignals") or not workflow.get("stopSignals"):
         errors.append("training workflow must define healthSignals and stopSignals")
+    quick_start = workflow.get("quickStart") or {}
+    if [platform.get("id") for platform in quick_start.get("platforms", [])] != [
+        "mps",
+        "cuda",
+    ]:
+        errors.append("training quick start must define MPS and CUDA platforms")
+    quick_steps = quick_start.get("steps") or []
+    if [step.get("number") for step in quick_steps] != list(range(1, 8)):
+        errors.append("training quick start must contain consecutive steps 1 through 7")
+    for step in quick_steps:
+        commands = step.get("commands") or {}
+        for platform in ("mps", "cuda"):
+            if not (commands.get(platform) or {}).get("code"):
+                errors.append(
+                    f"training quick-start step {step.get('number')} is missing {platform} code"
+                )
     for resource in workflow.get("resources") or []:
         resource_path = project_dir / resource.get("path", "")
         if not resource_path.is_file():

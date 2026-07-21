@@ -23,7 +23,7 @@ Tags:
 The course is maintained as one English guide:
 
 - [course_en.md](course_en.md)
-- [Final training runbook](docs/FINAL_TRAINING_RUNBOOK.md) for the canonical
+- [How to train runbook](docs/FINAL_TRAINING_RUNBOOK.md) for the canonical
   macOS/MPS and Windows/CUDA workflow.
 - [Video series guide](docs/VIDEO_SERIES_GUIDE.md) for teaching the 42
   checkpoints and the final experiment.
@@ -221,7 +221,7 @@ Verify CUDA:
 .\.venv\Scripts\python.exe -c "import torch; print(torch.version.cuda); print(torch.cuda.is_available()); print(torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'no cuda device')"
 ```
 
-See the [final training runbook](docs/FINAL_TRAINING_RUNBOOK.md) if the
+See the [how to train runbook](docs/FINAL_TRAINING_RUNBOOK.md) if the
 official selector requires a different wheel index for the installed driver.
 
 </details>
@@ -244,14 +244,14 @@ python -c "import torch; print(torch.__version__); print(torch.ones(1).device)"
 
 </details>
 
-## Quick Start: Local Training
+## How to Train: Copy-Ready Quick Start
 
 The final project trains on
 [FineWeb-Edu](https://huggingface.co/datasets/HuggingFaceFW/fineweb-edu) using
 the GPT-2 BPE tokenizer. The dataset is not committed to the repository.
 
 The canonical, fully explained workflow is the
-[final training runbook](docs/FINAL_TRAINING_RUNBOOK.md). The commands below
+[how to train runbook](docs/FINAL_TRAINING_RUNBOOK.md). The commands below
 are a compact reference; keep the runbook open for setup, monitoring, resume,
 Windows PowerShell, and troubleshooting.
 
@@ -498,7 +498,7 @@ retries. A transient FP16 overflow lowers the scale and repeats the exact same
 batch and step, up to eight times, before failing closed.
 
 Follow the exact two-phase PowerShell procedure in
-[Final Training Runbook — Windows NVIDIA CUDA](docs/FINAL_TRAINING_RUNBOOK.md#6-windows-nvidia-cuda-smoke-gate-and-complete-run).
+[How to Train Runbook — Windows NVIDIA CUDA](docs/FINAL_TRAINING_RUNBOOK.md#6-windows-nvidia-cuda-smoke-gate-and-complete-run).
 It runs a 20-step gate with the real architecture, then resumes that same
 checkpoint to step 45,000. The section also includes 4, 6, and 8 GiB VRAM
 profiles and the matching generation command.

@@ -15,7 +15,7 @@ Use the same six-part structure in every episode:
 4. **Live checkpoint** — run the numbered lesson and inspect its output.
 5. **Success test** — show the assertion, loss, shape, or generation difference
    that proves the change works.
-6. **Thirty-second recap** — connect the new component to the final training
+6. **Thirty-second recap** — connect the new component to the complete training
    pipeline and preview the next problem.
 
 Display the checkpoint number, source path, seed, and device whenever code is

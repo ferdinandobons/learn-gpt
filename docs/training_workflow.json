@@ -1,7 +1,7 @@
 {
-  "version": 1,
-  "title": "From the first lesson to a complete training run",
-  "summary": "Learn the components on a tracked study sample, validate the repository, prepare a reproducible FineWeb-Edu subset, pass a backend smoke test, run the controlled 17.7M-parameter experiment, and evaluate the best checkpoint with seeded prompts.",
+  "version": 2,
+  "title": "How to train LearnGPT",
+  "summary": "A copy-ready path from a clean clone to a validated FineWeb-Edu dataset, a complete 17.7M-parameter training run, and seeded text generation.",
   "model": {
     "name": "LearnGPT controlled 18M",
     "parameters": 17716049,
@@ -77,6 +77,213 @@
       "success": "The model produces plausible English continuations that react to context, without being presented as an instruction-following assistant."
     }
   ],
+  "quickStart": {
+    "defaultPlatform": "mps",
+    "platforms": [
+      {
+        "id": "mps",
+        "label": "Apple Silicon",
+        "backend": "MPS",
+        "description": "macOS on an M-series Mac. This is the profile used by the verified 45,000-step reference run."
+      },
+      {
+        "id": "cuda",
+        "label": "Windows + NVIDIA",
+        "backend": "CUDA",
+        "description": "Windows PowerShell with an NVIDIA GPU and the pinned CUDA 12.6 PyTorch wheel."
+      }
+    ],
+    "steps": [
+      {
+        "number": 1,
+        "title": "Clone and install",
+        "description": "Create an isolated Python 3.13 environment and install the dependencies for the selected backend.",
+        "commands": {
+          "mps": {
+            "label": "macOS Terminal",
+            "language": "bash",
+            "code": "git clone https://github.com/ferdinandobons/learn-gpt.git\ncd learn-gpt\npython3 -m venv .venv\n.venv/bin/python -m pip install --upgrade pip setuptools wheel\n.venv/bin/python -m pip install -r final_project/requirements.txt"
+          },
+          "cuda": {
+            "label": "Windows PowerShell",
+            "language": "powershell",
+            "code": "git clone https://github.com/ferdinandobons/learn-gpt.git\ncd learn-gpt\npy -3.13 -m venv .venv\n.\\.venv\\Scripts\\python.exe -m pip install --upgrade pip setuptools wheel\n.\\.venv\\Scripts\\python.exe -m pip install torch==2.12.1 --index-url https://download.pytorch.org/whl/cu126\n.\\.venv\\Scripts\\python.exe -m pip install -r final_project\\requirements-common.txt"
+          }
+        },
+        "check": "The environment interpreter imports PyTorch without an error."
+      },
+      {
+        "number": 2,
+        "title": "Verify the backend and repository",
+        "description": "Confirm that PyTorch can create a tensor on the selected accelerator, then run the structural validator and regression tests.",
+        "commands": {
+          "mps": {
+            "label": "Verify MPS and project gates",
+            "language": "bash",
+            "code": ".venv/bin/python -c \"import torch; print(torch.__version__); print(torch.backends.mps.is_built(), torch.backends.mps.is_available()); print(torch.ones(1, device='mps'))\"\n.venv/bin/python -B tools/validate_learngpt.py\n.venv/bin/python -B -m unittest discover -s tests -v"
+          },
+          "cuda": {
+            "label": "Verify CUDA and project gates",
+            "language": "powershell",
+            "code": ".\\.venv\\Scripts\\python.exe -c \"import torch; print(torch.__version__); print(torch.version.cuda); print(torch.cuda.is_available()); print(torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'CUDA unavailable')\"\n.\\.venv\\Scripts\\python.exe -B tools\\validate_learngpt.py\n.\\.venv\\Scripts\\python.exe -B -m unittest discover -s tests -v"
+          }
+        },
+        "check": "The backend is available and every repository test passes before any large download starts."
+      },
+      {
+        "number": 3,
+        "title": "Download and tokenize FineWeb-Edu",
+        "description": "Stream the dataset once and create the canonical 10 GiB GPT-2-tokenized source. Keep this directory unchanged.",
+        "commands": {
+          "mps": {
+            "label": "Prepare the canonical corpus",
+            "language": "bash",
+            "code": ".venv/bin/python -B -m final_project.prepare_data \\\n  --target-gb 10 \\\n  --output-dir data/processed/fineweb_edu"
+          },
+          "cuda": {
+            "label": "Prepare the canonical corpus",
+            "language": "powershell",
+            "code": ".\\.venv\\Scripts\\python.exe -B -m final_project.prepare_data `\n  --target-gb 10 `\n  --output-dir data\\processed\\fineweb_edu"
+          }
+        },
+        "check": "data/processed/fineweb_edu contains train.bin, val.bin, and meta.json with complete=true."
+      },
+      {
+        "number": 4,
+        "title": "Create and validate the 1 GiB experiment",
+        "description": "Derive the smaller deterministic experiment used by the controlled run, then validate the exact files training will read.",
+        "commands": {
+          "mps": {
+            "label": "Create and validate the subset",
+            "language": "bash",
+            "code": ".venv/bin/python -B -m final_project.prepare_subset \\\n  --source-data-dir data/processed/fineweb_edu \\\n  --output-dir data/processed/fineweb_edu_experiment_1g \\\n  --target-gb 1 \\\n  --validation-ratio 0.01 \\\n  --seed 1337 \\\n  --chunk-tokens 65536\n\n.venv/bin/python -B tools/validate_learngpt.py \\\n  --training-data-dir data/processed/fineweb_edu_experiment_1g"
+          },
+          "cuda": {
+            "label": "Create and validate the subset",
+            "language": "powershell",
+            "code": ".\\.venv\\Scripts\\python.exe -B -m final_project.prepare_subset `\n  --source-data-dir data\\processed\\fineweb_edu `\n  --output-dir data\\processed\\fineweb_edu_experiment_1g `\n  --target-gb 1 `\n  --validation-ratio 0.01 `\n  --seed 1337 `\n  --chunk-tokens 65536\n\n.\\.venv\\Scripts\\python.exe -B tools\\validate_learngpt.py `\n  --training-data-dir data\\processed\\fineweb_edu_experiment_1g"
+          }
+        },
+        "check": "Validation passes and the subset metadata records seed 1337, chunk size 65536, and a 1% validation split."
+      },
+      {
+        "number": 5,
+        "title": "Pass a short training gate",
+        "description": "Exercise the real backend and checkpoint path before committing hours to the complete run.",
+        "commands": {
+          "mps": {
+            "label": "One-step disposable MPS smoke test",
+            "language": "bash",
+            "code": ".venv/bin/python -B -m final_project.training \\\n  --device mps \\\n  --data-dir data/processed/fineweb_edu_experiment_1g \\\n  --checkpoint-path /tmp/learngpt-mps-smoke.pt \\\n  --overwrite-checkpoints \\\n  --context-size 8 \\\n  --embedding-size 16 \\\n  --num-heads 4 \\\n  --num-transformer-blocks 1 \\\n  --batch-size 1 \\\n  --gradient-accumulation-steps 1 \\\n  --training-steps 1 \\\n  --eval-interval 1 \\\n  --eval-batches 1 \\\n  --base-learning-rate 1e-4 \\\n  --min-learning-rate 1e-5 \\\n  --warmup-steps 0 \\\n  --decay-steps 1"
+          },
+          "cuda": {
+            "label": "First 20 steps of the final CUDA run",
+            "language": "powershell",
+            "code": ".\\.venv\\Scripts\\python.exe -B -m final_project.training `\n  --device cuda `\n  --data-dir data\\processed\\fineweb_edu_experiment_1g `\n  --checkpoint-path checkpoints\\learngpt-cuda-18m-stable-1g.pt `\n  --encoding-name gpt2 `\n  --seed 1337 `\n  --context-size 256 `\n  --embedding-size 256 `\n  --num-heads 4 `\n  --num-transformer-blocks 6 `\n  --dropout 0.0 `\n  --use-scaled-dot-product-attention `\n  --output-chunk-size 0 `\n  --batch-size 4 `\n  --gradient-accumulation-steps 8 `\n  --training-steps 20 `\n  --eval-interval 250 `\n  --eval-batches 20 `\n  --base-learning-rate 3e-4 `\n  --min-learning-rate 3e-5 `\n  --warmup-steps 1000 `\n  --decay-steps 45000 `\n  --weight-decay 0.05 `\n  --gradient-clip 1.0 `\n  --max-grad-norm-before-clip 100 `\n  --gradient-retry-attempts 0 `\n  --context-sensitivity-contexts 32 `\n  --mixed-precision `\n  --precision-dtype float16"
+          }
+        },
+        "check": "Loss is finite, the first loss is near 10.82, and best/latest checkpoint files are created."
+      },
+      {
+        "number": 6,
+        "title": "Start the complete training run",
+        "description": "Run the controlled 45,000-update profile. No artificial pause between steps is required.",
+        "commands": {
+          "mps": {
+            "label": "Fresh 45,000-step MPS run",
+            "language": "bash",
+            "code": "caffeinate -i .venv/bin/python -B -m final_project.training \\\n  --device mps \\\n  --data-dir data/processed/fineweb_edu_experiment_1g \\\n  --checkpoint-path checkpoints/learngpt-mps-18m-stable-1g-v2.pt \\\n  --encoding-name gpt2 \\\n  --seed 1337 \\\n  --context-size 256 \\\n  --embedding-size 256 \\\n  --num-heads 4 \\\n  --num-transformer-blocks 6 \\\n  --dropout 0.0 \\\n  --use-scaled-dot-product-attention \\\n  --output-chunk-size 32768 \\\n  --batch-size 4 \\\n  --gradient-accumulation-steps 8 \\\n  --training-steps 45000 \\\n  --eval-interval 250 \\\n  --eval-batches 20 \\\n  --base-learning-rate 3e-4 \\\n  --min-learning-rate 3e-5 \\\n  --warmup-steps 1000 \\\n  --decay-steps 45000 \\\n  --weight-decay 0.05 \\\n  --gradient-clip 1.0 \\\n  --max-grad-norm-before-clip 100 \\\n  --gradient-retry-attempts 3 \\\n  --context-sensitivity-contexts 32"
+          },
+          "cuda": {
+            "label": "Continue the validated CUDA run to step 45,000",
+            "language": "powershell",
+            "code": ".\\.venv\\Scripts\\python.exe -B -m final_project.training `\n  --device cuda `\n  --data-dir data\\processed\\fineweb_edu_experiment_1g `\n  --checkpoint-path checkpoints\\learngpt-cuda-18m-stable-1g.pt `\n  --resume-checkpoint-path checkpoints\\learngpt-cuda-18m-stable-1g-latest.pt `\n  --training-steps 45000"
+          }
+        },
+        "check": "Validation loss trends downward, retries normally remain zero, and the latest checkpoint advances every evaluation interval."
+      },
+      {
+        "number": 7,
+        "title": "Generate from the best checkpoint",
+        "description": "Use the best-validation file, a fixed seed, and several samples to judge prompt sensitivity rather than one lucky output.",
+        "commands": {
+          "mps": {
+            "label": "Generate three seeded MPS samples",
+            "language": "bash",
+            "code": ".venv/bin/python -B -m final_project.generate \\\n  --device mps \\\n  --checkpoint-path checkpoints/learngpt-mps-18m-stable-1g-v2.pt \\\n  --prompt \"The purpose of education is\" \\\n  --max-new-tokens 120 \\\n  --temperature 0.8 \\\n  --top-k 40 \\\n  --num-samples 3 \\\n  --seed 1337"
+          },
+          "cuda": {
+            "label": "Generate three seeded CUDA samples",
+            "language": "powershell",
+            "code": ".\\.venv\\Scripts\\python.exe -B -m final_project.generate `\n  --device cuda `\n  --checkpoint-path checkpoints\\learngpt-cuda-18m-stable-1g.pt `\n  --prompt \"The purpose of education is\" `\n  --max-new-tokens 120 `\n  --temperature 0.8 `\n  --top-k 40 `\n  --num-samples 3 `\n  --seed 1337"
+          }
+        },
+        "check": "Continuations are plausible, react to different prompts, and are evaluated as base-model completions rather than chat answers."
+      }
+    ],
+    "resumeCommands": {
+      "mps": {
+        "label": "Resume an interrupted MPS run",
+        "language": "bash",
+        "code": "caffeinate -i .venv/bin/python -B -m final_project.training \\\n  --device mps \\\n  --data-dir data/processed/fineweb_edu_experiment_1g \\\n  --checkpoint-path checkpoints/learngpt-mps-18m-stable-1g-v2.pt \\\n  --resume-checkpoint-path checkpoints/learngpt-mps-18m-stable-1g-v2-latest.pt \\\n  --training-steps 45000"
+      },
+      "cuda": {
+        "label": "Resume an interrupted CUDA run",
+        "language": "powershell",
+        "code": ".\\.venv\\Scripts\\python.exe -B -m final_project.training `\n  --device cuda `\n  --data-dir data\\processed\\fineweb_edu_experiment_1g `\n  --checkpoint-path checkpoints\\learngpt-cuda-18m-stable-1g.pt `\n  --resume-checkpoint-path checkpoints\\learngpt-cuda-18m-stable-1g-latest.pt `\n  --training-steps 45000"
+      }
+    },
+    "parameterGroups": [
+      {
+        "title": "Model shape",
+        "parameters": [
+          { "name": "--context-size", "value": "256", "why": "Number of tokens visible at once. Larger contexts cost substantially more memory." },
+          { "name": "--embedding-size", "value": "256", "why": "Width of every token representation; the main capacity and memory control." },
+          { "name": "--num-heads", "value": "4", "why": "Splits the 256-wide state into four attention views." },
+          { "name": "--num-transformer-blocks", "value": "6", "why": "Adds depth while keeping the model near 17.7M parameters." },
+          { "name": "--dropout", "value": "0.0", "why": "The controlled subset and run use no stochastic dropout, improving reproducibility." },
+          { "name": "--encoding-name", "value": "gpt2", "why": "Selects the 50,257-token GPT-2 BPE vocabulary used by the dataset." }
+        ]
+      },
+      {
+        "title": "Batch and duration",
+        "parameters": [
+          { "name": "--batch-size", "value": "4", "why": "Micro-batches processed together; lower this first if the GPU runs out of memory." },
+          { "name": "--gradient-accumulation-steps", "value": "8", "why": "Combines eight micro-batches before AdamW, producing 8,192 tokens per update." },
+          { "name": "--training-steps", "value": "45000", "why": "Total optimizer-update target, including completed steps after resume." },
+          { "name": "--seed", "value": "1337", "why": "Makes initialization, batches, subset selection, and samples reproducible." }
+        ]
+      },
+      {
+        "title": "Learning schedule",
+        "parameters": [
+          { "name": "--base-learning-rate", "value": "3e-4", "why": "Peak AdamW learning rate after warm-up." },
+          { "name": "--min-learning-rate", "value": "3e-5", "why": "Cosine-decay floor used near the end of training." },
+          { "name": "--warmup-steps", "value": "1000", "why": "Raises the rate gradually so random initial weights do not receive an abrupt full update." },
+          { "name": "--decay-steps", "value": "45000", "why": "Spreads cosine decay across the entire controlled run." },
+          { "name": "--weight-decay", "value": "0.05", "why": "Regularizes matrix weights through AdamW without applying decay to biases and normalization scales." }
+        ]
+      },
+      {
+        "title": "Evaluation and safety",
+        "parameters": [
+          { "name": "--eval-interval", "value": "250", "why": "Measures train and validation loss every 250 updates without evaluating constantly." },
+          { "name": "--eval-batches", "value": "20", "why": "Averages enough batches to reduce noise while keeping evaluation affordable." },
+          { "name": "--gradient-clip", "value": "1.0", "why": "Limits the applied update after raw-gradient integrity checks pass." },
+          { "name": "--max-grad-norm-before-clip", "value": "100", "why": "Rejects a suspicious raw gradient instead of hiding it with clipping." },
+          { "name": "--gradient-retry-attempts", "value": "3 MPS / 0 CUDA", "why": "MPS can retry an invalid raw gradient; CUDA handles transient FP16 overflow separately." },
+          { "name": "--context-sensitivity-contexts", "value": "32", "why": "Checks whether correct context eventually beats shuffled context." },
+          { "name": "--output-chunk-size", "value": "32768 MPS / 0 CUDA", "why": "MPS chunks the large vocabulary projection to preserve correct gradients; CUDA uses one projection." },
+          { "name": "--mixed-precision", "value": "CUDA only", "why": "CUDA uses FP16 autocast and a resumable GradScaler; the controlled MPS profile intentionally disables it." }
+        ]
+      }
+    ],
+    "cudaMemoryProfiles": [
+      { "memory": "8 GiB or more", "batchSize": 4, "accumulation": 8, "extra": "Controlled default" },
+      { "memory": "6 GiB", "batchSize": 2, "accumulation": 16, "extra": "Same 8,192 tokens per update" },
+      { "memory": "4 GiB", "batchSize": 1, "accumulation": 32, "extra": "Also set --output-chunk-size 32768" }
+    ]
+  },
   "healthSignals": [
     "The first loss is close to 10.82, the random baseline for a 50,257-token vocabulary.",
     "MPS reports a successful repeated-gradient and CPU-parity self-check before step 1.",
@@ -97,7 +304,7 @@
   ],
   "resources": [
     {
-      "title": "Final training runbook",
+      "title": "How to train runbook",
       "path": "docs/FINAL_TRAINING_RUNBOOK.md",
       "description": "Exact macOS/MPS, Windows/CUDA, smoke, resume, monitoring, and generation commands."
     },

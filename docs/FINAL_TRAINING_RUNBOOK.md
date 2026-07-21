@@ -1,4 +1,4 @@
-# Final Training Runbook
+# How to Train LearnGPT
 
 This is the canonical operational guide for turning the 42 LearnGPT lessons
 into one complete, reproducible training experiment. Use `course_en.md` to
@@ -25,11 +25,18 @@ English continuations that react to their prompt. It does not produce a
 reliable chat assistant; instruction following requires a later fine-tuning
 stage on prompt-response data.
 
-## 1. Install and verify the environment
+## 1. Clone, install, and verify the environment
 
 LearnGPT requires Python 3.12 or newer because the pinned NumPy build has the
 same minimum. Python 3.13 is recommended; the verified MPS run used Python
 3.13.12 and PyTorch 2.12.1. Run commands from the repository root.
+
+Start from a clean clone:
+
+```bash
+git clone https://github.com/ferdinandobons/learn-gpt.git
+cd learn-gpt
+```
 
 ### macOS or Linux shell
 
