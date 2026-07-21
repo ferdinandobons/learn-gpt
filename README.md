@@ -27,6 +27,9 @@ The course is maintained as one English guide:
   macOS/MPS and Windows/CUDA workflow.
 - [Video series guide](docs/VIDEO_SERIES_GUIDE.md) for teaching the 42
   checkpoints and the final experiment.
+- [Model memory and training limits](docs/MODEL_MEMORY_AND_TRAINING_LIMITS.md)
+  for understanding how parameters, activations, context, and optimizer state
+  affect an 8 GB local training run.
 
 ## What This Project Contains
 
@@ -53,6 +56,7 @@ LearnGPT/
 
   docs/
     FINAL_TRAINING_RUNBOOK.md
+    MODEL_MEMORY_AND_TRAINING_LIMITS.md
     VIDEO_SERIES_GUIDE.md
     training_workflow.json
     verified_runs/

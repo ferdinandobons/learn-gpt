@@ -730,8 +730,8 @@ last token can influence the final-position logits used for generation.
 - The extra outer list gives each prompt a batch dimension, producing input
   shape `[1, T]` rather than `[T]`.
 - `[:, -1, :]` compares the next-token scores after the complete prompt.
-- `torch.allclose(a, b)` checks elementwise numerical equality with floating-
-  point tolerances.
+- `torch.allclose(a, b)` checks elementwise numerical equality with
+  floating-point tolerances.
 - `all` and `fall` end with the same ID, so the model selects the same embedding
   row. A different prefix cannot matter until attention mixes positions.
 
@@ -1637,9 +1637,10 @@ which is preferable for the controlled MPS training recipe.
   explicit triangular mask.
 - Dropout probability is forced to `0.0` during evaluation because the functional
   operator does not inspect `model.training` automatically.
-- The optimized path returns no attention matrix for inspection. The failed MPS
-  run was reproduced with manual attention too, so SDPA was not its root cause;
-  keep it enabled because it remains the efficient controlled-run path.
+- The optimized path returns no attention matrix for inspection. Keep the
+  manual path available when attention weights must be examined; use the fused
+  path for the controlled run because it reduces intermediate work while
+  preserving the same causal-attention contract.
 
 ## Lesson 41 - Performance Flags and DDP
 
@@ -1750,8 +1751,8 @@ three-step study run proves integration, not final language quality.
 - Configuration objects validate related arguments before expensive training;
   `to_model_kwargs()` expands only fields accepted by the model constructor.
 - The final projection can split the `[C, V]` operation into vocabulary chunks
-  and concatenate their logits, avoiding the faulty monolithic MPS backward path
-  while preserving the same mathematical output.
+  and concatenate their logits. This avoids one very large MPS backward
+  operation while preserving the same mathematical output.
 - On MPS, gradients are preallocated and cleared in place. A discarded warm-up
   and CPU comparison verify direction; raw norms above the integrity threshold
   are retried before clipping, so corrupted updates never reach AdamW.
