@@ -21,6 +21,7 @@ class ModelConfig:
     bias: bool = True
     tie_weights: bool = True
     use_scaled_dot_product_attention: bool = False
+    fused_attention: bool = False
     output_chunk_size: int = 32768
 
     def __post_init__(self):
@@ -77,6 +78,7 @@ class ModelConfig:
                 "use_scaled_dot_product_attention",
                 False,
             ),
+            fused_attention=payload.get("fused_attention", False),
             output_chunk_size=payload.get("output_chunk_size", 32768),
         )
         saved_head_size = payload.get("head_size")
@@ -94,6 +96,7 @@ class TrainingConfig:
     batch_size: int = 4
     training_steps: int = 3
     eval_interval: int = 1
+    log_interval: int | None = None
     eval_batches: int = 1
     base_learning_rate: float = 0.001
     min_learning_rate: float = 0.0001
@@ -122,6 +125,9 @@ class TrainingConfig:
 
         if self.eval_interval < 1:
             raise ValueError("eval_interval must be at least 1.")
+
+        if self.log_interval is not None and self.log_interval < 1:
+            raise ValueError("log_interval must be at least 1 when set.")
 
         if self.eval_batches < 1:
             raise ValueError("eval_batches must be at least 1.")

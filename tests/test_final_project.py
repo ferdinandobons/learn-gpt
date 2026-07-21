@@ -13,18 +13,26 @@ import torch
 from torch import nn
 
 from final_project.batching import (
+    create_batch,
     create_dataset_fingerprint,
     load_training_and_validation_data,
 )
-from final_project.checkpoint import load_checkpoint, load_checkpoint_payload, save_checkpoint
+from final_project.checkpoint import (
+    load_checkpoint,
+    load_checkpoint_payload,
+    restore_checkpoint_rng_state,
+    save_checkpoint,
+)
 from final_project.config import ModelConfig, TrainingConfig
 from final_project.generate import (
     generate_samples_from_checkpoint,
     load_model_from_checkpoint,
 )
 from final_project.model import (
+    FusedMultiHeadAttention,
     GPT_INITIALIZATION_STD,
     LanguageModel,
+    MultiHeadAttention,
     SelfAttentionHead,
 )
 from final_project.prepare_subset import prepare_subset
@@ -108,6 +116,70 @@ class ModelInitializationTests(unittest.TestCase):
 
 
 class NanoGPTArchitectureTests(unittest.TestCase):
+    def test_fused_attention_matches_separate_heads(self):
+        torch.manual_seed(123)
+        separate = MultiHeadAttention(
+            embedding_size=32,
+            head_size=8,
+            context_size=8,
+            num_heads=4,
+            dropout=0.0,
+            bias=True,
+            use_scaled_dot_product_attention=True,
+        )
+        fused = FusedMultiHeadAttention(
+            embedding_size=32,
+            head_size=8,
+            context_size=8,
+            num_heads=4,
+            dropout=0.0,
+            bias=True,
+            use_scaled_dot_product_attention=True,
+        )
+        self.assertEqual(
+            sum(parameter.numel() for parameter in separate.parameters()),
+            sum(parameter.numel() for parameter in fused.parameters()),
+        )
+        queries = torch.cat([head.query.weight for head in separate.heads])
+        keys = torch.cat([head.key.weight for head in separate.heads])
+        values = torch.cat([head.value.weight for head in separate.heads])
+        with torch.no_grad():
+            fused.query_key_value.weight.copy_(
+                torch.cat((queries, keys, values)),
+            )
+            fused.output_projection.load_state_dict(
+                separate.output_projection.state_dict(),
+            )
+
+        separate.eval()
+        fused.eval()
+        embeddings = torch.randn(2, 8, 32)
+        with torch.no_grad():
+            separate_output, _ = separate(embeddings)
+            fused_output, _ = fused(embeddings)
+
+        self.assertTrue(
+            torch.allclose(
+                separate_output,
+                fused_output,
+                atol=1e-6,
+                rtol=1e-5,
+            )
+        )
+
+    def test_legacy_checkpoint_config_uses_separate_attention(self):
+        payload = make_model_config().to_checkpoint_dict()
+        payload.pop("fused_attention")
+
+        restored = ModelConfig.from_checkpoint_dict(payload)
+        model = LanguageModel(**restored.to_model_kwargs())
+
+        self.assertFalse(restored.fused_attention)
+        self.assertIsInstance(
+            model.transformer_blocks[0].multi_head_attention,
+            MultiHeadAttention,
+        )
+
     def test_token_embedding_and_output_head_share_weights(self):
         config = make_model_config()
         model = LanguageModel(**config.to_model_kwargs())
@@ -243,6 +315,16 @@ class NanoGPTArchitectureTests(unittest.TestCase):
         self.assertAlmostEqual(get_learning_rate(step=100, **settings), 1e-4)
         self.assertAlmostEqual(get_learning_rate(step=101, **settings), 1e-4)
 
+    def test_training_config_validates_and_round_trips_log_interval(self):
+        with self.assertRaisesRegex(ValueError, "log_interval"):
+            TrainingConfig(log_interval=0)
+
+        config = TrainingConfig(log_interval=25)
+        restored = TrainingConfig.from_checkpoint_dict(
+            config.to_checkpoint_dict(),
+        )
+        self.assertEqual(restored.log_interval, 25)
+
 
 class DatasetValidationTests(unittest.TestCase):
     def write_dataset(self, data_dir, complete=True, encoding_name="gpt2"):
@@ -289,6 +371,21 @@ class DatasetValidationTests(unittest.TestCase):
             self.write_dataset(data_dir, complete=False)
             with self.assertRaisesRegex(ValueError, "incomplete"):
                 load_training_and_validation_data(data_dir)
+
+    def test_vectorized_batch_contains_consecutive_inputs_and_targets(self):
+        data = np.arange(512, dtype=np.uint16)
+        torch.manual_seed(123)
+        input_tensor, target_tensor = create_batch(
+            data=data,
+            batch_size=4,
+            context_size=8,
+            device="cpu",
+        )
+
+        self.assertEqual(tuple(input_tensor.shape), (4, 8))
+        self.assertEqual(tuple(target_tensor.shape), (4, 8))
+        self.assertTrue(torch.equal(input_tensor[:, 1:], target_tensor[:, :-1]))
+        self.assertTrue(torch.equal(target_tensor, input_tensor + 1))
 
     def test_dataset_fingerprint_is_path_independent_and_content_sensitive(self):
         with tempfile.TemporaryDirectory() as temporary_dir:
@@ -835,6 +932,20 @@ class CheckpointTests(unittest.TestCase):
 
         def load_state_dict(self, state_dict):
             raise AssertionError("An empty scaler state must not be loaded.")
+
+    def test_cuda_rng_state_is_moved_to_cpu_before_restore(self):
+        expected_state = torch.tensor([1, 2, 3], dtype=torch.uint8)
+        mapped_state = SimpleNamespace(cpu=lambda: expected_state)
+
+        with (
+            patch("torch.cuda.is_available", return_value=True),
+            patch("torch.cuda.set_rng_state_all") as set_rng_state_all,
+        ):
+            restore_checkpoint_rng_state(
+                {"rng_state": {"cuda": [mapped_state]}},
+            )
+
+        set_rng_state_all.assert_called_once_with([expected_state])
 
     def test_fresh_training_protects_existing_checkpoints(self):
         with tempfile.TemporaryDirectory() as temporary_dir:

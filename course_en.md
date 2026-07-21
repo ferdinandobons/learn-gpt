@@ -1759,6 +1759,13 @@ three-step study run proves integration, not final language quality.
 - Atomic best/latest checkpoints include configs, RNG state, optimizer and
   GradScaler state, best metric, and dataset fingerprint. Resume rejects a
   different dataset unless explicitly overridden.
+- CUDA can opt into one combined QKV projection and one batched SDPA call per
+  block with `fused_attention=True`; legacy checkpoints keep the separate-head
+  layout because the saved model configuration defaults missing fields to
+  `False`.
+- `log_interval` reports current loss, learning rate, gradient status,
+  throughput, and ETA without running the validation/checkpoint path controlled
+  by `eval_interval`.
 - The separate controlled experiment uses the same modules with the seeded
   1 GiB subset, approximately 17.7M parameters, and 45,000 steps. Its workflow
   is: prepare data, load memmaps, train, evaluate, checkpoint, then generate.
@@ -1905,7 +1912,9 @@ older affected checkpoints.
 The runbook contains the equivalent Windows/CUDA profile, a short hardware
 gate, VRAM adjustments, dataset fingerprint behavior, checkpoint overwrite
 protection, CUDA FP16 same-step overflow retries, and the exact interpretation
-of every printed metric.
+of every printed metric. The measured larger-model CUDA experiments and the
+final fused-attention command are documented in
+`CUDA_TRAINING_OPTIMIZATIONS.md`.
 
 ## Final Mental Model
 

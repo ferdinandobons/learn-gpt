@@ -579,6 +579,7 @@ def train_model(
     warmup_steps,
     decay_steps,
     gradient_clip,
+    log_interval=None,
     max_grad_norm_before_clip=None,
     gradient_retry_attempts=0,
     gradient_accumulation_steps=1,
@@ -604,6 +605,9 @@ def train_model(
 
     if eval_interval < 1:
         raise ValueError("eval_interval must be at least 1.")
+
+    if log_interval is not None and log_interval < 1:
+        raise ValueError("log_interval must be at least 1 when set.")
 
     if eval_batches < 1:
         raise ValueError("eval_batches must be at least 1.")
@@ -739,6 +743,7 @@ def train_model(
         )
 
     training_start_time = time.time()
+    tokens_per_step = batch_size * context_size * gradient_accumulation_steps
 
     for step in range(start_step, training_steps + 1):
         learning_rate = get_learning_rate(
@@ -888,10 +893,44 @@ def train_model(
             or step == training_steps
         )
 
+        if (
+            print_progress
+            and log_interval is not None
+            and step % log_interval == 0
+            and not should_evaluate
+        ):
+            elapsed_seconds = max(time.time() - training_start_time, 0.001)
+            completed_steps = max(step - start_step + 1, 1)
+            tokens_seen = completed_steps * tokens_per_step
+            tokens_per_second = tokens_seen / elapsed_seconds
+            remaining_steps = max(training_steps - step, 0)
+            eta_seconds = remaining_steps * elapsed_seconds / completed_steps
+            grad_norm_text = "n/a" if grad_norm is None else f"{grad_norm:.4f}"
+            print(
+                "step={step}/{training_steps} "
+                "loss={loss:.4f} "
+                "lr={learning_rate:.2e} "
+                "grad_norm={grad_norm} "
+                "amp_retries={amp_overflow_retries} "
+                "amp_overflows={amp_overflow_count} "
+                "tok/s={tokens_per_second:.0f} "
+                "eta={eta} (log only)".format(
+                    step=step,
+                    training_steps=training_steps,
+                    loss=total_loss,
+                    learning_rate=learning_rate,
+                    grad_norm=grad_norm_text,
+                    amp_overflow_retries=amp_overflow_retries,
+                    amp_overflow_count=amp_overflow_count,
+                    tokens_per_second=tokens_per_second,
+                    eta=format_duration(eta_seconds),
+                ),
+                flush=True,
+            )
+
         if should_evaluate:
             elapsed_seconds = max(time.time() - training_start_time, 0.001)
             completed_steps = max(step - start_step + 1, 1)
-            tokens_per_step = batch_size * context_size * gradient_accumulation_steps
             tokens_seen = completed_steps * tokens_per_step
             tokens_per_second = tokens_seen / elapsed_seconds
             remaining_steps = max(training_steps - step, 0)
@@ -1064,11 +1103,13 @@ def parse_args():
     parser.add_argument("--no-bias", action="store_true")
     parser.add_argument("--no-weight-tying", action="store_true")
     parser.add_argument("--use-scaled-dot-product-attention", action="store_true")
+    parser.add_argument("--fused-attention", action="store_true")
     parser.add_argument("--output-chunk-size", type=int, default=32768)
 
     parser.add_argument("--batch-size", type=int, default=8)
     parser.add_argument("--training-steps", type=int, default=None)
     parser.add_argument("--eval-interval", type=int, default=100)
+    parser.add_argument("--log-interval", type=int, default=None)
     parser.add_argument("--eval-batches", type=int, default=10)
     parser.add_argument("--base-learning-rate", type=float, default=3e-4)
     parser.add_argument("--min-learning-rate", type=float, default=3e-5)
@@ -1165,6 +1206,7 @@ def main():
             bias=not args.no_bias,
             tie_weights=not args.no_weight_tying,
             use_scaled_dot_product_attention=args.use_scaled_dot_product_attention,
+            fused_attention=args.fused_attention,
             output_chunk_size=args.output_chunk_size,
         )
 
@@ -1174,6 +1216,8 @@ def main():
         )
         if args.training_steps is not None:
             training_config.training_steps = args.training_steps
+        if args.log_interval is not None:
+            training_config.log_interval = args.log_interval
         if args.max_grad_norm_before_clip is not None:
             training_config.max_grad_norm_before_clip = (
                 args.max_grad_norm_before_clip
@@ -1195,6 +1239,7 @@ def main():
                 1000 if args.training_steps is None else args.training_steps
             ),
             eval_interval=args.eval_interval,
+            log_interval=args.log_interval,
             eval_batches=args.eval_batches,
             base_learning_rate=args.base_learning_rate,
             min_learning_rate=args.min_learning_rate,
@@ -1264,6 +1309,7 @@ def main():
         context_size=model_config.context_size,
         training_steps=training_config.training_steps,
         eval_interval=training_config.eval_interval,
+        log_interval=training_config.log_interval,
         eval_batches=training_config.eval_batches,
         checkpoint_path=args.checkpoint_path,
         model_config=model_config.to_checkpoint_dict(),

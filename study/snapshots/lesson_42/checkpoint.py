@@ -57,7 +57,11 @@ def restore_checkpoint_rng_state(checkpoint):
         torch.set_rng_state(rng_state["cpu"].cpu())
 
     if "cuda" in rng_state and torch.cuda.is_available():
-        torch.cuda.set_rng_state_all(rng_state["cuda"])
+        # ``torch.load(..., map_location="cuda")`` moves every tensor in the
+        # checkpoint, including RNG states, onto the GPU. PyTorch's CUDA RNG
+        # restoration API requires a list of CPU ByteTensors instead.
+        cuda_rng_states = [state.cpu() for state in rng_state["cuda"]]
+        torch.cuda.set_rng_state_all(cuda_rng_states)
 
     if (
         "mps" in rng_state

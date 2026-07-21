@@ -161,22 +161,27 @@ def create_batch(data, batch_size, context_size, device=None):
         size=(batch_size,),
     )
 
-    input_chunks = []
-    target_chunks = []
-
-    for start_position in start_positions.tolist():
-        token_chunk = np.asarray(
-            data[start_position : start_position + context_size + 1],
-            dtype=np.int64,
-        )
-        input_chunks.append(torch.from_numpy(token_chunk[:-1].copy()))
-        target_chunks.append(torch.from_numpy(token_chunk[1:].copy()))
-
-    input_tensor = torch.stack(input_chunks)
-    target_tensor = torch.stack(target_chunks)
+    token_positions = (
+        start_positions.numpy()[:, None]
+        + np.arange(context_size + 1, dtype=np.int64)[None, :]
+    )
+    token_chunks = np.asarray(data[token_positions], dtype=np.int64)
+    input_tensor = torch.from_numpy(token_chunks[:, :-1].copy())
+    target_tensor = torch.from_numpy(token_chunks[:, 1:].copy())
 
     if device is not None:
-        input_tensor = input_tensor.to(device)
-        target_tensor = target_tensor.to(device)
+        device_type = torch.device(device).type
+        use_pinned_memory = device_type == "cuda"
+        if use_pinned_memory:
+            input_tensor = input_tensor.pin_memory()
+            target_tensor = target_tensor.pin_memory()
+        input_tensor = input_tensor.to(
+            device,
+            non_blocking=use_pinned_memory,
+        )
+        target_tensor = target_tensor.to(
+            device,
+            non_blocking=use_pinned_memory,
+        )
 
     return input_tensor, target_tensor
