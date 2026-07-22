@@ -221,8 +221,9 @@ The complete runnable entry point is `study/lessons/01_read_text.py`.
   Linux, and Windows.
 - `read_text(encoding="utf-8")` opens, decodes, reads, and closes the file. The
   explicit encoding makes the byte-to-character conversion deterministic.
-- `len(text)` counts Python Unicode characters. `text[:500]` is a non-mutating
-  slice from index `0` up to, but not including, index `500`.
+- `len(text)` counts Python Unicode characters rather than encoded UTF-8 bytes.
+- `text[:500]` is a non-mutating slice from index `0` up to, but not including,
+  index `500`; it provides a short inspection sample without changing `text`.
 
 ## Lesson 02 - Character Tokenizer
 
@@ -251,13 +252,13 @@ The code is exercised by `study/lessons/02_character_tokenizer.py`.
 
 - `set(text)` removes duplicates. Because sets have no meaningful vocabulary
   order, `sorted(...)` creates the same ordered character list on every run.
-- `{}` constructs an empty dictionary. The two dictionaries implement inverse
-  lookups: character to ID for encoding and ID to character for decoding.
+- `char_to_id = {}` and `id_to_char = {}` construct two independent empty
+  dictionaries before the loop starts.
 - `enumerate(unique_chars)` yields `(index, value)` pairs, so the zero-based
   index becomes the token ID.
-- `char_to_id[char] = token_id` and `id_to_char[token_id] = char` build a
-  bijection: each character has one ID and each ID maps back to exactly one
-  character.
+- `char_to_id[char] = token_id` creates the forward lookup used while encoding.
+- `id_to_char[token_id] = char` creates its inverse, so each ID can be decoded
+  back to exactly one character.
 
 ## Lesson 03 - Encode and Decode
 
@@ -288,12 +289,15 @@ above implement the same logic found in `study/lessons/03_encode_decode.py`.
 
 ### Code syntax and logic
 
-- `def` binds a reusable function name; parameters are local names supplied by
-  the caller.
+- `def encode(text, char_to_id):` declares the encoding function and binds its
+  two caller-supplied arguments to local names.
 - `[char_to_id[char] for char in text]` visits the input left to right and performs one
   dictionary lookup per character, preserving order.
 - The generator inside `"".join(...)` converts every ID back to a character;
   `join` concatenates them without inserting a separator.
+- `token_ids = encode(sample, char_to_id)` and
+  `reconstructed_text = decode(token_ids, id_to_char)` exercise the two
+  directions in sequence rather than testing either function in isolation.
 - `assert condition` raises `AssertionError` when the round trip fails. This
   turns an assumption into an executable invariant.
 
@@ -330,9 +334,11 @@ The reusable implementation lives in `study/snapshots/lesson_04/tokenizer.py`;
   are assigned to two names in one statement.
 - The snapshot path contains `lesson_04`, making the dependency explicit and
   preventing future lesson changes from silently rewriting this checkpoint.
-- `create_vocabulary(...)`, `encode(...)`, and `decode(...)` form the tokenizer
-  interface, so the script does not depend on its internal loops. That
-  is the first module boundary in the project.
+- `create_vocabulary(full_text)` builds both lookup tables from the complete
+  corpus rather than from the shorter sample being encoded.
+- `encode(sample, char_to_id)` and `decode(token_ids, id_to_char)` consume only
+  the module's public interface, so the script does not depend on its internal
+  loops. That is the first module boundary in the project.
 
 ## Lesson 05 - Training and Validation
 
@@ -397,9 +403,10 @@ See the printed prefix-to-next-token pairs in
 - The stop index is exclusive. `CONTEXT_SIZE + 1` is necessary to include the
   target paired with the last input position.
 - `range(CONTEXT_SIZE)` yields positions `0` through `T - 1`.
-- `input_tokens[: position + 1]` grows the visible prefix, while
-  `target_tokens[position]` selects exactly the next token paired with its last
-  position.
+- `context = input_tokens[: position + 1]` grows the visible prefix by one token
+  on every iteration.
+- `next_token = target_tokens[position]` selects exactly the next-token label
+  paired with the current prefix.
 
 ## Lesson 07 - Random Examples
 
@@ -428,8 +435,10 @@ The function is introduced in `study/lessons/07_random_examples.py`.
 
 - `random.randint(a, b)` includes both endpoints. The upper bound reserves one
   extra token because targets are shifted by one.
-- Adding `context_size` constructs the exclusive end of the input slice; adding
-  one to both target bounds preserves equal lengths.
+- `data[start_position : start_position + context_size]` extracts exactly `T`
+  consecutive input IDs from the sampled position.
+- `data[start_position + 1 : start_position + context_size + 1]` shifts both
+  target bounds by one while preserving the same length as the input window.
 - `return input_tokens, target_tokens` returns a tuple, which callers unpack
   into two names.
 - `random.seed(42)` resets Python's generator to a known state. The number has
@@ -463,8 +472,12 @@ The nested-list representation is visible in
 
 ### Code syntax and logic
 
+- `batch_inputs = []` and `batch_targets = []` create separate row containers
+  before any example is sampled.
 - `for _ in ...` repeats an action when the loop index itself is intentionally
   unused; `_` communicates that intent.
+- `input_tokens, target_tokens = create_example(data, context_size)` samples one
+  aligned pair and unpacks the returned tuple.
 - `list.append(value)` mutates the list by adding one example at the end.
 - Inputs and targets are collected separately but in the same loop, so row `i`
   in one list remains paired with row `i` in the other.
@@ -494,12 +507,16 @@ The conversion and indexing examples are in
 
 ### Code syntax and logic
 
-- `torch.tensor(nested_list)` copies the rectangular Python data into a tensor;
-  integer input is inferred as `torch.int64`, the index type embeddings expect.
+- `input_tensor = torch.tensor(batch_inputs)` and
+  `target_tensor = torch.tensor(batch_targets)` copy both rectangular Python
+  batches into tensors; integer input is inferred as `torch.int64`, the index
+  type embeddings expect.
 - `.shape` returns one size per dimension: batch rows `B` and time positions
   `T`.
 - `input_tensor[0]` selects the first row. `.tolist()` converts it back only for
   the character decoder used by this teaching script.
+- `first_input = input_tensor[0].tolist()` does not change `input_tensor`; it
+  creates a Python-list copy for inspection.
 - Operations later act on all `B * T` positions in parallel rather than using
   Python loops over individual tokens.
 
@@ -529,6 +546,8 @@ The implementation moves to `study/snapshots/lesson_10/batching.py`, while
 
 - Keyword arguments such as `data=...` document which value fills each
   parameter and remain clear when several integer sizes are passed together.
+- `batch_size=4` controls the number of sampled rows, while `context_size=8`
+  controls the number of token positions in each row.
 - `input_tensor, target_tensor = create_batch(...)` uses multiple assignment to
   unpack the function's two returned tensors.
 - `device="cpu"` is a string understood by PyTorch; later it can be replaced by
@@ -561,10 +580,13 @@ Run `study/lessons/11_verify_pytorch.py` before introducing a model.
 
 ### Code syntax and logic
 
+- `torch.tensor(token_ids)` converts the rectangular nested list to one rank-2
+  integer tensor before any indexing checks are performed.
 - `torch.__version__` identifies the installed runtime, which matters when an
   accelerator or optimized operator behaves differently across releases.
-- `tensor[0]` selects one row. In `tensor[:, 1]`, `:` selects every row and `1`
-  selects the second column because indexing is zero-based.
+- `tensor[0]` selects one complete row.
+- In `tensor[:, 1]`, `:` selects every row and `1` selects the second column
+  because indexing is zero-based.
 - `.dtype` reports the stored scalar type; token IDs must stay integral rather
   than becoming floating-point values.
 - `tensor.shape`, `tensor[0]`, `tensor[:, 1]`, and `tensor.dtype` do not alter the
@@ -599,12 +621,16 @@ by `study/lessons/12_bigram_model.py`.
 
 ### Code syntax and logic
 
-- Subclassing `nn.Module` registers layers and parameters for PyTorch.
-  `super().__init__()` initializes that registration machinery.
+- `class LanguageModel(nn.Module):` creates a model type that participates in
+  PyTorch parameter registration, device transfer, and serialization.
+- `super().__init__()` initializes the `nn.Module` registration machinery before
+  assigning any child layer to `self`.
 - `nn.Embedding(V, V)` is a trainable matrix with `V` rows and `V` columns.
   Indexing a token ID selects its row; that row is used directly as `V` logits.
 - Calling `model(input_ids)` dispatches to `forward` through `nn.Module`'s call
   machinery. For input `[B, T]`, the result is `[B, T, V]`.
+- `return self.token_embedding_table(input_ids)` performs one vectorized lookup
+  for every batch and time position without an explicit Python loop.
 - A logit is an unnormalized score. No `softmax` is required yet because loss
   functions can consume logits directly.
 
@@ -637,11 +663,17 @@ The implementation is in `study/snapshots/lesson_13/model.py`.
 
 - `target_ids=None` makes targets optional: inference returns logits, while
   training supplies targets and also receives a loss.
+- `logits = self.token_embedding_table(input_ids)` always computes predictions;
+  the target branch changes only what else the method returns.
+- `if target_ids is None: return logits` exits early during inference before any
+  loss-specific reshape is performed.
 - Tuple unpacking reads `[B, T, V]` from `logits.shape` into named dimensions.
 - `reshape(B * T, V)` treats every time position in every batch row as one
   classification example. Targets become the matching vector `[B * T]`.
 - `F.cross_entropy` combines log-softmax with negative log likelihood. Passing
   raw logits is both numerically stable and the required PyTorch interface.
+- `return logits, loss` preserves the structured predictions for inspection and
+  exposes the scalar objective used by `backward()`.
 
 ## Lesson 14 - Bigram Training
 
@@ -672,11 +704,16 @@ The complete loop and before/after loss comparison are in
 - `model.parameters()` yields every registered trainable tensor. AdamW keeps
   moving statistics for them and applies updates at the chosen learning rate.
 - `range(TRAINING_STEPS)` repeats one optimizer update per iteration.
+- `input_ids, target_ids = create_batch(...)` samples a new aligned batch for
+  the current update.
+- `_, loss = model(input_ids, target_ids)` discards logits because this loop
+  needs only the scalar objective.
 - `optimizer.zero_grad()` clears gradients left by the previous iteration;
   PyTorch otherwise accumulates gradients by default.
 - `loss.backward()` traverses the recorded computation graph in reverse and
-  fills each parameter's `.grad`. `optimizer.step()` then reads those gradients
-  and mutates the parameters; their order is essential.
+  fills each parameter's `.grad`.
+- `optimizer.step()` reads those gradients and mutates the parameters; it must
+  occur after `backward()` and before the next gradient reset.
 
 ## Lesson 15 - Bigram Generation
 
@@ -704,6 +741,12 @@ Generation is exercised by `study/lessons/15_bigram_generation.py`.
 
 ### Code syntax and logic
 
+- `generated_ids = input_ids` initializes the growing sequence with the prompt
+  supplied by the caller.
+- `for _ in range(max_new_tokens)` performs exactly one sampling decision per
+  requested new token.
+- `logits = self(generated_ids)` recomputes next-token scores from the sequence
+  produced so far.
 - `logits[:, -1, :]` keeps every batch row and vocabulary column but selects
   only the final time position. Negative index `-1` means the last element.
 - `softmax(..., dim=-1)` normalizes the vocabulary axis into probabilities that
@@ -712,6 +755,8 @@ Generation is exercised by `study/lessons/15_bigram_generation.py`.
   unlike `argmax`, it permits varied output.
 - `torch.cat(..., dim=1)` appends the new `[B, 1]` column to time dimension of
   `[B, T]`, so the next iteration can condition on it.
+- `return generated_ids` returns the original prompt and all appended IDs as one
+  tensor.
 
 ## Lesson 16 - Bigram Limitation
 
@@ -738,6 +783,8 @@ This controlled comparison is in `study/lessons/16_bigram_limit.py`.
 
 - The extra outer list gives each prompt a batch dimension, producing input
   shape `[1, T]` rather than `[T]`.
+- `encode("all", char_to_id)` and its companion calls apply the same tokenizer
+  to every controlled prompt before comparison.
 - `[:, -1, :]` compares the next-token scores after the complete prompt.
 - `torch.allclose(a, b)` checks elementwise numerical equality with
   floating-point tolerances.
@@ -778,6 +825,9 @@ The separated representation and output layers live in
   `[B, T, V]` without changing batch or time axes.
 - Both layers contain trainable `nn.Parameter` objects automatically registered
   by assignment to `self`.
+- `self.token_embedding_table(input_ids)` performs the ID-to-vector lookup,
+  while `self.output_head(token_embeddings)` performs the separate
+  vector-to-logits projection.
 - `token_embeddings` is an internal vector, not a probability distribution. It
   can contain any
   real values useful for the learned output transformation.
@@ -807,11 +857,15 @@ Context limiting during generation is also added in
 
 ### Code syntax and logic
 
+- `nn.Embedding(context_size, embedding_size)` allocates one learned `C`-wide
+  vector for every supported position from `0` through `context_size - 1`.
 - `input_ids.shape[1]` reads `T`, the current sequence length.
 - `torch.arange(T, device=...)` creates position IDs `0` through `T - 1` on the
   same device as the input, avoiding CPU/accelerator placement errors.
 - Token embeddings have `[B, T, C]`; position embeddings have `[T, C]`.
   PyTorch broadcasting reuses the latter across all `B` rows during addition.
+- `embeddings = token_embeddings + position_embeddings` combines token identity
+  and order without concatenating or changing the model width.
 - Generation keeps only `generated_ids[:, -self.context_size:]`, because the
   position table and attention mask support at most the configured context.
 
@@ -843,15 +897,20 @@ The complete `SelfAttentionHead` is in
 
 ### Code syntax and logic
 
-- Three bias-free linear maps turn `[B, T, C]` into queries, keys, and values of
-  shape `[B, T, H]`.
+- `self.key`, `self.query`, and `self.value` are three independent bias-free
+  linear maps from `[B, T, C]` to `[B, T, H]`.
+- `register_buffer("causal_mask", ...)` stores the mask in the module state and
+  moves it with the model without training it as a parameter.
 - `transpose(-2, -1)` swaps time and feature axes of keys. Batched `@` therefore
   produces pairwise scores `[B, T, T]`.
-- Dividing by `sqrt(H)` controls score magnitude. `torch.tril` constructs the
-  lower triangle, and `register_buffer` moves it with the model without training
-  it as a parameter.
-- Masked future scores become negative infinity, so softmax gives them zero
-  weight. Multiplying `[B, T, T] @ [B, T, H]` creates contextual outputs.
+- Dividing by `math.sqrt(keys.shape[-1])` controls score magnitude as head width
+  grows.
+- `masked_fill(causal_mask == 0, float("-inf"))` replaces all future-position
+  scores before normalization.
+- `F.softmax(attention_scores, dim=-1)` turns each allowed score row into weights
+  that sum to one; masked positions receive zero weight.
+- `attention_weights @ values` mixes the value vectors into contextual outputs
+  of shape `[B, T, H]`.
 
 ## Lesson 20 - Multi-Head Attention
 
@@ -882,6 +941,8 @@ The expanded loop, including per-head attention weights, is in
   weights are not shared.
 - `nn.ModuleList` is essential: a plain Python list would not register nested
   parameters for optimization, device moves, or checkpointing.
+- `[head(embeddings)[0] for head in self.heads]` runs every registered head and
+  retains its contextual output while leaving diagnostic weights separate.
 - Each output is `[B, T, H]`. `torch.cat(..., dim=-1)` concatenates the feature
   axis to form `[B, T, num_heads * H]`.
 - The constructor enforces `num_heads * head_size == embedding_size`, keeping
@@ -916,7 +977,10 @@ The projection is introduced in `study/snapshots/lesson_21/model.py`.
   `out_features` restores `embedding_size`.
 - `nn.Linear` applies the same learned affine transformation independently at
   every batch and time position.
-- The shape changes from `[B, T, num_heads * H]` to `[B, T, C]`.
+- `torch.cat(attended_outputs, dim=-1)` first joins the head outputs into
+  `[B, T, num_heads * H]`.
+- `self.output_projection(concatenated_embeddings)` mixes that joined feature
+  axis and restores `[B, T, C]`.
 - `return projected_embeddings, attention_weights_by_head` separates the
   representation used by the model from the attention maps inspected by the
   lesson.
@@ -980,6 +1044,8 @@ Pre-normalization is introduced in `study/snapshots/lesson_23/model.py`.
 - `nn.LayerNorm(normalized_shape=embedding_size)` subtracts a feature mean,
   divides by a stabilized standard
   deviation, then applies learned scale and bias parameters.
+- `normalized_embeddings = self.attention_layer_norm(embeddings)` creates a
+  normalized branch while leaving the residual source unchanged.
 - This is pre-norm because normalization occurs before attention. The residual
   addition uses the original `embeddings`, not the normalized copy.
 - LayerNorm changes values but preserves `[B, T, C]`, so attention and residual
@@ -1012,12 +1078,18 @@ The expanded implementation and its second normalized residual branch are in
 
 ### Code syntax and logic
 
-- `4 * embedding_size` creates a wider hidden feature space, conventionally
-  four times `C`; the second linear layer projects it back to `C`.
+- `class FeedForward(nn.Module):` makes the position-wise network a reusable,
+  registered submodule.
+- `self.expand = nn.Linear(embedding_size, 4 * embedding_size)` creates a hidden
+  feature space conventionally four times wider than `C`.
 - `nn.GELU()` is a smooth nonlinear activation. Without it, two consecutive
   linear layers would collapse mathematically into one linear transformation.
+- `self.project = nn.Linear(4 * embedding_size, embedding_size)` restores the
+  model width required by the residual stream.
 - Linear layers act only on the last dimension, so `[B, T, C]` becomes
   `[B, T, 4C]` and then `[B, T, C]`; positions do not mix here.
+- `self.project(self.activation(self.expand(embeddings)))` expresses the exact
+  expand, activate, project order in one nested return expression.
 - `feed_forward_input = self.feed_forward_layer_norm(residual_after_attention)`
   applies a second LayerNorm before this module, while
   `residual_after_feed_forward = residual_after_attention + feed_forward_output`
@@ -1054,10 +1126,16 @@ The reusable block boundary is defined in
 
 - The class owns two LayerNorms, one multi-head attention module, and one
   feed-forward module; assigning them to `self` registers the whole hierarchy.
+- `attention_input = self.attention_layer_norm(embeddings)` normalizes the first
+  branch before attention while retaining `embeddings` for the skip path.
 - `_` discards attention weights because normal forward computation only needs
   contextual embeddings.
-- Each branch follows `x = x + sublayer(norm(x))`, the pre-norm Transformer
-  pattern. The second branch receives the result of the first.
+- `residual_after_attention = embeddings + attention_output` completes the first
+  pre-norm residual branch.
+- `feed_forward_input` and `feed_forward_output` compute the second normalized
+  sublayer from the already updated residual stream.
+- `return residual_after_attention + feed_forward_output` completes the second
+  skip connection and returns the block result.
 - Input and output are both `[B, T, C]`. This shape-preserving contract is what
   allows an arbitrary number of blocks to be chained.
 
@@ -1092,6 +1170,8 @@ The stack appears in `study/snapshots/lesson_26/model.py`.
   architectural dimensions but learns its own parameters.
 - `nn.ModuleList` registers every block for optimization, serialization, and
   device transfer while still allowing an explicit Python loop.
+- `for transformer_block in self.transformer_blocks` visits the registered
+  blocks in construction order.
 - On each iteration, the previous output replaces `block_output`, so data flows
   sequentially rather than through blocks in parallel.
 - The constructor rejects fewer than one block, and every iteration preserves
@@ -1121,6 +1201,10 @@ The completed model path is in `study/snapshots/lesson_27/model.py`.
 
 ### Code syntax and logic
 
+- `self.final_layer_norm = nn.LayerNorm(...)` registers the normalization that
+  closes the residual stack.
+- `self.output_head = nn.Linear(embedding_size, vocabulary_size)` registers the
+  final `C -> V` vocabulary projection.
 - The loop returns the final residual representation `[B, T, C]`.
 - `block_output = self.final_layer_norm(block_output)` normalizes the last
   feature axis and preserves all dimensions.
@@ -1164,6 +1248,12 @@ The short seeded training run is `study/lessons/28_transformer_training.py`.
 - Keyword construction records each architectural choice explicitly;
   `HEAD_SIZE = EMBEDDING_SIZE // NUM_HEADS` uses integer division so heads tile
   the model width exactly.
+- `optimizer = torch.optim.AdamW(model.parameters(), lr=LEARNING_RATE)` binds
+  the complete registered Transformer parameter set to one optimizer.
+- `_, loss = model(input_tensor, target_tensor)` verifies the training forward
+  path and keeps only the scalar objective.
+- `optimizer.zero_grad()`, `loss.backward()`, and `optimizer.step()` perform one
+  ordered update: clear, differentiate, then mutate parameters.
 - `torch.manual_seed(42)` makes parameter initialization and tensor sampling
   repeatable for the lesson.
 - `next(model.parameters()).detach().clone()` captures a parameter before
@@ -1212,13 +1302,20 @@ The reusable evaluator is in `study/snapshots/lesson_29/training.py`.
 
 - `@torch.no_grad()` is a decorator that disables gradient recording for the
   complete function, reducing memory and preventing accidental backward state.
-- `model.eval()` switches mode-dependent layers such as dropout; the saved
-  `model.training` flag lets the function restore the caller's prior mode.
-- `.items()` yields split name/data pairs. `.item()` copies each scalar tensor
-  loss into a Python number before averaging.
-- `@torch.no_grad()` and `model.eval()` make this a measurement path: no
-  `optimizer.step()` appears in the function, so it measures both splits but never
-  changes parameters.
+- `was_training = model.training` records the caller's mode before the evaluator
+  changes it.
+- `model.eval()` switches mode-dependent layers such as dropout, and
+  `losses_by_split = {}` prepares the result mapping.
+- The dictionary `.items()` loop runs the same measurement procedure over both
+  `training_data` and `validation_data` without duplicating code.
+- `for _ in range(eval_batches)` samples several independent batches so the
+  reported value is not tied to a single random window.
+- `split_losses.append(loss.item())` copies each scalar tensor loss into a Python
+  number and stores it for aggregation.
+- `sum(split_losses) / len(split_losses)` computes the arithmetic mean for the
+  current split.
+- `if was_training: model.train()` restores training mode only when it was active
+  before the call; no optimizer update occurs in this measurement function.
 
 ## Lesson 30 - Checkpoint
 
@@ -1248,15 +1345,19 @@ Save and load functions are in `study/snapshots/lesson_30/checkpoint.py`.
 
 ### Code syntax and logic
 
-- `state_dict()` returns named tensor state rather than serializing live Python
-  module objects, making reconstruction explicit.
-- The dictionary gives every saved component a stable key. `torch.save` writes
-  the nested tensors and Python metadata in one file.
+- `model.state_dict()` stores named model parameters and buffers rather than a
+  live Python module object.
+- `optimizer.state_dict()` stores AdamW moving statistics and parameter-group
+  state needed to continue optimization.
+- `model_config`, `step`, and `losses` preserve the architecture and the exact
+  point reached by the run.
+- `char_to_id` and `id_to_char` preserve the tokenizer contract required to
+  interpret both prompts and generated IDs.
 - `mkdir(parents=True, exist_ok=True)` creates missing parent directories and
   does not fail when they already exist.
-- `load_state_dict(...)` later copies saved values into a compatible instance.
-  Lesson 42 extends this foundation with atomic writes, RNG state, best/latest
-  state, dataset identity, runtime metadata, and CUDA GradScaler state.
+- `torch.save(checkpoint, checkpoint_path)` serializes the complete dictionary to
+  the prepared destination. `load_state_dict(...)` later copies saved values
+  into a compatible instance.
 
 ## Lesson 31 - Generate from a Checkpoint
 
@@ -1284,15 +1385,21 @@ The independent loading path is in `study/snapshots/lesson_31/generate.py`.
 
 ### Code syntax and logic
 
-- `**checkpoint["model_config"]` expands a dictionary into named constructor
-  arguments, rebuilding the exact architecture expected by the weights.
-- `weights_only=True` restricts PyTorch loading to safe tensor-compatible data
-  rather than arbitrary pickled objects.
-- `model.eval()` selects inference behavior; `torch.no_grad()` additionally
-  avoids building a backward graph.
+- `torch.load(checkpoint_path, weights_only=True)` restricts loading to safe
+  tensor-compatible data rather than arbitrary pickled objects.
+- `LanguageModel(**checkpoint["model_config"])` expands the saved dictionary into
+  named arguments and rebuilds the architecture expected by the weights.
+- `model.load_state_dict(checkpoint["model_state_dict"])` copies the saved
+  parameter values into that compatible model instance.
+- `model.eval()` selects inference behavior for dropout and other mode-dependent
+  layers.
+- `encode(prompt_text, checkpoint["char_to_id"])` applies the vocabulary stored
+  with the checkpoint rather than a newly constructed mapping.
 - `[prompt_ids]` creates batch dimension `B=1`; `dtype=torch.long` provides the
-  integer type required by embedding lookup. The saved inverse vocabulary then
-  decodes generated IDs back into text.
+  integer type required by embedding lookup.
+- `with torch.no_grad()` prevents construction of a backward graph while
+  `model.generate(...)` produces the continuation. The saved inverse vocabulary
+  then decodes generated IDs back into text.
 
 ## Lesson 32 - Sampling Controls
 
@@ -1325,12 +1432,17 @@ through `study/snapshots/lesson_32/generate.py`.
 - Dividing logits by a positive temperature changes their relative scale before
   softmax. Values below `1` sharpen the distribution; values above `1` flatten
   it. The function rejects zero or negative values.
+- `if top_k is not None` keeps the filtering branch optional, and
+  `min(top_k, last_token_logits.shape[-1])` prevents asking for more entries than
+  the vocabulary contains.
 - `torch.topk(..., k)` returns the `k` largest values and their indices. Only
   the values are needed, so `_` discards the indices.
 - `top_values[:, [-1]]` keeps the smallest surviving value with shape `[B, 1]`,
   allowing it to broadcast across `[B, V]`.
-- Scores below that threshold become negative infinity and therefore receive
-  zero probability after softmax. `None` leaves the vocabulary unfiltered.
+- `last_token_logits < minimum_top_value` creates the boolean mask of values to
+  remove.
+- `masked_fill(..., float("-inf"))` gives those entries zero probability after
+  softmax. `None` leaves the vocabulary unfiltered.
 
 ## Lesson 33 - Best Checkpoint
 
@@ -1366,9 +1478,13 @@ The selection rule is in `study/snapshots/lesson_33/training.py`.
 
 - `math.inf` is larger than any finite first loss, guaranteeing that the first
   evaluation can become the initial best.
+- `best_checkpoint_path = None` represents the absence of any saved best model
+  before the first successful evaluation.
 - `losses["validation"]` selects the held-out metric, not the training metric.
 - The strict `<` avoids rewriting the file when validation merely ties the
   existing best.
+- `best_validation_loss = losses["validation"]` updates the comparison baseline
+  before later evaluations run.
 - `best_checkpoint_path = save_checkpoint(...)` records the path returned by the
   save function. Later lessons
   add a separate latest checkpoint for resuming interrupted work; best and
@@ -1406,11 +1522,16 @@ The scheduler and optimizer helpers are in
 
 ### Code syntax and logic
 
-- `if step < warmup_steps` linearly interpolates from zero toward the base rate,
-  while `if step > decay_steps` fixes the rate at its configured floor.
-  The second branch fixes the rate at its configured floor after decay.
-- In the middle branch, `decay_ratio` moves from `0` to `1`; cosine converts it
-  into a smooth coefficient moving from `1` to `0`.
+- `if step < warmup_steps` linearly interpolates from zero toward the base rate.
+- `if step > decay_steps` fixes the learning rate at its configured minimum
+  after decay has completed.
+- `decay_ratio = (step - warmup_steps) / (decay_steps - warmup_steps)` maps the
+  middle interval to the normalized range from `0` to `1`.
+- `0.5 * (1.0 + math.cos(math.pi * decay_ratio))` converts that ratio into a
+  smooth coefficient that moves from `1` to `0`.
+- The final interpolation combines `min_learning_rate` and
+  `base_learning_rate - min_learning_rate`, so the schedule never decays below
+  its configured floor.
 - `optimizer.param_groups` receives the computed rate each step, so AdamW uses
   the schedule instead of a constant value.
 - `clip_grad_norm_` modifies gradients in place only when their combined norm
@@ -1447,6 +1568,10 @@ feed-forward path in `study/snapshots/lesson_35/model.py`.
 - `nn.Dropout(dropout)` rescales surviving activations during training so their
   expected magnitude
   remains stable.
+- `self.output_head = nn.Linear(embedding_size, vocabulary_size)` creates the
+  untied output projection before the optional sharing decision.
+- `if tie_weights` keeps sharing configurable rather than changing every model
+  checkpoint unconditionally.
 - The assignment for weight tying does not copy values. Both modules reference
   the same `Parameter`, so one gradient update changes the shared matrix.
 - Tying is shape-valid because the embedding matrix is `[V, C]`, exactly the
@@ -1491,9 +1616,16 @@ This production boundary spans `batching.py`, `tokenizer.py`, `device.py`,
   exposes the file as an array without loading it all into RAM.
 - `uint16` stores IDs up to 65,535, enough for GPT-2's 50,257-token vocabulary;
   batches convert slices to `int64` because PyTorch embeddings require long IDs.
+- `model.named_parameters()` yields both stable names and tensors;
+  `if parameter.requires_grad` excludes frozen state from optimization.
 - `p.dim() >= 2` selects matrices such as linear and embedding weights for
-  decay. One-dimensional biases and normalization scales enter the zero-decay
-  group.
+  decay.
+- `p.dim() < 2` sends one-dimensional biases and normalization scales to the
+  zero-decay group.
+- The two dictionaries in `optimizer_groups` associate each parameter list with
+  its own `weight_decay` value.
+- `torch.optim.AdamW(optimizer_groups, lr=learning_rate)` consumes those groups
+  while sharing the same base learning rate.
 - `get_default_device()` chooses CUDA, then MPS, then CPU. CUDA may request fused
   AdamW when the installed PyTorch exposes it.
 
@@ -1532,12 +1664,21 @@ The accumulation loop is in `study/snapshots/lesson_37/training.py`.
 
 - Gradients accumulate because `zero_grad` runs once before the inner loop and
   `optimizer.step` once after it.
+- `set_to_none=True` releases the old gradient tensors instead of filling them
+  with zeros; the next backward pass allocates fresh gradients on supported
+  devices.
+- Each loop iteration calls `create_batch(...)` to obtain one micro-batch on the
+  requested device.
+- `_, loss = model(input_tensor, target_tensor)` computes the micro-batch
+  objective while discarding logits.
 - `loss = loss / gradient_accumulation_steps` divides each loss by the number of
   micro-batches, making the accumulated
   gradient an average. Without division, its scale would grow with the chosen
   accumulation count.
 - `.item()` records the already-scaled scalar for reporting; `backward()` uses
   the tensor that still owns its computation graph.
+- Repeated `loss.backward()` calls add into the same parameter gradients because
+  no reset occurs inside the loop.
 - Effective tokens per optimizer update equal `B * T * accumulation_steps`;
   accumulation changes update batching, not model context length.
 
@@ -1579,15 +1720,22 @@ implemented in the matching `training.py`.
 
 ### Code syntax and logic
 
-- `@dataclass` generates an initializer and representation from annotated
-  fields such as `batch_size: int`; defaults document the lesson-sized run.
+- `@dataclass` generates an initializer and representation from the annotated
+  configuration fields.
+- Fields such as `batch_size: int = 4` combine a type annotation with an explicit
+  lesson-sized default.
 - `asdict(self)` converts nested configuration values into checkpoint-friendly
   dictionaries. A computed `head_size` property derives `C // num_heads`.
+- `if resume_checkpoint_path is not None` keeps fresh training and resumed
+  training on separate explicit paths.
+- `load_checkpoint(resume_checkpoint_path, model, optimizer, device)` restores
+  model and optimizer state onto the selected runtime device.
 - `checkpoint.get("step", 0)` supports older files missing the key; adding one
   resumes at `N + 1`.
-- `training_steps` is the total target step, not a number of additional steps.
-  Lesson 42 completes the contract with saved config loading, RNG and GradScaler
-  restoration, dataset fingerprint checks, and coordinated best/latest files.
+- `range(start_step, training_steps + 1)` includes the configured final step, so
+  `training_steps` is the total target rather than a number of additional steps.
+- `get_learning_rate(...)` and `apply_learning_rate(optimizer, learning_rate)`
+  recompute and apply the schedule after resume instead of restarting it at zero.
 
 ## Lesson 39 - Last-Token Output Head
 
@@ -1623,9 +1771,12 @@ The conditional path is in `study/snapshots/lesson_39/model.py`.
   is preserved: `[B, T, C]` becomes `[B, 1, C]`, not `[B, C]`.
 - The output head therefore returns `[B, 1, V]`; generation's existing
   `logits[:, -1, :]` remains valid.
-- `if target_ids is None` selects the optimized inference-only path.
-  Vocabulary-chunked training projection
-  is introduced in the guarded final runtime of Lesson 42.
+- `return logits` exits immediately from the inference branch before the
+  training-only full-sequence projection.
+- When targets exist, `final_layer_norm` and `output_head` process all `T`
+  positions and produce `[B, T, V]`.
+- The two `reshape` calls align predictions as `[B * T, V]` and labels as
+  `[B * T]` for `F.cross_entropy`.
 
 ## Lesson 40 - Scaled Dot-Product Attention
 
@@ -1658,15 +1809,18 @@ Both paths coexist in `study/snapshots/lesson_40/model.py`.
 - `if self.use_scaled_dot_product_attention` selects one implementation without
   changing the module's
   external output shape.
+- `F.scaled_dot_product_attention(queries, keys, values, ...)` performs score
+  scaling, normalization, and value mixing through one PyTorch operator.
 - `is_causal=True` asks PyTorch to enforce the same no-future-token rule as the
   explicit triangular mask.
 - Dropout probability is forced to `0.0` during evaluation because the functional
   operator does not inspect `model.training` automatically.
 - `return attended_embeddings, None` means the optimized path returns no
-  attention matrix for inspection. Keep the
-  manual path available when attention weights must be examined; use the fused
-  path for the controlled run because it reduces intermediate work while
-  preserving the same causal-attention contract.
+  attention matrix for inspection.
+- `# Otherwise run the explicit scores, mask, softmax, and values path.` marks
+  the inspectable fallback used when attention weights are needed; the fused
+  path reduces intermediate work while preserving the same causal-attention
+  contract.
 
 ## Lesson 41 - Performance Flags and DDP
 
@@ -1702,13 +1856,16 @@ These optional runtime paths are in `study/snapshots/lesson_41/training.py`.
 
 - `hasattr(torch, "compile")` guards PyTorch versions that do not expose the
   compiler. Disabled flags return the original model and a no-op context.
+- `return torch.compile(model)` returns the compiled wrapper only after both the
+  feature flag and runtime capability checks pass.
 - `with get_autocast_context(device, mixed_precision, precision_dtype)` selects
-  lower-precision operations only on supported devices, while
-  `scaler.scale(loss).backward()` uses GradScaler specifically for CUDA float16
-  to reduce underflow.
-  GradScaler is enabled specifically for CUDA float16 to reduce underflow.
-- Scaling occurs before `backward`; unscaling must occur before clipping, then
-  `step` and `update` apply the optimizer action and adjust scale state.
+  lower-precision operations only on supported devices.
+- `scaler.scale(loss).backward()` scales the CUDA float16 loss before gradient
+  computation to reduce underflow.
+- `scaler.unscale_(optimizer)` must run before `clip_grad_norm_`, so clipping
+  measures real rather than scaled gradients.
+- `scaler.step(optimizer)` conditionally applies the update, and
+  `scaler.update()` adjusts the scale for the next iteration.
 - `mixed_precision=False` is required by the controlled MPS recipe. Lesson 42 adds
   persistent MPS gradient buffers, warm-up, CPU parity self-checks, and raw-norm
   integrity gates before any real update.
@@ -1777,8 +1934,23 @@ The runnable integration is `study/lessons/42_final_project.py`. The files under
 
 ### Code syntax and logic
 
-- Configuration objects validate related arguments before expensive training;
-  `to_model_kwargs()` expands only fields accepted by the model constructor.
+- `ModelConfig(...)` groups and validates architectural choices such as
+  vocabulary size and output projection chunk size before allocating the model.
+- `TrainingConfig(...)` groups optimization and integrity controls such as the
+  raw-gradient threshold, retry count, and context diagnostics.
+- `LanguageModel(**model_config.to_model_kwargs()).to(device)` expands only
+  constructor-compatible model fields, creates the network, and moves its state
+  to the selected device.
+- `configure_optimizer(model, training_config.base_learning_rate, training_config.weight_decay, device=device)`
+  builds the device-aware AdamW parameter groups from the validated settings.
+- `history, best_checkpoint_path = train_model(...)` starts the complete update
+  loop and returns both recorded metrics and the strongest validation checkpoint.
+- The `train_model` keyword arguments make the run contract explicit: data,
+  batch and context sizes, evaluation cadence, learning-rate schedule, gradient
+  controls, checkpoint metadata, and device all travel through named values.
+- `generate_text_from_checkpoint(checkpoint_path=best_checkpoint_path, ...)`
+  reloads the selected artifact for an independent generation test instead of
+  reusing the in-memory training model.
 - The final projection can split the `[C, V]` operation into vocabulary chunks
   and concatenate their logits. This avoids one very large MPS backward
   operation while preserving the same mathematical output.
