@@ -397,10 +397,11 @@ def check_course_index(project_dir: Path, errors: list[str]) -> None:
             errors.append(f"course_en.md does not contain section ## Lesson {lesson}")
 
     required_subsections = (
-        "### What we built",
-        "### Why it matters",
-        "### Syntax and logic",
+        "### Visual explanation",
+        "### Code",
+        "### Code syntax and logic",
     )
+    maximum_syntax_points = 0
     for index, heading in enumerate(lesson_headings):
         lesson = heading.group(1)
         end = (
@@ -435,12 +436,34 @@ def check_course_index(project_dir: Path, errors: list[str]) -> None:
                     f"Lesson {lesson}: required teaching subsections are out of order"
                 )
 
-            what_start, why_start, _ = subsection_positions
-            what_body = body[what_start:why_start]
-            if not re.search(r"^```(?:python|bash|text)$", what_body, flags=re.MULTILINE):
+            _, code_start, syntax_start = subsection_positions
+            code_body = body[code_start:syntax_start]
+            if not re.search(r"^```(?:python|bash|text)$", code_body, flags=re.MULTILINE):
                 errors.append(
-                    f"Lesson {lesson}: 'What we built' must contain a code block"
+                    f"Lesson {lesson}: 'Code' must contain a code block"
                 )
+
+            syntax_body = body[syntax_start:]
+            syntax_points = re.findall(
+                r"^- .+(?:\n {2}.+)*",
+                syntax_body,
+                flags=re.MULTILINE,
+            )
+            maximum_syntax_points = max(maximum_syntax_points, len(syntax_points))
+            if len(syntax_points) < 3:
+                errors.append(
+                    f"Lesson {lesson}: 'Code syntax and logic' must contain at least three points"
+                )
+            for point_index, point in enumerate(syntax_points, start=1):
+                if "`" not in point:
+                    errors.append(
+                        f"Lesson {lesson}: syntax point {point_index} has no explicit code reference"
+                    )
+
+    if maximum_syntax_points <= 4:
+        errors.append(
+            "course_en.md still treats four syntax points as a fixed template"
+        )
 
 
 def check_study_scripts(project_dir: Path, errors: list[str]) -> None:
