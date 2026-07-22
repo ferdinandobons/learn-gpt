@@ -233,6 +233,32 @@ context loss gain: +0.8963
 throughput: 20,312 tokens/s
 ```
 
+## Quality and functional equivalence
+
+The optimized run preserves the original 300,000-step training specification:
+
+- the same approximately 124-million-parameter decoder-only architecture;
+- the same 12 blocks, 12 heads, width 768, and context length 256;
+- the same FineWeb-Edu token files and GPT-2 tokenizer;
+- the same 8,192 effective tokens per optimizer update;
+- the same AdamW settings, learning-rate schedule, seed, and step count;
+- FP32 master weights and optimizer state, with FP16 used only for eligible
+  mixed-precision CUDA operations.
+
+The separate-head and fused-attention step-100 smoke runs also produced closely
+matching optimization signals:
+
+| Attention path | Train loss | Validation loss | Reported loss | Gradient norm | Context loss gain | AMP overflows |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Original separate heads | 9.2490 | 9.2847 | 9.2692 | 2.5580 | +0.8375 | 0 |
+| Fused QKV | 9.2479 | 9.2871 | 9.2717 | 2.7334 | +0.8963 | 0 |
+
+The validation-loss difference was 0.0024, approximately 0.026%, which is
+consistent with ordinary initialization, sampling, and floating-point ordering
+variation. The two fresh runs are not expected to be bit-for-bit identical,
+but they are architecturally, functionally, and statistically equivalent for
+the intended training objective.
+
 At that measured rate, 300,000 steps represent about 33.6 hours of pure
 training computation. Full validation, context diagnostics, checkpoint writes,
 Windows scheduling, and thermal behavior add overhead, so approximately 1.5 to
@@ -277,6 +303,25 @@ Run from the repository root in PowerShell:
 ```
 
 This is a fresh run because it does not specify `--resume-checkpoint-path`.
+
+For the run to start unambiguously from step zero, neither of these files should
+exist before launching it:
+
+```text
+checkpoints\learngpt-cuda-124m-fused-b8-clean-300k.pt
+checkpoints\learngpt-cuda-124m-fused-b8-clean-300k-latest.pt
+```
+
+Before the production launch, all 14 earlier experiment checkpoints were
+removed from `checkpoints`, reclaiming 19.75 GiB. This included the original,
+fast, batch-size comparison, fused smoke-test, and previous clean-test
+checkpoints. The directory was verified empty, both production paths above were
+verified absent, and no Python training process was active. Dataset files,
+source code, tests, and documentation were not removed.
+
+The cleanup is a one-time recorded state, not an instruction to delete future
+production checkpoints. Once training starts, keep the best checkpoint for
+generation and the automatically maintained `-latest` checkpoint for resume.
 
 ## Resume command
 
