@@ -13,10 +13,10 @@ each change and the connections between the parts.
 
 The implementation is grounded in these sources:
 
-- `nanoGPT/model.py` for the decoder-only Transformer structure;
-- `nanoGPT/train.py` for optimization, scheduling, evaluation, and checkpoint
+- `../AndrejKarpathy/nanoGPT/model.py` for the decoder-only Transformer structure;
+- `../AndrejKarpathy/nanoGPT/train.py` for optimization, scheduling, evaluation, and checkpoint
   concepts;
-- `nanoGPT/sample.py` for checkpoint-based generation;
+- `../AndrejKarpathy/nanoGPT/sample.py` for checkpoint-based generation;
 - PyTorch modules such as `Embedding`, `Linear`, `LayerNorm`, `GELU`, AdamW,
   scaled dot-product attention, and cross entropy;
 - *Attention Is All You Need* for scaled dot-product and multi-head attention;

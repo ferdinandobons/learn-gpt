@@ -21,9 +21,14 @@ Tags:
 `fused-attention`,
 `machine-learning`, `deep-learning`, `education`, `study-project`.
 
-The course is maintained as one English guide:
+The course is maintained in a code-first guide and in an aligned bilingual
+graphical edition:
 
-- [course_en.md](course_en.md)
+- [course_en.md](course_en.md) — concise English path tied to lesson code.
+- [course_en_graphic.md](course_en_graphic.md) — detailed English narrative,
+  mathematics, worked examples, and diagrams.
+- [course_it_graphic.md](course_it_graphic.md) — human-authored Italian
+  translation with international technical terms kept in English.
 - [How to train runbook](docs/FINAL_TRAINING_RUNBOOK.md) for the canonical
   macOS/MPS and Windows/CUDA workflow.
 - [CUDA training optimizations](CUDA_TRAINING_OPTIMIZATIONS.md) for measured
@@ -33,6 +38,12 @@ The course is maintained as one English guide:
 - [Model memory and training limits](docs/MODEL_MEMORY_AND_TRAINING_LIMITS.md)
   for understanding how parameters, activations, context, and optimizer state
   affect an 8 GB local training run.
+
+All 42 lessons use the same bilingual readability contract: a continuous
+beginner-friendly narrative, a semantic timeline of three to seven steps
+according to the transformation's real complexity, and an explicit
+before/goal/after/invariant summary. English and Italian must always be updated
+together, with technical terms kept in their conventional English form.
 
 ## What This Project Contains
 
@@ -56,6 +67,8 @@ The course is maintained as one English guide:
 LearnGPT/
   README.md
   course_en.md
+  course_en_graphic.md
+  course_it_graphic.md
   CUDA_TRAINING_OPTIMIZATIONS.md
 
   docs/
@@ -91,6 +104,7 @@ LearnGPT/
     requirements-common.txt
 
   tools/
+    run_all_lessons.py
     validate_learngpt.py
 
   tests/
@@ -161,9 +175,11 @@ Run the complete clean-clone teaching gate:
 python -B tools/run_all_lessons.py
 ```
 
-Read the course while running the numbered lesson scripts. The Markdown files
-explain the new code introduced by each lesson, while `study/snapshots/` keeps
-the complete code state for that lesson. Lessons use the tracked
+Read either course path while running the numbered lesson scripts. The
+graphical editions use one consistent division of responsibility: the central
+narrative explains the process, the Mathematics material owns formulas and
+complete calculations, and the Programming material owns syntax and code.
+`study/snapshots/` keeps the complete code state for each lesson. Lessons use the tracked
 `data/study_sample.txt`; the 10 GiB corpus is required only for real training.
 GitHub Actions repeats the validator, regression suite, and all 42 lessons on
 both Linux and Windows.
@@ -591,7 +607,7 @@ instead of committing `.pt`, `.pth`, or `.ckpt` files to the repository.
 
 ## Relationship To nanoGPT
 
-LearnGPT follows the local `../nanoGPT` implementation as its architectural
+LearnGPT follows the local `../AndrejKarpathy/nanoGPT` implementation as its architectural
 and training reference:
 
 - decoder-only Transformer architecture

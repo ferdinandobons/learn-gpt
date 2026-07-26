@@ -8,6 +8,7 @@ File purpose:
 - Preserve a stable reference point for the course examples.
 """
 
+import torch
 import torch.nn.functional as F
 from torch import nn
 
@@ -35,3 +36,15 @@ class LanguageModel(nn.Module):
         loss = F.cross_entropy(logits_flat, target_ids_flat)
 
         return logits, loss
+
+    def generate(self, input_ids, max_new_tokens):
+        generated_ids = input_ids
+
+        for _ in range(max_new_tokens):
+            logits = self(generated_ids)
+            last_token_logits = logits[:, -1, :]
+            probabilities = F.softmax(last_token_logits, dim=-1)
+            next_token_ids = torch.multinomial(probabilities, num_samples=1)
+            generated_ids = torch.cat((generated_ids, next_token_ids), dim=1)
+
+        return generated_ids

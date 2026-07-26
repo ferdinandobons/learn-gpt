@@ -5,8 +5,13 @@ This directory contains one project-code snapshot for each lesson.
 Rule:
 
 ```text
-study/lessons/NN_lesson_name.py -> imports from study/snapshots/lesson_NN/
+lessons 01-03 -> standalone scripts with no project module yet
+lesson 04 onward -> imports from study/snapshots/lesson_NN/
 ```
+
+Lesson 04 is the first extraction into a reusable project module. The first
+three snapshot directories therefore contain only snapshot metadata and
+requirements; their lesson logic deliberately remains visible in the scripts.
 
 Why this exists:
 

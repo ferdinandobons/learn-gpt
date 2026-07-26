@@ -1,7 +1,7 @@
 """
 Changes compared with the previous file:
-- This lesson script uses the English project layout and imports lesson-specific
-  snapshot code.
+- Lessons 01-03 are intentionally standalone: there is no project module to
+  import yet.
 - It belongs to lesson 03 of the guided LearnGPT path.
 
 File purpose:
@@ -26,10 +26,6 @@ def create_vocabulary(text):
     for token_id, char in enumerate(unique_chars):
         char_to_id[char] = token_id
         id_to_char[token_id] = char
-    
-    # print(f"Character to ID: {char_to_id}")
-    # print("")
-    # print(f"ID to character: {id_to_char}")
 
     return char_to_id, id_to_char
 
@@ -40,7 +36,6 @@ def encode(text, char_to_id):
     for char in text:
         token_id = char_to_id[char]
         token_ids.append(token_id)
-    print(token_ids)
 
     return token_ids
 

@@ -1,7 +1,7 @@
 """
 Changes compared with the previous file:
-- This lesson script uses the English project layout and imports lesson-specific
-  snapshot code.
+- Lessons 01-03 are intentionally standalone: there is no project module to
+  import yet.
 - It belongs to lesson 01 of the guided LearnGPT path.
 
 File purpose:

@@ -8,8 +8,6 @@ File purpose:
 - Preserve a stable reference point for the course examples.
 """
 
-import math
-
 import torch
 import torch.nn.functional as F
 from torch import nn
