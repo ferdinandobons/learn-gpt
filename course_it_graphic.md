@@ -472,7 +472,7 @@ $$
 ### Sintesi della lezione: obiettivo e risultato
 
 - **Prima:** hai aperto il corso, ma non sai ancora che cosa installare, che cosa
-  cliccare o come entra in gioco il repository GitHub.
+  cliccare o come si collega il repository GitHub.
 - **Obiettivo:** capire la piattaforma, il repository di codice collegato e il
   setup minimo prima della prima lezione tecnica.
 - **Dopo:** sai come leggere una lezione, dove trovare il suo codice, che cosa
@@ -551,7 +551,7 @@ introdotti quando diventano necessari.
 
 ### Il repository GitHub collegato
 
-Il codice vive qui:
+Il codice è disponibile qui:
 
 [github.com/ferdinandobons/learn-gpt](https://github.com/ferdinandobons/learn-gpt)
 
@@ -612,17 +612,18 @@ Usa questo ritmo:
 6. Usa il link GitHub della lezione quando vuoi la versione nel repository.
 7. Vai avanti solo quando sai spiegare il cambiamento in una frase.
 
-Il corso è cumulativo. La Lezione 01 parte dalla lettura del testo. Poi arrivano
-token ID, batch, tensor, primo modello, embedding, attention, blocchi
-Transformer, training, checkpoint, generation e runtime di training
-production-ready. Non compare tutto insieme.
+Il corso è cumulativo. La Lezione 01 parte dalla lettura del testo. Le lezioni
+successive introducono token ID, batch, tensor, il primo modello, embedding,
+attention, blocchi Transformer, training, checkpoint, generation e un runtime
+di training production-ready. Ogni componente viene introdotto nel momento in
+cui serve.
 
 ### Cosa succede dopo
 
-La Lezione 01 avvia la costruzione vera. Legge il piccolo file di testo
-didattico e trasforma testo esterno in una stringa Python. Sembra semplice
-perché è semplice. Il punto è rendere affidabile il primo contratto prima di
-aggiungere tokenizer, tensor, modelli e training.
+La Lezione 01 inizia la parte tecnica. Legge il piccolo file di testo didattico
+e trasforma il contenuto del file in una stringa Python. L'operazione è
+semplice, ma definisce il primo contratto da verificare prima di aggiungere
+tokenizer, tensor, modelli e training.
 
 
 # Modulo 1 — Il testo diventa token
@@ -640,21 +641,21 @@ aggiungere tokenizer, tensor, modelli e training.
 
 ### Comprendere la trasformazione
 
-Il corso comincia da un'operazione volutamente semplice: **portare il testo dal
-disco dentro il programma**. Lo script reale legge il file più lungo
+Il corso comincia da un'operazione volutamente semplice: **leggere nel
+programma il testo memorizzato su disco**. Lo script reale legge il file più lungo
 `data/study_sample.txt`; per rendere visibile la trasformazione, il corso usa
 anche un mini-file didattico che contiene `The cat sleeps here.`.
 Quella frase è l'esempio condiviso, non il contenuto letterale della prima riga
 del dataset reale. In entrambi i casi, sul disco esiste soltanto una sequenza di
 byte che Python deve interpretare con l'encoding `UTF-8`.
 
-Nel mini-file, il risultato non è ancora una previsione: è semplicemente la
+Nel mini-file, il risultato non è ancora una previsione: è la
 stringa Python `"The cat sleeps here."`. Lo script esegue la stessa operazione
 sull'intero study sample. Spazi e punteggiatura fanno parte della sequenza
 esattamente come le lettere. Se uno spazio venisse eliminato o due caratteri si
 scambiassero di posizione, le lezioni successive costruirebbero token e target
-da un testo diverso. La lettura stabilisce quindi il **contratto dei dati** su
-cui poggerà il modello.
+da un testo diverso. La lettura stabilisce quindi il **contratto dei dati**
+usato dal modello.
 
 La chiamata `read_text(encoding="utf-8")` esegue due azioni collegate. Prima
 apre il file e legge i byte; poi li decodifica usando la regola UTF-8. Con i
@@ -667,9 +668,9 @@ rimanere invariato**.
 Alla fine controlliamo due segnali molto concreti: `len(text)` ci dice quanti
 caratteri Python sono stati ottenuti e `text[:500]` mostra un breve campione.
 Questi controlli non modificano il contenuto; servono a verificare che il
-programma stia leggendo il file atteso. Non abbiamo ancora iniziato a
-“insegnare” nulla al modello: abbiamo soltanto creato una sorgente testuale
-affidabile dalla quale, nella prossima lezione, potremo ricavare i token.
+programma stia leggendo il file atteso. Il training non è ancora iniziato:
+abbiamo soltanto creato una sorgente testuale affidabile dalla quale, nella
+prossima lezione, potremo ricavare i token.
 
 ### Trasformazione, passo dopo passo
 
@@ -743,7 +744,7 @@ affidabile dalla quale, nella prossima lezione, potremo ricavare i token.
 ### Dove siamo arrivati
 
 Ora Python possiede una sequenza testuale stabile e ispezionabile. Questo è lo
-status quo da cui partirà il tokenizer: non un insieme di parole già comprese,
+stato da cui partirà il tokenizer: non un insieme di parole già comprese,
 ma una stringa nella quale ogni carattere, spazio e segno di punteggiatura ha
 una posizione precisa.
 
@@ -850,7 +851,7 @@ I sistemi GPT moderni usano la stessa idea, ma con un tokenizer più potente.
 Di solito non assegnano un ID a ogni singolo carattere né un ID a ogni parola.
 Un approccio di produzione comune è BPE, dove frammenti frequenti di byte o
 testo ricevono un proprio token ID e il testo raro può comunque essere
-scomposto in pezzi più piccoli. Alcuni token speciali possono inoltre
+scomposto in unità più piccole. Alcuni token speciali possono inoltre
 riservare ID per confini come end-of-text. Questa lezione parte
 intenzionalmente dai caratteri perché l'intero vocabulary resta visibile sulla
 pagina. Il concetto da conservare è lo stesso che useremo più avanti con BPE:
@@ -861,8 +862,8 @@ definisce un ordine stabile. `sorted(...)` aggiunge la regola necessaria alla
 riproducibilità: lo stesso insieme di caratteri produce sempre la stessa lista.
 `enumerate(...)` può quindi assegnare gli indirizzi `0, 1, ..., V-1`.
 
-Costruiamo due dizionari nello stesso ciclo. `char_to_id` traduce un carattere
-nel suo numero; `id_to_char` risponde alla domanda inversa. Devono rimanere
+Costruiamo due dizionari nello stesso ciclo. `char_to_id` associa un carattere
+al suo numero; `id_to_char` esegue l'associazione inversa. Devono rimanere
 inversi esatti: ogni carattere noto ha un solo ID valido e ogni ID valido
 recupera un solo carattere.
 
@@ -1031,7 +1032,7 @@ numerico potrà usare.
 caratteri senza aggiungere separatori. Il risultato deve conservare anche
 spazi, lettere ripetute e punto finale.
 
-Le due mappe devono essere davvero inverse. Se `char_to_id["h"]` restituisce
+Le due mappe devono essere inverse esatte. Se `char_to_id["h"]` restituisce
 `6`, allora `id_to_char[6]` deve restituire di nuovo `"h"`. Questo rende ogni
 posizione verificabile separatamente: possiamo osservare il carattere
 originale, l'ID intermedio e il carattere ricostruito senza affidarsi a una
@@ -1099,9 +1100,9 @@ perché questo tokenizer didattico non definisce un fallback.
 
 ### Dove siamo arrivati
 
-Il testo attraversa ora il confine simbolico/numerico in entrambe le direzioni.
-Le funzioni vivono ancora nel lesson script, ma il loro contratto è concreto e
-verificabile.
+Il testo può ora essere convertito dalla rappresentazione simbolica a quella
+numerica e poi ricostruito. Le funzioni si trovano ancora nel lesson script, ma
+il loro contratto è concreto e verificabile.
 
 - **Cambiato:** i lookup singoli sono diventati operazioni su sequenze complete.
 - **Preservato:** lunghezza, ordine, spazi, punteggiatura e identità.
@@ -1207,7 +1208,7 @@ Questo è lo stesso codice a loop espliciti usato in
 - **Prima:** vocabulary e round trip corretti ma duplicati nei lesson script
 - **Obiettivo:** esporre creazione del vocabulary, encode e decode da un unico modulo
 - **Dopo:** un'interfaccia tokenizer riutilizzabile dalle lezioni successive
-- **Vincolo:** ogni caller deve usare le stesse mappe in encode e decode
+- **Vincolo:** ogni componente chiamante deve usare le stesse mappe in encode e decode
 
 ### Comprendere la trasformazione
 
@@ -1225,15 +1226,15 @@ Il vocabulary continua a essere costruito sull'intero testo sorgente. Il sample
 può essere codificato solo se i suoi caratteri sono presenti in quella mappa;
 le stesse mappe attraversano poi l'intero round trip.
 
-L'import rende inoltre visibile la dipendenza. Leggendo lo script sappiamo da
-quale snapshot arriva il contratto e possiamo eseguire la lezione anche se i
+L'import rende inoltre visibile la dipendenza. Leggendo lo script sappiamo
+quale snapshot definisce il contratto e possiamo eseguire la lezione anche se i
 moduli futuri cambieranno. Il modulo non introduce una classe, uno stato
-nascosto o una nuova codifica: espone semplicemente tre funzioni con input e
-output espliciti. In questo modo un errore resta localizzabile nel tokenizer,
-invece di essere replicato in ogni consumer.
+nascosto o una nuova codifica: espone tre funzioni con input e output espliciti.
+Un eventuale errore resta così localizzabile nel tokenizer, invece di essere
+replicato in ogni componente che usa il modulo.
 
-Questo è il primo single source of truth del progetto. Ogni lesson script che
-lo importa riusa lo stesso comportamento senza reimplementarlo.
+Questo è il primo punto unico di definizione del progetto. Ogni lesson script
+che importa il modulo riusa lo stesso comportamento senza reimplementarlo.
 
 ### Trasformazione, passo dopo passo
 
@@ -1256,11 +1257,12 @@ lo importa riusa lo stesso comportamento senza reimplementarlo.
 
    Il modulo esporta `create_vocabulary`, `encode` e `decode`.
 
-   **Cosa osservare:** i caller dipendono da nomi, argomenti e risultati.
+   **Cosa osservare:** il codice chiamante dipende da nomi, argomenti e risultati.
 
 4. **OPERATION — Importa e usa le stesse funzioni**
 
-   Il client crea le mappe sul testo completo e applica il round trip al sample.
+   Lo script chiamante crea le mappe sul testo completo e applica il round trip
+   al sample.
 
    **Cosa osservare:** la stessa coppia di mappe serve entrambe le direzioni.
 
@@ -1272,7 +1274,8 @@ lo importa riusa lo stesso comportamento senza reimplementarlo.
 
 ### Dove siamo arrivati
 
-Il tokenizer è ora una dipendenza esplicita, non setup nascosto in una demo.
+Il tokenizer è ora una dipendenza esplicita, non una configurazione duplicata
+all'interno di una demo.
 
 - **Cambiato:** logica duplicata è diventata un'interfaccia importabile.
 - **Preservato:** ordine del vocabulary e comportamento del round trip.
@@ -1292,8 +1295,8 @@ passaggio di dati attraverso il confine di un modulo.
 
 ### Esempio visivo svolto
 
-> **Stato dell'esempio ricorrente:** racchiudiamo le operazioni di encode e
-> decode di `The cat sleeps here.` dietro un'interfaccia tokenizer
+> **Stato dell'esempio ricorrente:** esponiamo le operazioni di encode e decode
+> di `The cat sleeps here.` tramite un'interfaccia tokenizer
 > riutilizzabile.
 
 ```learngpt-mermaid
@@ -1333,8 +1336,8 @@ token_ids = encode(sample, char_to_id)
 reconstructed_text = decode(token_ids, id_to_char)
 ```
 
-L'implementazione riutilizzabile vive in
-`study/snapshots/lesson_04/tokenizer.py`; il client eseguibile è
+L'implementazione riutilizzabile si trova in
+`study/snapshots/lesson_04/tokenizer.py`; lo script eseguibile è
 `study/lessons/04_test_tokenizer.py`.
 
 ### Sintassi e logica
@@ -1545,9 +1548,10 @@ verticalmente, `4` deve predire `7`, `7` deve predire `1` e così via. Uno
 shift errato insegnerebbe un task diverso anche con shape apparentemente
 corrette.
 
-I prefissi crescenti descrivono lo stesso allineamento. Il bigram imminente
-userà inizialmente solo il token corrente; il Transformer causale userà in
-seguito l'intero prefisso visibile. La coppia input/target è valida per entrambi.
+I prefissi crescenti descrivono lo stesso allineamento. Il modello bigram
+introdotto nelle prossime lezioni userà inizialmente solo il token corrente; il
+Transformer causale userà in seguito l'intero prefisso visibile. La coppia
+input/target è valida per entrambi.
 
 Le quattro colonne non sono quattro sequenze scollegate. Sono quattro punti di
 supervisione ricavati dalla stessa finestra ordinata: alla posizione `t`,
@@ -1630,7 +1634,7 @@ visibile, qual è il token immediatamente successivo a ogni posizione?”
 
 ### Dove siamo arrivati
 
-I dati contengono ora domande e risposte esplicite per il next-token learning.
+I dati contengono ora coppie input/target esplicite per il next-token learning.
 
 - **Cambiato:** una finestra senza label è diventata una coppia input/target.
 - **Preservato:** ordine e relazione con il token immediatamente successivo.
@@ -1800,8 +1804,8 @@ possiamo controllarla e confrontarla.
    Chiamate ripetute possono coprire molti contesti locali, conservando
    l'ordine di ogni sequenza.
 
-   **Cosa osservare:** la varietà nasce dalla posizione iniziale, non dal
-   riordinamento dei token.
+   **Cosa osservare:** la posizione iniziale determina quale finestra viene
+   estratta; l'ordine dei token non cambia.
 
 ### Dove siamo arrivati
 
@@ -2118,7 +2122,7 @@ griglia dei target. I valori non acquistano un significato nuovo: è la loro
 rappresentazione che ora possiede una shape e un tipo scalare che PyTorch può
 ispezionare.
 
-Poiché tutti i valori di partenza sono integer Python, questa chiamata
+Poiché tutti i valori di partenza sono interi Python, questa chiamata
 particolare inferisce `torch.int64`, chiamato anche `torch.long`. È il tipo
 che servirà più avanti per i lookup nelle embedding table. Il codice della
 lezione non passa esplicitamente `dtype=torch.long`: è quindi importante
@@ -2140,7 +2144,7 @@ andata e ritorno conferma che la conversione ha preservato la sequenza.
 1. **INPUT — Ricevi due liste rettangolari**
 
    `batch_inputs` e `batch_targets` contengono ciascuna `B` righe di `T`
-   integer.
+   intero.
 
    **Cosa osservare:** le righe devono avere tutte la stessa lunghezza; una
    struttura irregolare non può diventare il tensor di rango 2 previsto.
@@ -2212,7 +2216,7 @@ prima il batch, poi il tempo.
 |---|---|---|
 | Valori | `[[4,7],[7,1]]` | `[[4,7],[7,1]]` |
 | Shape | implicita | `[2,2]` |
-| Tipo | integer Python | `torch.int64`, inferito |
+| Tipo | intero Python | `torch.int64`, inferito |
 | Device | nessuno | `cpu`, predefinito |
 
 I numeri non cambiano: diventa esplicito il loro contratto computazionale.
@@ -2242,7 +2246,7 @@ Gli esempi di conversione e indexing si trovano in
 ### Sintassi e logica
 
 - `torch.tensor(batch_inputs)` e `torch.tensor(batch_targets)` copiano le due
-  liste rettangolari in tensor; dagli integer di partenza PyTorch inferisce
+  liste rettangolari in tensor; dagli interi di partenza PyTorch inferisce
   `torch.int64`, il tipo richiesto dagli indici delle embedding.
 - `.shape` restituisce una dimensione per asse: `B` righe del batch e `T`
   posizioni temporali.
@@ -2280,7 +2284,7 @@ Python campiona `B` esempi, aggiunge le righe abbinate alle due liste e infine
 le converte con `torch.tensor`. Non esistono ancora una classe
 `BatchProvider`, una griglia di indici vettorializzata, una memmap `uint16` o
 un trasferimento verso un acceleratore: sono ottimizzazioni della versione di
-produzione, non lo status quo di questa lezione.
+produzione, non dello stato attuale della lezione.
 
 Il vantaggio è un confine stabile. Le lezioni del modello possono chiedere due
 tensor senza conoscere i dettagli del campionamento; il modulo di batching
@@ -2464,8 +2468,8 @@ Le lezioni 09 e 10 hanno già convertito batch campionati in tensor PyTorch e
 stampato le loro shape `[B,T]`. Qui non introduciamo di nuovo la conversione:
 eliminiamo campionamento casuale, decode del testo e valori dipendenti dal
 corpus per controllare un solo contratto numerico in isolamento. Diamo a
-PyTorch otto integer noti e confrontiamo ogni risultato osservato con una
-risposta conosciuta in anticipo.
+PyTorch otto interi noti e confrontiamo ogni risultato osservato con il valore
+atteso.
 
 Partiamo da `[[1, 2, 3, 4], [5, 6, 7, 8]]`. In Python è una lista contenente
 due liste; dopo `torch.tensor(...)` diventa un unico oggetto rettangolare con
@@ -2503,10 +2507,10 @@ non soltanto un controllo preliminare.
 Infine stampiamo la versione di PyTorch e il `dtype`. La versione identifica il
 runtime che ha prodotto l'osservazione; il `dtype` descrive come sono
 memorizzati gli scalari. Lo script non seleziona e non verifica ancora CPU, MPS
-o CUDA: il device entrerà nel percorso più avanti. L'evidenza di questa lezione
-è più stretta e precisa: il runtime installato crea il tensor intero atteso e
-le operazioni di indexing stampano le selezioni previste. È un risultato modesto,
-ma rende verificabile il substrato che userà il primo modello.
+o CUDA: il device verrà introdotto più avanti. La verifica di questa lezione è
+circoscritta: il runtime installato crea il tensor intero atteso e le operazioni
+di indexing stampano le selezioni previste. Il risultato conferma le operazioni
+di base che userà il primo modello.
 
 ### Trasformazione, passo dopo passo
 
@@ -2534,7 +2538,7 @@ ma rende verificabile il substrato che userà il primo modello.
    **Cosa osservare:** l'asse `0` conta le righe, l'asse `1` conta le
    posizioni e l'indexing espone i valori esistenti senza riordinarli.
 
-4. **CHECK — Registra il runtime e confronta l'evidenza**
+4. **CHECK — Registra il runtime e confronta i risultati**
 
    ```text
    torch.__version__  → release PyTorch installata
@@ -2542,9 +2546,9 @@ ma rende verificabile il substrato che userà il primo modello.
    tensor.dtype       → tipo scalare intero
    ```
 
-   **Cosa osservare:** lo script stampa evidenza che il lettore confronta con
-   il contratto atteso; non verifica ancora un device o un operatore tra
-   matrici.
+   **Cosa osservare:** il lettore confronta l'output dello script con il
+   contratto atteso; questa lezione non verifica ancora un device o una
+   moltiplicazione tra matrici.
 
 5. **OUTPUT — Accetta il contratto del runtime**
 
@@ -2556,10 +2560,9 @@ ma rende verificabile il substrato che userà il primo modello.
 
 ### Dove siamo arrivati
 
-Il runtime PyTorch non è più una dipendenza completamente data per scontata:
-abbiamo osservato come rappresenta gli ID e come interpreta i due assi. Da
-questo punto, se un livello successivo produce una shape o un valore inatteso,
-possiamo confrontarlo con un riferimento tensoriale piccolo e leggibile.
+Abbiamo verificato come PyTorch rappresenta gli ID e interpreta i due assi. Se
+un livello successivo produce una shape o un valore inatteso, possiamo
+confrontarlo con questo riferimento tensoriale piccolo e leggibile.
 
 - **Cambiato:** le strutture numeriche sono ora tensor PyTorch verificati.
 - **Preservato:** valori, ordine degli ID e significato degli assi.
@@ -2670,7 +2673,7 @@ Questa sezione mostra come il codice realizza direttamente la trasformazione mat
 
 ### Comprendere la trasformazione
 
-La pipeline dei dati può ormai fornire tensor interi, ma quegli integer non
+La pipeline dei dati può ormai fornire tensor interi, ma quegli interi non
 producono previsioni da soli. Il primo modello introduce una tabella
 addestrabile `W` con `V` righe e `V` colonne. Una riga rappresenta il token
 corrente; una colonna rappresenta uno dei possibili token successivi. Ogni
@@ -2691,8 +2694,8 @@ vocabulary e restituisce `[B,T,V]`.
 Il modello è un bigram perché ogni riga dipende soltanto dall'ID nella stessa
 posizione. I token precedenti del prefix non influenzano la previsione. La
 tabella parte da valori addestrabili arbitrari; questa lezione si limita a
-crearla e applicarla. Normalizzazione e loss arrivano nella lezione
-successiva.
+crearla e applicarla. La normalizzazione e la loss vengono introdotte nella
+lezione successiva.
 
 ### Trasformazione, passo dopo passo
 
@@ -2862,7 +2865,7 @@ I logits indicano quali token il modello favorisce, ma non dicono se il token
 favorito sia quello corretto. La cross-entropy confronta ogni riga di score sul
 vocabulary con il target ID allineato. In ogni posizione del batch pone una
 domanda precisa: quanta probabilità normalizzata ha assegnato questa riga al
-token che è comparso davvero subito dopo?
+token comparso subito dopo?
 
 Per un esempio aritmetico chiuso con soli tre token candidati — `sleeps`,
 `here` e `.` — i logits `[1.2, 0.3, -0.1]` diventano probabilità
@@ -2877,8 +2880,8 @@ quindi il codice trasforma i logits in `[B*T,V]` e i target in `[B*T]`.
 Entrambi i reshape seguono lo stesso ordine row-major. Se uno dei due venisse
 riordinato diversamente, shape valide nasconderebbero etichette sbagliate.
 
-La funzione combina un log-softmax numericamente stabile con la penalità
-negative log e calcola la media sulle posizioni. Non restituisce un tensor di
+La funzione combina un log-softmax numericamente stabile con la negative
+log-likelihood e calcola la media sulle posizioni. Non restituisce un tensor di
 probabilità: il metodo restituisce i logits originali, ancora strutturati, e
 una sola loss scalare che la lezione successiva potrà differenziare.
 
@@ -2946,7 +2949,7 @@ una sola loss scalare che la lezione successiva potrà differenziare.
 ### Dove siamo arrivati
 
 Il modello dispone ora di un segnale di qualità differenziabile. Nessun
-parametro è ancora cambiato: lo scalare descrive semplicemente le previsioni
+parametro è ancora cambiato: lo scalare descrive le previsioni
 del batch corrente in una forma utilizzabile dalla backpropagation.
 
 - **Cambiato:** logits non valutati producono ora una cross-entropy loss scalare.
@@ -3273,8 +3276,8 @@ passaggio importante è da una previsione singola a un **loop**: il token
 campionato ora diventa parte dell'input della previsione successiva.
 
 Partiamo da `The`. Il modello produce logits per tutte le posizioni del prompt,
-ma soltanto l'ultima riga risponde alla domanda corrente: «che cosa può venire
-dopo l'ultimo token?». La softmax trasforma quella riga in probabilità, il
+ma per campionare il token successivo servono soltanto quelli dell'ultima
+posizione. La softmax trasforma quella riga in probabilità, il
 sampling sceglie un ID e la concatenazione lo aggiunge all'asse temporale. Se
 viene campionato `cat`, lo stato passa da `[The]` a `[The, cat]`; l'iterazione
 successiva chiede che cosa può seguire `cat`.
@@ -3285,27 +3288,25 @@ quindi divergere pur partendo dallo stesso prompt. Durante il processo cambia
 la sequenza, non ciò che il modello ha imparato.
 
 Questa distinzione è utile anche nel debugging. Se una continuazione è debole,
-bisogna separare una distribuzione poco utile da un campione semplicemente
-sfortunato. Il modello produce la distribuzione; `multinomial` compie la scelta
+bisogna distinguere una distribuzione poco utile da una singola scelta
+sfavorevole del sampling. Il modello produce la distribuzione; `multinomial` compie la scelta
 casuale. Modificare la regola di sampling cambia quali possibilità vengono
 esplorate, ma non riaddestra la bigram table.
 
 ### Trasformazione, passo dopo passo
 
-1. **INPUT — Individua lo stato disponibile**
+1. **INPUT — Parti dal prompt corrente**
 
-   Il punto di partenza è **un prompt fisso**. Prima di applicare qualsiasi
-   operazione, bisogna riconoscere con precisione quale oggetto esiste già e
-   quale informazione contiene.
+   Il prompt è un tensor di token ID con shape `[B,T]`. All'inizio contiene
+   soltanto gli ID forniti dall'utente.
 
-   **Cosa osservare:** questo è l'input del passaggio, non il risultato che
-   vogliamo ottenere.
+   **Cosa osservare:** la generation estende questo tensor lungo l'asse
+   temporale; non modifica gli ID già presenti.
 
-2. **OPERATION — Bigram generation**
+2. **OPERATION — Calcola la distribuzione del token successivo**
 
-   Applichiamo l'operazione **Genera testo campionando ripetutamente il token successivo previsto**. La traccia seguente mostra
-   gli oggetti nell'ordine di lettura, trasformazione e uso nel
-   passaggio successivo:
+   Il modello calcola i logits per il prompt corrente. La generation seleziona
+   quelli dell'ultima posizione, applica la softmax e campiona un ID:
 
    ```learngpt-visual
    {
@@ -3327,51 +3328,47 @@ esplorate, ma non riaddestra la bigram table.
        C --> N["Nuovo prefisso · The, cat"]
    ```
 
-   **Cosa osservare:** ogni freccia rappresenta un'operazione concreta; una
-   riga intermedia è sia l'output del passaggio precedente sia
-   l'input di quello successivo.
+   **Cosa osservare:** per decidere il prossimo token viene usata soltanto
+   l'ultima riga dei logits.
 
-3. **INTERMEDIATE STATE — Segui le consegne intermedie**
+3. **INTERMEDIATE STATE — Aggiungi l'ID campionato**
 
-   Fermati su ciascuna riga centrale della traccia. Questi valori non sono
-   decorativi: rendono visibile ciò che il programma deve aver già prodotto
-   prima di poter continuare.
+   `torch.multinomial` restituisce un ID con shape `[B,1]`; `torch.cat` lo
+   aggiunge al prompt. Se viene campionato `cat`, `[The]` diventa
+   `[The, cat]`.
 
-   **Cosa osservare:** se uno stato intermedio manca o ha significato diverso,
-   la freccia successiva non possiede l'input corretto.
+   **Cosa osservare:** l'ID appena aggiunto sarà il token corrente della
+   previsione successiva.
 
-4. **CHECK — Proteggi il vincolo della lezione**
+4. **CHECK — Mantieni invariato il modello**
 
-   Verifichiamo che **il vocabulary e il compito di prevedere il token successivo restano gli stessi**. Il controllo separa una trasformazione
-   corretta da un risultato che sembra plausibile soltanto perché ha una shape
-   compatibile.
+   Il loop esegue soltanto forward pass, softmax, sampling e concatenazione.
+   Non chiama `backward()` né `optimizer.step()`.
 
-   **Cosa osservare:** il passaggio modifica solo ciò che dichiara di
-   modificare; l'informazione necessaria alle lezioni successive resta
-   allineata.
+   **Cosa osservare:** durante la generation cambia la sequenza, mentre
+   parametri e mappatura del vocabulary restano invariati.
 
-5. **OUTPUT — Definisci il nuovo stato**
+5. **OUTPUT — Ripeti per il numero di token richiesto**
 
-   Alla fine possediamo **un prompt esteso un token alla volta**. Questo è il nuovo punto di
-   partenza del corso, non un semplice valore temporaneo.
+   Ogni iterazione aggiunge una colonna al tensor. Dopo `K` iterazioni, la
+   shape temporale passa da `[B,T]` a `[B,T+K]`.
 
-   **Cosa osservare:** l'output conferma l'obiettivo indicato nella sintesi iniziale e può essere
-   passato alla lezione successiva senza ricostruire il processo da zero.
+   **Cosa osservare:** l'output contiene sia il prompt originale sia tutti gli
+   ID campionati.
 
 ### Dove siamo arrivati
 
-La trasformazione è completa quando **un prompt esteso un token alla volta** è disponibile e il
-vincolo della lezione è ancora rispettato. A questo punto possiamo fermarci:
-anticipare il passaggio successivo renderebbe meno chiaro quale
-responsabilità appartiene a questa lezione.
+Il modello bigram può ora generare una continuazione autoregressiva. A ogni
+iterazione usa l'ultimo token disponibile, campiona il successivo e lo aggiunge
+alla sequenza.
 
-- **Cambiato:** un prompt fisso è diventato **un prompt esteso un token alla volta**.
-- **Preservato:** il vocabulary e il compito di prevedere il token successivo restano gli stessi.
-- **Prossimo passo:** **Limite di bigramma** userà questo risultato come nuovo input.
+- **Cambiato:** un prompt fisso viene esteso di un token a ogni iterazione.
+- **Preservato:** parametri, vocabulary e ordine left-to-right.
+- **Prossimo passo:** verificare quali parti del prompt il modello bigram usa
+  realmente per scegliere il token successivo.
 
-> **Se ricordi una sola cosa:** il risultato importante non è il nome
-> dell'operazione, ma il nuovo stato verificabile che essa produce:
-> **un prompt esteso un token alla volta**.
+> **Se ricordi una sola cosa:** ogni token campionato viene aggiunto al prompt
+> e usato nell'iterazione successiva, senza aggiornare i parametri del modello.
 
 ### Come leggere la matematica
 
@@ -3499,20 +3496,18 @@ dubbio generico in una prova riproducibile del requisito architetturale.
 
 ### Trasformazione, passo dopo passo
 
-1. **INPUT — Individua lo stato disponibile**
+1. **INPUT — Prepara due prefissi con lo stesso token finale**
 
-   Il punto di partenza è **un predittore del token successivo funzionante**. Prima di applicare qualsiasi
-   operazione, bisogna riconoscere con precisione quale oggetto esiste già e
-   quale informazione contiene.
+   Usiamo due sequenze con parti iniziali diverse, ma entrambe terminate da
+   `cat`.
 
-   **Cosa osservare:** questo è l'input del passaggio, non il risultato che
-   vogliamo ottenere.
+   **Cosa osservare:** il confronto mantiene costanti modello, tokenizer e
+   ultimo token; cambia soltanto il contesto precedente.
 
-2. **OPERATION — Limite di bigramma**
+2. **OPERATION — Calcola entrambe le distribuzioni bigram**
 
-   Applichiamo l'operazione **Mostra perché una memoria limitata a un solo token non è sufficiente**. La traccia seguente mostra
-   gli oggetti nell'ordine di lettura, trasformazione e uso nel
-   passaggio successivo:
+   Il modello esegue il lookup della riga associata al token finale di ciascun
+   prefisso:
 
    ```learngpt-mermaid
    flowchart TD
@@ -3535,51 +3530,47 @@ dubbio generico in una prova riproducibile del requisito architetturale.
    }
    ```
 
-   **Cosa osservare:** ogni freccia rappresenta un'operazione concreta; una
-   riga intermedia è sia l'output del passaggio precedente sia
-   l'input di quello successivo.
+   **Cosa osservare:** entrambi i prefissi selezionano la stessa riga della
+   bigram table.
 
-3. **INTERMEDIATE STATE — Segui le consegne intermedie**
+3. **INTERMEDIATE STATE — Seleziona i logits dell'ultima posizione**
 
-   Fermati su ciascuna riga centrale della traccia. Questi valori non sono
-   decorativi: rendono visibile ciò che il programma deve aver già prodotto
-   prima di poter continuare.
+   Per ogni prefisso, `[:, -1, :]` estrae il vettore di logits usato per la
+   previsione successiva.
 
-   **Cosa osservare:** se uno stato intermedio manca o ha significato diverso,
-   la freccia successiva non possiede l'input corretto.
+   **Cosa osservare:** nel modello bigram quel vettore dipende soltanto
+   dall'ultimo ID.
 
-4. **CHECK — Proteggi il vincolo della lezione**
+4. **CHECK — Confronta numericamente i risultati**
 
-   Verifichiamo che **il vocabulary e il compito di prevedere il token successivo restano gli stessi**. Il controllo separa una trasformazione
-   corretta da un risultato che sembra plausibile soltanto perché ha una shape
-   compatibile.
+   `torch.allclose` verifica che i due vettori di logits siano uguali entro la
+   tolleranza numerica.
 
-   **Cosa osservare:** il passaggio modifica solo ciò che dichiara di
-   modificare; l'informazione necessaria alle lezioni successive resta
-   allineata.
+   **Cosa osservare:** l'uguaglianza non dipende dalla qualità del training, ma
+   dal lookup definito dall'architettura.
 
-5. **OUTPUT — Definisci il nuovo stato**
+5. **OUTPUT — Identifica il limite di contesto**
 
-   Alla fine possediamo **una descrizione precisa del suo limite di contesto**. Questo è il nuovo punto di
-   partenza del corso, non un semplice valore temporaneo.
+   Il test dimostra che il modello non può usare i token che precedono
+   l'ultimo.
 
-   **Cosa osservare:** l'output conferma l'obiettivo indicato nella sintesi iniziale e può essere
-   passato alla lezione successiva senza ricostruire il processo da zero.
+   **Cosa osservare:** per utilizzare un prefisso più lungo serve una
+   rappresentazione contestualizzata.
 
 ### Dove siamo arrivati
 
-La trasformazione è completa quando **una descrizione precisa del suo limite di contesto** è disponibile e il
-vincolo della lezione è ancora rispettato. A questo punto possiamo fermarci:
-anticipare il passaggio successivo renderebbe meno chiaro quale
-responsabilità appartiene a questa lezione.
+Il confronto rende verificabile il limite del modello: due prefissi che
+terminano con lo stesso token producono la stessa distribuzione, anche quando
+tutto ciò che li precede è diverso.
 
-- **Cambiato:** un predittore del token successivo funzionante è diventato **una descrizione precisa del suo limite di contesto**.
-- **Preservato:** il vocabulary e il compito di prevedere il token successivo restano gli stessi.
-- **Prossimo passo:** **Token embedding** userà questo risultato come nuovo input.
+- **Cambiato:** il limite di contesto del modello è ora dimostrato con un test
+  riproducibile.
+- **Preservato:** modello, vocabulary e compito next-token.
+- **Prossimo passo:** rappresentare ogni token con feature continue che
+  potranno essere combinate dall'attention.
 
-> **Se ricordi una sola cosa:** il risultato importante non è il nome
-> dell'operazione, ma il nuovo stato verificabile che essa produce:
-> **una descrizione precisa del suo limite di contesto**.
+> **Se ricordi una sola cosa:** un modello bigram usa soltanto l'ultimo token
+> del prefisso; i token precedenti non possono modificare la previsione.
 
 ### Come leggere la matematica
 
@@ -3686,32 +3677,30 @@ programmatore: è il training a organizzarle in direzioni utili.
 
 Applicato a tutti gli ID, il lookup introduce soltanto l'asse delle feature:
 `[B,T]` diventa `[B,T,C]` senza cambiare l'ordine dei token.
+La nuova dimensione ha lunghezza `C` in ogni posizione.
 
 I valori della tabella, a differenza della mappatura degli ID, sono parametri
 del modello. La backpropagation raggiunge le righe selezionate dai token del
 batch e ne modifica le coordinate. Il programmatore sceglie `V` e `C`; il
 training sceglie i numeri conservati nella tabella `V × C`. Un vettore può
-quindi diventare utile senza chiamare esplicitamente una coordinata «animale»
-o «verbo». La lezione non aggiunge ancora posizione o contesto: crea il feature
-space continuo in cui opereranno le trasformazioni successive.
-Questo è il nuovo oggetto concreto consegnato alla lezione successiva.
+quindi diventare utile senza assegnare esplicitamente a una coordinata il
+significato di «animale» o «verbo». La lezione non aggiunge ancora posizione o
+contesto: crea lo spazio continuo delle feature usato dalle trasformazioni
+successive.
 
 ### Trasformazione, passo dopo passo
 
-1. **INPUT — Individua lo stato disponibile**
+1. **INPUT — Ricevi i token ID**
 
-   Il punto di partenza è **un ID per token**. Prima di applicare qualsiasi
-   operazione, bisogna riconoscere con precisione quale oggetto esiste già e
-   quale informazione contiene.
+   L'input è un tensor intero `[B,T]`. Ogni valore identifica una riga del
+   vocabulary.
 
-   **Cosa osservare:** questo è l'input del passaggio, non il risultato che
-   vogliamo ottenere.
+   **Cosa osservare:** un token ID è un indice categorico, non una feature
+   continua.
 
-2. **OPERATION — Token embedding**
+2. **OPERATION — Esegui il lookup nella embedding table**
 
-   Applichiamo l'operazione **Rappresenta ogni token con un feature vector appreso**. La traccia seguente mostra
-   gli oggetti nell'ordine di lettura, trasformazione e uso nel
-   passaggio successivo:
+   Ogni ID seleziona una riga appresa di larghezza `C`:
 
    ```learngpt-visual
    {
@@ -3752,51 +3741,45 @@ Questo è il nuovo oggetto concreto consegnato alla lezione successiva.
    }
    ```
 
-   **Cosa osservare:** ogni freccia rappresenta un'operazione concreta; una
-   riga intermedia è sia l'output del passaggio precedente sia
-   l'input di quello successivo.
+   **Cosa osservare:** il lookup aggiunge l'asse delle feature senza cambiare
+   batch, ordine o posizione dei token.
 
-3. **INTERMEDIATE STATE — Segui le consegne intermedie**
+3. **INTERMEDIATE STATE — Ottieni un vettore per ogni posizione**
 
-   Fermati su ciascuna riga centrale della traccia. Questi valori non sono
-   decorativi: rendono visibile ciò che il programma deve aver già prodotto
-   prima di poter continuare.
+   Il risultato del lookup per una posizione è un vettore `[C]`; applicato
+   all'intero batch produce `[B,T,C]`.
 
-   **Cosa osservare:** se uno stato intermedio manca o ha significato diverso,
-   la freccia successiva non possiede l'input corretto.
+   **Cosa osservare:** occorrenze dello stesso ID selezionano la stessa riga
+   della tabella prima di aggiungere posizione e contesto.
 
-4. **CHECK — Proteggi il vincolo della lezione**
+4. **CHECK — Verifica shape e allineamento**
 
-   Verifichiamo che **gli assi batch/tempo e il vincolo causale restano intatti mentre cambiano le feature**. Il controllo separa una trasformazione
-   corretta da un risultato che sembra plausibile soltanto perché ha una shape
-   compatibile.
+   La shape deve cambiare da `[B,T]` a `[B,T,C]`, mantenendo la corrispondenza
+   tra ogni ID e il vettore nella stessa posizione.
 
-   **Cosa osservare:** il passaggio modifica solo ciò che dichiara di
-   modificare; l'informazione necessaria alle lezioni successive resta
-   allineata.
+   **Cosa osservare:** vengono aggiunte feature continue; gli assi batch e
+   tempo non vengono riordinati.
 
-5. **OUTPUT — Definisci il nuovo stato**
+5. **OUTPUT — Restituisci gli embedding dei token**
 
-   Alla fine possediamo **$C$ feature apprese per token**. Questo è il nuovo punto di
-   partenza del corso, non un semplice valore temporaneo.
+   Ogni token dispone ora di `C` feature apprese, rappresentate in un tensor
+   `[B,T,C]`.
 
-   **Cosa osservare:** l'output conferma l'obiettivo indicato nella sintesi iniziale e può essere
-   passato alla lezione successiva senza ricostruire il processo da zero.
+   **Cosa osservare:** i valori della tabella sono parametri addestrabili; la
+   mappatura tra token e ID resta invariata.
 
 ### Dove siamo arrivati
 
-La trasformazione è completa quando **$C$ feature apprese per token** sono disponibili e il
-vincolo della lezione è ancora rispettato. A questo punto possiamo fermarci:
-anticipare il passaggio successivo renderebbe meno chiaro quale
-responsabilità appartiene a questa lezione.
+Il modello dispone ora di una rappresentazione continua per ogni token. La
+shape `[B,T,C]` è compatibile con i layer neurali successivi, ma non contiene
+ancora informazioni sulla posizione o sul contesto.
 
-- **Cambiato:** un ID per token è diventato **$C$ feature apprese per token**.
-- **Preservato:** gli assi batch/tempo e il vincolo causale restano intatti mentre cambiano le feature.
-- **Prossimo passo:** **Embedding di posizione** userà questo risultato come nuovo input.
+- **Cambiato:** ogni ID è stato sostituito da `C` feature apprese.
+- **Preservato:** identità dei token, batch e ordine temporale.
+- **Prossimo passo:** aggiungere un embedding di posizione a ogni vettore.
 
-> **Se ricordi una sola cosa:** il risultato importante non è il nome
-> dell'operazione, ma il nuovo stato verificabile che essa produce:
-> **$C$ feature apprese per token**.
+> **Se ricordi una sola cosa:** `nn.Embedding(V,C)` usa ogni token ID per
+> selezionare una riga appresa e trasforma `[B,T]` in `[B,T,C]`.
 
 ### Come leggere la matematica
 
@@ -3855,7 +3838,8 @@ token_embeddings = self.token_embedding_table(input_ids)
 logits = self.output_head(token_embeddings)
 ```
 
-I livelli di rappresentazione e uscita separati vivono in `study/snapshots/lesson_17/model.py`.
+I livelli separati di rappresentazione e di uscita sono definiti in
+`study/snapshots/lesson_17/model.py`.
 
 ### Sintassi e logica
 
@@ -3865,7 +3849,7 @@ I livelli di rappresentazione e uscita separati vivono in `study/snapshots/lesso
   `[B,T,V]`, senza cambiare gli assi batch e tempo.
 - Entrambi i layer contengono oggetti `nn.Parameter` addestrabili, registrati
   automaticamente quando vengono assegnati a `self`.
-- `self.token_embedding_table(input_ids)` esegue la ricerca ID -to-vector,
+- `self.token_embedding_table(input_ids)` esegue la conversione da ID a vettore,
   mentre `self.output_head(token_embeddings)` esegue la proiezione separata da
   vettore a logits.
 - `token_embeddings` è un tensor interno, non una distribuzione di probabilità:
@@ -3920,20 +3904,19 @@ il proprio indice.
 
 ### Trasformazione, passo dopo passo
 
-1. **INPUT — Individua lo stato disponibile**
+1. **INPUT — Parti dai token embedding**
 
-   Il punto di partenza è **l'identità dei token ma non l'ordine**. Prima di applicare qualsiasi
-   operazione, bisogna riconoscere con precisione quale oggetto esiste già e
-   quale informazione contiene.
+   Il tensor `[B,T,C]` contiene l'identità appresa dei token, ma occorrenze
+   uguali dello stesso token hanno ancora lo stesso vettore.
 
-   **Cosa osservare:** questo è l'input del passaggio, non il risultato che
-   vogliamo ottenere.
+   **Cosa osservare:** l'asse temporale ordina le posizioni, ma tale ordine non
+   è ancora rappresentato nei valori delle feature.
 
-2. **OPERATION — Embedding di posizione**
+2. **OPERATION — Seleziona e somma gli embedding di posizione**
 
-   Applichiamo l'operazione **Aggiungi informazioni su dove si verifica ogni token**. La traccia seguente mostra
-   gli oggetti nell'ordine di lettura, trasformazione e uso nel
-   passaggio successivo:
+   `torch.arange(T)` crea gli indici temporali. La position embedding table
+   associa a ciascun indice un vettore `[C]`, che viene sommato al token
+   embedding nella stessa posizione:
 
    ```learngpt-visual
    {
@@ -3970,56 +3953,51 @@ il proprio indice.
      "stages": [
        {"label": "Token embedding", "shape": "B × T × C", "note": "identità appresa"},
        {"label": "Position embedding", "shape": "T × C", "note": "broadcast lungo B"},
-       {"label": "Residual state iniziale", "shape": "B × T × C", "note": "identità più posizione"}
+       {"label": "Stato residual iniziale", "shape": "B × T × C", "note": "identità più posizione"}
      ]
    }
    ```
 
-   **Cosa osservare:** ogni freccia rappresenta un'operazione concreta; una
-   riga intermedia è sia l'output del passaggio precedente sia
-   l'input di quello successivo.
+   **Cosa osservare:** la somma avviene feature per feature e non concatena i
+   due vettori.
 
-3. **INTERMEDIATE STATE — Segui le consegne intermedie**
+3. **INTERMEDIATE STATE — Riutilizza le posizioni nel batch**
 
-   Fermati su ciascuna riga centrale della traccia. Questi valori non sono
-   decorativi: rendono visibile ciò che il programma deve aver già prodotto
-   prima di poter continuare.
+   Gli embedding di posizione hanno shape `[T,C]` e vengono applicati a tutte
+   le `B` righe tramite broadcasting.
 
-   **Cosa osservare:** se uno stato intermedio manca o ha significato diverso,
-   la freccia successiva non possiede l'input corretto.
+   **Cosa osservare:** la posizione `t` usa lo stesso vettore di posizione in
+   ogni elemento del batch.
 
-4. **CHECK — Proteggi il vincolo della lezione**
+4. **CHECK — Verifica la compatibilità della somma**
 
-   Verifichiamo che **gli assi batch/tempo e il vincolo causale restano intatti mentre cambiano le feature**. Il controllo separa una trasformazione
-   corretta da un risultato che sembra plausibile soltanto perché ha una shape
-   compatibile.
+   Token embedding e position embedding devono avere la stessa larghezza `C`.
+   Il broadcasting deve produrre ancora una shape `[B,T,C]`.
 
-   **Cosa osservare:** il passaggio modifica solo ciò che dichiara di
-   modificare; l'informazione necessaria alle lezioni successive resta
-   allineata.
+   **Cosa osservare:** la somma modifica i valori delle feature, non il numero
+   di token o la loro disposizione.
 
-5. **OUTPUT — Definisci il nuovo stato**
+5. **OUTPUT — Restituisci lo stato con identità e posizione**
 
-   Alla fine possediamo **identità del token e posizione nella sequenza**. Questo è il nuovo punto di
-   partenza del corso, non un semplice valore temporaneo.
+   Il tensor risultante contiene, nella stessa larghezza `C`, informazione sul
+   token e sulla sua posizione.
 
-   **Cosa osservare:** l'output conferma l'obiettivo indicato nella sintesi iniziale e può essere
-   passato alla lezione successiva senza ricostruire il processo da zero.
+   **Cosa osservare:** non è ancora presente informazione proveniente dagli
+   altri token; questa sarà introdotta dalla self-attention.
 
 ### Dove siamo arrivati
 
-La trasformazione è completa quando **identità del token e posizione nella sequenza** sono disponibili e il
-vincolo della lezione è ancora rispettato. A questo punto possiamo fermarci:
-anticipare il passaggio successivo renderebbe meno chiaro quale
-responsabilità appartiene a questa lezione.
+Ogni posizione dispone ora di un vettore che combina token embedding e
+position embedding. Lo stesso token in due posizioni diverse può quindi
+produrre stati iniziali diversi.
 
-- **Cambiato:** l'identità dei token ma non l'ordine è diventato **identità del token e posizione nella sequenza**.
-- **Preservato:** gli assi batch/tempo e il vincolo causale restano intatti mentre cambiano le feature.
-- **Prossimo passo:** **Causal self-attention head** userà questo risultato come nuovo input.
+- **Cambiato:** al token embedding è stato aggiunto un embedding di posizione.
+- **Preservato:** shape `[B,T,C]`, identità dei token e ordine del batch.
+- **Prossimo passo:** usare la causal self-attention per integrare il contesto
+  visibile in ogni posizione.
 
-> **Se ricordi una sola cosa:** il risultato importante non è il nome
-> dell'operazione, ma il nuovo stato verificabile che essa produce:
-> **identità del token e posizione nella sequenza**.
+> **Se ricordi una sola cosa:** token embedding e position embedding hanno la
+> stessa larghezza `C` e vengono sommati senza modificare la shape `[B,T,C]`.
 
 ### Come leggere la matematica
 
@@ -4577,7 +4555,7 @@ Questa sezione mostra come il codice realizza direttamente la trasformazione mat
 ### Sintesi della lezione: obiettivo e risultato
 
 - **Prima:** una sola vista contestuale
-- **Obiettivo:** Esegui più viste di attention in parallelo
+- **Obiettivo:** eseguire più viste di attention in parallelo
 - **Dopo:** $H$ viste contestuali riunite in $C$ feature
 - **Vincolo:** gli assi batch/tempo e il vincolo causale restano intatti mentre cambiano le feature
 
@@ -4585,7 +4563,7 @@ Questa sezione mostra come il codice realizza direttamente la trasformazione mat
 
 Una sola head offre a ciascun token un solo modo appreso di raccogliere il
 contesto. La multi-head attention esegue più head indipendenti sullo stesso
-residual state.
+stato residual.
 
 Per `sleeps`, supponiamo che due head di larghezza 2 producano:
 
@@ -4620,20 +4598,18 @@ Il risultato resta un tensor `[B,T,C]` pronto per la proiezione successiva.
 
 ### Trasformazione, passo dopo passo
 
-1. **INPUT — Individua lo stato disponibile**
+1. **INPUT — Fornisci lo stesso stato a tutte le head**
 
-   Il punto di partenza è **una sola vista contestuale**. Prima di applicare qualsiasi
-   operazione, bisogna riconoscere con precisione quale oggetto esiste già e
-   quale informazione contiene.
+   Ogni head riceve lo stesso tensor `[B,T,C]`, che contiene token, posizione e
+   il contesto già disponibile.
 
-   **Cosa osservare:** questo è l'input del passaggio, non il risultato che
-   vogliamo ottenere.
+   **Cosa osservare:** le head condividono l'input, ma usano proiezioni Q, K e V
+   con parametri indipendenti.
 
-2. **OPERATION — Multi-head attention**
+2. **OPERATION — Esegui le head in modo indipendente**
 
-   Applichiamo l'operazione **Esegui più viste di attention in parallelo**. La traccia seguente mostra
-   gli oggetti nell'ordine di lettura, trasformazione e uso nel
-   passaggio successivo:
+   Ogni head applica causal self-attention e restituisce un tensor
+   `[B,T,D]`:
 
    ```learngpt-mermaid
    flowchart TD
@@ -4646,51 +4622,46 @@ Il risultato resta un tensor `[B,T,C]` pronto per la proiezione successiva.
        C --> O["Stato token con più viste"]
    ```
 
-   **Cosa osservare:** ogni freccia rappresenta un'operazione concreta; una
-   riga intermedia è sia l'output del passaggio precedente sia
-   l'input di quello successivo.
+   **Cosa osservare:** l'output di una head non viene usato come input di
+   un'altra head.
 
-3. **INTERMEDIATE STATE — Segui le consegne intermedie**
+3. **INTERMEDIATE STATE — Raccogli gli output delle head**
 
-   Fermati su ciascuna riga centrale della traccia. Questi valori non sono
-   decorativi: rendono visibile ciò che il programma deve aver già prodotto
-   prima di poter continuare.
+   Dopo `H` calcoli indipendenti sono disponibili `H` tensor con shape
+   `[B,T,D]`.
 
-   **Cosa osservare:** se uno stato intermedio manca o ha significato diverso,
-   la freccia successiva non possiede l'input corretto.
+   **Cosa osservare:** batch, tempo e causalità coincidono in tutte le head;
+   cambiano soltanto le feature prodotte.
 
-4. **CHECK — Proteggi il vincolo della lezione**
+4. **CHECK — Verifica la larghezza complessiva**
 
-   Verifichiamo che **gli assi batch/tempo e il vincolo causale restano intatti mentre cambiano le feature**. Il controllo separa una trasformazione
-   corretta da un risultato che sembra plausibile soltanto perché ha una shape
-   compatibile.
+   Il costruttore richiede `H * D == C`, così la concatenazione può
+   ripristinare la larghezza del modello.
 
-   **Cosa osservare:** il passaggio modifica solo ciò che dichiara di
-   modificare; l'informazione necessaria alle lezioni successive resta
-   allineata.
+   **Cosa osservare:** una head con larghezza errata renderebbe incompatibile
+   l'output con il residual stream.
 
-5. **OUTPUT — Definisci il nuovo stato**
+5. **OUTPUT — Concatena lungo l'asse delle feature**
 
-   Alla fine possediamo **$H$ viste contestuali riunite in $C$ feature**. Questo è il nuovo punto di
-   partenza del corso, non un semplice valore temporaneo.
+   `torch.cat(..., dim=-1)` trasforma gli `H` output `[B,T,D]` in un unico
+   tensor `[B,T,C]`.
 
-   **Cosa osservare:** l'output conferma l'obiettivo indicato nella sintesi iniziale e può essere
-   passato alla lezione successiva senza ricostruire il processo da zero.
+   **Cosa osservare:** la concatenazione affianca le feature e non ne calcola
+   la media.
 
 ### Dove siamo arrivati
 
-La trasformazione è completa quando **$H$ viste contestuali riunite in $C$ feature** sono disponibili e il
-vincolo della lezione è ancora rispettato. A questo punto possiamo fermarci:
-anticipare il passaggio successivo renderebbe meno chiaro quale
-responsabilità appartiene a questa lezione.
+Il modello calcola ora `H` viste contestuali indipendenti per ogni posizione e
+le concatena in un tensor `[B,T,C]`. Le slice delle head sono ancora separate
+lungo l'asse delle feature.
 
-- **Cambiato:** una sola vista contestuale è diventato **$H$ viste contestuali riunite in $C$ feature**.
-- **Preservato:** gli assi batch/tempo e il vincolo causale restano intatti mentre cambiano le feature.
-- **Prossimo passo:** **Attention output projection** userà questo risultato come nuovo input.
+- **Cambiato:** una sola head è stata sostituita da `H` head indipendenti.
+- **Preservato:** assi batch/tempo, causal mask e larghezza finale `C`.
+- **Prossimo passo:** combinare le feature concatenate con un'output
+  projection appresa.
 
-> **Se ricordi una sola cosa:** il risultato importante non è il nome
-> dell'operazione, ma il nuovo stato verificabile che essa produce:
-> **$H$ viste contestuali riunite in $C$ feature**.
+> **Se ricordi una sola cosa:** ogni head produce `[B,T,D]`; concatenando `H`
+> head con `H*D=C` si ottiene `[B,T,C]`.
 
 ### Come leggere la matematica
 
@@ -4829,12 +4800,11 @@ I valori esatti vengono appresi. Input e output mantengono larghezza C, ma le
 coordinate di uscita sono combinazioni lineari delle slice, non copie separate. La somma al
 residual stream avverrà nella lezione successiva.
 
-La parola “projection” può nascondere l'operazione concreta. In ogni posizione
-batch/tempo, la stessa matrice e lo stesso bias trasformano una riga in modo
-indipendente; qui nessun token legge un altro token. La comunicazione temporale
-è già avvenuta dentro le head. Questo layer riorganizza soltanto l'evidenza che
-esse hanno restituito. Mantenere `[B,T,C]` è il contratto che renderà possibile
-la residual addition della prossima lezione.
+La projection applica la stessa matrice e lo stesso bias a ogni posizione
+batch/tempo. Qui nessun token legge un altro token: la comunicazione temporale
+è già avvenuta nelle head. Questo layer combina le feature che esse hanno
+restituito. Mantenere `[B,T,C]` è il requisito per la residual addition della
+prossima lezione.
 Non modifica la causal mask né aggiunge posizioni: applica la stessa
 trasformazione affine C-to-C a ogni riga. Il nuovo stato è un singolo update
 proiettato, non più un insieme di slice che i layer successivi devono
@@ -4842,20 +4812,17 @@ interpretare separatamente.
 
 ### Trasformazione, passo dopo passo
 
-1. **INPUT — Individua lo stato disponibile**
+1. **INPUT — Ricevi le feature concatenate**
 
-   Il punto di partenza è **slice di feature separate per head**. Prima di applicare qualsiasi
-   operazione, bisogna riconoscere con precisione quale oggetto esiste già e
-   quale informazione contiene.
+   L'input ha shape `[B,T,C]`, ma le sue slice provengono ancora da head
+   distinte.
 
-   **Cosa osservare:** questo è l'input del passaggio, non il risultato che
-   vogliamo ottenere.
+   **Cosa osservare:** la concatenazione ha ripristinato la larghezza `C`, ma
+   non ha ancora combinato le feature tra head.
 
-2. **OPERATION — Attention output projection**
+2. **OPERATION — Applica l'output projection**
 
-   Applichiamo l'operazione **integra le attention head concatenate nello spazio delle feature del residual stream**. La traccia seguente mostra
-   gli oggetti nell'ordine di lettura, trasformazione e uso nel
-   passaggio successivo:
+   Una trasformazione affine appresa `C → C` combina l'ultima dimensione:
 
    ```learngpt-visual
    {
@@ -4870,51 +4837,44 @@ interpretare separatamente.
    }
    ```
 
-   **Cosa osservare:** ogni freccia rappresenta un'operazione concreta; una
-   riga intermedia è sia l'output del passaggio precedente sia
-   l'input di quello successivo.
+   **Cosa osservare:** ogni feature di uscita può dipendere dalle feature di
+   tutte le head.
 
-3. **INTERMEDIATE STATE — Segui le consegne intermedie**
+3. **INTERMEDIATE STATE — Riutilizza la stessa matrice in ogni posizione**
 
-   Fermati su ciascuna riga centrale della traccia. Questi valori non sono
-   decorativi: rendono visibile ciò che il programma deve aver già prodotto
-   prima di poter continuare.
+   `nn.Linear(C,C)` agisce indipendentemente su ogni riga `[C]` del tensor,
+   mantenendo invariati batch e tempo.
 
-   **Cosa osservare:** se uno stato intermedio manca o ha significato diverso,
-   la freccia successiva non possiede l'input corretto.
+   **Cosa osservare:** la projection combina feature, ma non esegue altra
+   attention e non modifica la causal mask.
 
-4. **CHECK — Proteggi il vincolo della lezione**
+4. **CHECK — Verifica la shape dell'update**
 
-   Verifichiamo che **gli assi batch/tempo e il vincolo causale restano intatti mentre cambiano le feature**. Il controllo separa una trasformazione
-   corretta da un risultato che sembra plausibile soltanto perché ha una shape
-   compatibile.
+   Input e output devono avere entrambi shape `[B,T,C]`.
 
-   **Cosa osservare:** il passaggio modifica solo ciò che dichiara di
-   modificare; l'informazione necessaria alle lezioni successive resta
-   allineata.
+   **Cosa osservare:** la stessa larghezza permette di sommare l'update al
+   residual stream nella lezione successiva.
 
-5. **OUTPUT — Definisci il nuovo stato**
+5. **OUTPUT — Restituisci l'attention update**
 
-   Alla fine possediamo **un attention update proiettato**. Questo è il nuovo punto di
-   partenza del corso, non un semplice valore temporaneo.
+   Il risultato è un unico attention update `[B,T,C]` le cui feature possono
+   integrare tutte le head.
 
-   **Cosa osservare:** l'output conferma l'obiettivo indicato nella sintesi iniziale e può essere
-   passato alla lezione successiva senza ricostruire il processo da zero.
+   **Cosa osservare:** lo snapshot non applica ancora Dropout e non esegue la
+   somma residual.
 
 ### Dove siamo arrivati
 
-La trasformazione è completa quando **un attention update proiettato** è disponibile e il
-vincolo della lezione è ancora rispettato. A questo punto possiamo fermarci:
-anticipare il passaggio successivo renderebbe meno chiaro quale
-responsabilità appartiene a questa lezione.
+Le feature delle head non sono più separate: l'output projection le combina
+con parametri appresi e restituisce un attention update `[B,T,C]`.
 
-- **Cambiato:** slice di feature separate per head è diventato **un attention update proiettato**.
-- **Preservato:** gli assi batch/tempo e il vincolo causale restano intatti mentre cambiano le feature.
-- **Prossimo passo:** **Attention residual connection** userà questo risultato come nuovo input.
+- **Cambiato:** le slice concatenate sono state combinate da una projection
+  appresa.
+- **Preservato:** shape `[B,T,C]`, assi batch/tempo e causalità.
+- **Prossimo passo:** sommare l'attention update allo stato esistente.
 
-> **Se ricordi una sola cosa:** il risultato importante non è il nome
-> dell'operazione, ma il nuovo stato verificabile che essa produce:
-> **un attention update proiettato**.
+> **Se ricordi una sola cosa:** l'output projection combina le feature di tutte
+> le head, ma conserva la shape `[B,T,C]`.
 
 ### Come leggere la matematica
 
@@ -4956,7 +4916,7 @@ appresa $W_O\in\mathbb R^{C\times C}$ le combina:
 $$\operatorname{MHA}(R)=\operatorname{Concat}(O_1,\ldots,O_H)W_O+b_O.$$
 
 La shape rimane `[B,T,C]`, necessaria per la residual addition. La proiezione
-permette a ogni feature di uscita di combinare evidenza da tutte le head. Lo
+permette a ogni feature di uscita di combinare informazioni da tutte le head. Lo
 snapshot di questa lezione non applica ancora Dropout.
 
 ### Codice di riferimento aggiunto in questa lezione
@@ -4998,7 +4958,7 @@ Questa sezione mostra come il codice realizza direttamente la trasformazione mat
 ### Programmato rispetto ad appreso
 
 - **Definita dal programmatore:** la proiezione di uscita.
-- **Appreso durante il gradient training:** come ricombinare l'evidenza
+- **Appreso durante il gradient training:** come ricombinare le informazioni
   prodotta dalle diverse head.
 
 # Modulo 6 — Assemblare il Transformer
@@ -5009,7 +4969,7 @@ Questa sezione mostra come il codice realizza direttamente la trasformazione mat
 ### Sintesi della lezione: obiettivo e risultato
 
 - **Prima:** stato e risultato attention separati
-- **Obiettivo:** Aggiungi l'attention update senza sostituire lo stato esistente
+- **Obiettivo:** aggiungere l'attention update senza sostituire lo stato esistente
 - **Dopo:** un residual stream che contiene entrambi
 - **Vincolo:** gli assi batch/tempo e il vincolo causale restano intatti mentre cambiano le feature
 
@@ -5055,20 +5015,17 @@ residual stream lo conserva insieme all'informazione precedente.
 
 ### Trasformazione, passo dopo passo
 
-1. **INPUT — Individua lo stato disponibile**
+1. **INPUT — Mantieni separati stato e attention update**
 
-   Il punto di partenza è **stato e risultato attention separati**. Prima di applicare qualsiasi
-   operazione, bisogna riconoscere con precisione quale oggetto esiste già e
-   quale informazione contiene.
+   Sono disponibili il residual stream `R` e l'update `MHA(R)`, entrambi con
+   shape `[B,T,C]`.
 
-   **Cosa osservare:** questo è l'input del passaggio, non il risultato che
-   vogliamo ottenere.
+   **Cosa osservare:** `R` conserva lo stato precedente; `MHA(R)` contiene
+   l'informazione contestuale appena calcolata.
 
-2. **OPERATION — Attention residual connection**
+2. **OPERATION — Somma i due tensor**
 
-   Applichiamo l'operazione **Aggiungi l'attention update senza sostituire lo stato esistente**. La traccia seguente mostra
-   gli oggetti nell'ordine di lettura, trasformazione e uso nel
-   passaggio successivo:
+   La residual connection calcola `R + MHA(R)` elemento per elemento:
 
    ```learngpt-visual
    {
@@ -5076,59 +5033,51 @@ residual stream lo conserva insieme all'informazione precedente.
      "title": "Riunisci il branch in un solo residual stream",
      "description": "Lo stato sorgente e l'attention update condividono la shape B×T×C, quindi la somma elementwise restituisce la stessa interfaccia.",
      "stages": [
-       {"label": "Residual state esistente R", "shape": "B × T × C", "note": "identity path"},
+       {"label": "Stato residual esistente R", "shape": "B × T × C", "note": "identity path"},
        {"label": "Attention update MHA(R)", "shape": "B × T × C", "note": "nuova informazione contestuale"},
        {"label": "Somma elemento per elemento", "shape": "B × T × C", "note": "somma le feature corrispondenti"},
-       {"label": "Residual state che contiene entrambi", "shape": "B × T × C", "note": "unico input per il sublayer successivo"}
+       {"label": "Stato residual aggiornato", "shape": "B × T × C", "note": "unico input per il sublayer successivo"}
      ]
    }
    ```
 
-   **Cosa osservare:** ogni freccia rappresenta un'operazione concreta; una
-   riga intermedia è sia l'output del passaggio precedente sia
-   l'input di quello successivo.
+   **Cosa osservare:** ogni coordinata viene sommata soltanto alla coordinata
+   corrispondente.
 
-3. **INTERMEDIATE STATE — Segui le consegne intermedie**
+3. **INTERMEDIATE STATE — Conserva un solo residual stream**
 
-   Fermati su ciascuna riga centrale della traccia. Questi valori non sono
-   decorativi: rendono visibile ciò che il programma deve aver già prodotto
-   prima di poter continuare.
+   Dopo la somma, stato precedente e update non vengono più passati come tensor
+   separati.
 
-   **Cosa osservare:** se uno stato intermedio manca o ha significato diverso,
-   la freccia successiva non possiede l'input corretto.
+   **Cosa osservare:** il sublayer successivo riceve direttamente il tensor
+   aggiornato `[B,T,C]`.
 
-4. **CHECK — Proteggi il vincolo della lezione**
+4. **CHECK — Verifica la compatibilità degli operandi**
 
-   Verifichiamo che **gli assi batch/tempo e il vincolo causale restano intatti mentre cambiano le feature**. Il controllo separa una trasformazione
-   corretta da un risultato che sembra plausibile soltanto perché ha una shape
-   compatibile.
+   La somma residual richiede due shape identiche `[B,T,C]`.
 
-   **Cosa osservare:** il passaggio modifica solo ciò che dichiara di
-   modificare; l'informazione necessaria alle lezioni successive resta
-   allineata.
+   **Cosa osservare:** nessun asse viene aggiunto, rimosso o riordinato.
 
-5. **OUTPUT — Definisci il nuovo stato**
+5. **OUTPUT — Restituisci lo stato aggiornato**
 
-   Alla fine possediamo **un residual stream che contiene entrambi**. Questo è il nuovo punto di
-   partenza del corso, non un semplice valore temporaneo.
+   L'output `R'` conserva lo stato precedente e include l'attention update.
 
-   **Cosa osservare:** l'output conferma l'obiettivo indicato nella sintesi iniziale e può essere
-   passato alla lezione successiva senza ricostruire il processo da zero.
+   **Cosa osservare:** `R'` mantiene la shape `[B,T,C]` richiesta dai layer
+   successivi.
 
 ### Dove siamo arrivati
 
-La trasformazione è completa quando **un residual stream che contiene entrambi** è disponibile e il
-vincolo della lezione è ancora rispettato. A questo punto possiamo fermarci:
-anticipare il passaggio successivo renderebbe meno chiaro quale
-responsabilità appartiene a questa lezione.
+Il residual stream contiene ora sia lo stato precedente sia l'aggiornamento
+prodotto dall'attention. La somma conserva la shape e fornisce un unico input
+al sublayer successivo.
 
-- **Cambiato:** stato e risultato attention separati è diventato **un residual stream che contiene entrambi**.
-- **Preservato:** gli assi batch/tempo e il vincolo causale restano intatti mentre cambiano le feature.
-- **Prossimo passo:** **LayerNorm prima di attention** userà questo risultato come nuovo input.
+- **Cambiato:** due tensor separati sono stati combinati in un solo stato
+  residual.
+- **Preservato:** shape `[B,T,C]`, ordine delle posizioni e causalità.
+- **Prossimo passo:** normalizzare l'input del branch di attention.
 
-> **Se ricordi una sola cosa:** il risultato importante non è il nome
-> dell'operazione, ma il nuovo stato verificabile che essa produce:
-> **un residual stream che contiene entrambi**.
+> **Se ricordi una sola cosa:** la residual connection calcola
+> `R + MHA(R)`, conserva `R` e mantiene la shape `[B,T,C]`.
 
 ### Come leggere la matematica
 
@@ -5207,7 +5156,7 @@ Questa sezione mostra come il codice realizza direttamente la trasformazione mat
 ### Sintesi della lezione: obiettivo e risultato
 
 - **Prima:** feature con scale variabili
-- **Obiettivo:** Normalizza la scala delle feature di ogni token prima dell'attention
+- **Obiettivo:** normalizzare la scala delle feature di ogni token prima dell'attention
 - **Dopo:** feature del branch normalizzate e poi riscalate con parametri appresi
 - **Vincolo:** gli assi batch/tempo e il vincolo causale restano intatti mentre cambiano le feature
 
@@ -5219,8 +5168,8 @@ mentre il residual stream originale passa invariato lungo lo skip path.
 
 LayerNorm risolve un problema pratico di ottimizzazione. Attention confronta
 vettori tramite dot product, quindi la scala delle feature influenza quanto
-gli score diventino appuntiti o piatti. Normalizzare il vettore di feature di
-ogni token dà al branch attention una distribuzione di input più stabile,
+la distribuzione softmax risulti concentrata o uniforme. Normalizzare il
+vettore di feature di ogni token dà al branch attention un input più stabile,
 mentre scale e offset appresi permettono al modello di recuperare grandezze
 utili quando il training le scopre.
 
@@ -5256,20 +5205,18 @@ stato ricevuto dal block.
 
 ### Trasformazione, passo dopo passo
 
-1. **INPUT — Individua lo stato disponibile**
+1. **INPUT — Ricevi lo stato residual**
 
-   Il punto di partenza è **feature con scale variabili**. Prima di applicare qualsiasi
-   operazione, bisogna riconoscere con precisione quale oggetto esiste già e
-   quale informazione contiene.
+   L'input `[B,T,C]` può contenere feature con medie e scale diverse in ogni
+   posizione.
 
-   **Cosa osservare:** questo è l'input del passaggio, non il risultato che
-   vogliamo ottenere.
+   **Cosa osservare:** LayerNorm lavorerà sulle `C` feature di ciascun token,
+   non sugli assi batch o tempo.
 
-2. **OPERATION — LayerNorm prima di attention**
+2. **OPERATION — Normalizza l'input del branch**
 
-   Applichiamo l'operazione **Normalizza la scala delle feature di ogni token prima dell'attention**. La traccia seguente mostra
-   gli oggetti nell'ordine di lettura, trasformazione e uso nel
-   passaggio successivo:
+   Per ogni posizione, LayerNorm calcola media e varianza, normalizza le
+   feature e applica i parametri appresi `γ` e `β`:
 
    ```learngpt-visual
    {
@@ -5285,51 +5232,44 @@ stato ricevuto dal block.
    }
    ```
 
-   **Cosa osservare:** ogni freccia rappresenta un'operazione concreta; una
-   riga intermedia è sia l'output del passaggio precedente sia
-   l'input di quello successivo.
+   **Cosa osservare:** l'attention riceve la copia normalizzata; lo skip path
+   conserva lo stato residual originale.
 
-3. **INTERMEDIATE STATE — Segui le consegne intermedie**
+3. **INTERMEDIATE STATE — Applica scala e offset appresi**
 
-   Fermati su ciascuna riga centrale della traccia. Questi valori non sono
-   decorativi: rendono visibile ciò che il programma deve aver già prodotto
-   prima di poter continuare.
+   Dopo la standardizzazione, `γ` e `β` possono riscalare e traslare ogni
+   feature.
 
-   **Cosa osservare:** se uno stato intermedio manca o ha significato diverso,
-   la freccia successiva non possiede l'input corretto.
+   **Cosa osservare:** per questo motivo l'output finale non deve avere sempre
+   media zero e varianza uno.
 
-4. **CHECK — Proteggi il vincolo della lezione**
+4. **CHECK — Mantieni invariato lo skip path**
 
-   Verifichiamo che **gli assi batch/tempo e il vincolo causale restano intatti mentre cambiano le feature**. Il controllo separa una trasformazione
-   corretta da un risultato che sembra plausibile soltanto perché ha una shape
-   compatibile.
+   La residual addition deve continuare a usare `R`, non la copia normalizzata
+   `LN(R)`.
 
-   **Cosa osservare:** il passaggio modifica solo ciò che dichiara di
-   modificare; l'informazione necessaria alle lezioni successive resta
-   allineata.
+   **Cosa osservare:** questa scelta definisce un block pre-norm e mantiene
+   distinto l'input del branch dallo stato dello skip path.
 
-5. **OUTPUT — Definisci il nuovo stato**
+5. **OUTPUT — Fornisci l'input normalizzato all'attention**
 
-   Alla fine possediamo **feature standardizzate**. Questo è il nuovo punto di
-   partenza del corso, non un semplice valore temporaneo.
+   L'attention riceve un tensor `[B,T,C]` normalizzato e riscalato; lo stato
+   residual originale resta disponibile per la somma successiva.
 
-   **Cosa osservare:** l'output conferma l'obiettivo indicato nella sintesi iniziale e può essere
-   passato alla lezione successiva senza ricostruire il processo da zero.
+   **Cosa osservare:** LayerNorm non combina posizioni e non modifica la causal
+   mask.
 
 ### Dove siamo arrivati
 
-La trasformazione è completa quando **feature standardizzate** sono disponibili e il
-vincolo della lezione è ancora rispettato. A questo punto possiamo fermarci:
-anticipare il passaggio successivo renderebbe meno chiaro quale
-responsabilità appartiene a questa lezione.
+Il branch di attention riceve ora feature normalizzate e riscalate, mentre lo
+skip path conserva il tensor originale. La shape rimane `[B,T,C]`.
 
-- **Cambiato:** feature con scale variabili sono diventate **feature standardizzate**.
-- **Preservato:** gli assi batch/tempo e il vincolo causale restano intatti mentre cambiano le feature.
-- **Prossimo passo:** **Feed-forward network** userà questo risultato come nuovo input.
+- **Cambiato:** l'input del branch viene normalizzato prima dell'attention.
+- **Preservato:** stato dello skip path, shape `[B,T,C]` e causalità.
+- **Prossimo passo:** aggiungere il branch feed-forward pre-norm.
 
-> **Se ricordi una sola cosa:** il risultato importante non è il nome
-> dell'operazione, ma il nuovo stato verificabile che essa produce:
-> **feature standardizzate**.
+> **Se ricordi una sola cosa:** nel block pre-norm, attention legge `LN(R)`,
+> mentre la residual connection conserva e somma lo stato originale `R`.
 
 ### Come leggere la matematica
 
@@ -5430,7 +5370,7 @@ Questa sezione mostra come il codice realizza direttamente la trasformazione mat
 ### Sintesi della lezione: obiettivo e risultato
 
 - **Prima:** feature contestuali con trasformazioni per posizione limitate
-- **Obiettivo:** Normalizzare, trasformare e aggiungere un update non lineare indipendentemente in ogni posizione token
+- **Obiettivo:** normalizzare, trasformare e aggiungere un update non lineare in modo indipendente a ogni posizione
 - **Dopo:** un solo residual stream che contiene lo stato dopo attention e il suo update non lineare
 - **Vincolo:** gli assi batch/tempo e il vincolo causale restano intatti mentre cambiano le feature
 
@@ -5463,15 +5403,14 @@ dopo attention resta disponibile per lo skip path. La somma elementwise finale
 dei due tensor produce l'output effettivo della lezione. Lo snapshot non
 contiene ancora Dropout.
 
-Leggi il MLP come il passaggio di elaborazione per-token del block. Attention
+Il MLP esegue l'elaborazione per-token del block. Attention
 decide quali altre posizioni possono contribuire informazione; il MLP
 trasforma poi ogni vettore ormai contestualizzato senza spostare informazione
-tra posizioni temporali. GELU è importante perché piega il calcolo: senza
-l'attivazione, espansione e contrazione sarebbero ancora soltanto una mappa
-lineare più grande mascherata da due layer.
+tra posizioni temporali. GELU introduce la non-linearità: senza l'attivazione,
+espansione e contrazione equivalgono a un'unica trasformazione lineare.
 
 Gli stessi parametri feed-forward vengono riutilizzati in tutte le posizioni,
-ma ogni token è elaborato indipendentemente. Due posizioni con state
+ma ogni token è elaborato indipendentemente. Due posizioni con stati
 contestuali diversi possono ricevere update diversi pur attraversando la
 stessa funzione. Al contrario, modificare qui la riga di `sleeps` non modifica
 direttamente quella di `cat`: soltanto attention effettua lo scambio tra
@@ -5482,20 +5421,18 @@ il feed-forward network e non cambiano l'interfaccia esterna.
 
 ### Trasformazione, passo dopo passo
 
-1. **INPUT — Individua lo stato disponibile**
+1. **INPUT — Ricevi lo stato dopo attention**
 
-   Il punto di partenza è **feature contestuali con trasformazioni per posizione limitate**. Prima di applicare qualsiasi
-   operazione, bisogna riconoscere con precisione quale oggetto esiste già e
-   quale informazione contiene.
+   Il tensor `U[B,T,C]` contiene già informazione contestuale e viene usato sia
+   come input del branch sia come sorgente dello skip path.
 
-   **Cosa osservare:** questo è l'input del passaggio, non il risultato che
-   vogliamo ottenere.
+   **Cosa osservare:** il feed-forward network elaborerà ogni posizione in modo
+   indipendente.
 
-2. **OPERATION — Secondo branch residual pre-norm**
+2. **OPERATION — Normalizza ed esegui il feed-forward network**
 
-   Applichiamo l'operazione **Normalizzare, trasformare e aggiungere un update non lineare indipendentemente in ogni posizione token**. La traccia seguente mostra
-   gli oggetti nell'ordine di lettura, trasformazione e uso nel
-   passaggio successivo:
+   LayerNorm prepara l'input; la prima projection espande da `C` a `4C`, GELU
+   applica la non-linearità e la seconda projection torna a `C`:
 
    ```learngpt-visual
    {
@@ -5512,51 +5449,44 @@ il feed-forward network e non cambiano l'interfaccia esterna.
    }
    ```
 
-   **Cosa osservare:** ogni freccia rappresenta un'operazione concreta; una
-   riga intermedia è sia l'output del passaggio precedente sia
-   l'input di quello successivo.
+   **Cosa osservare:** le feature intermedie `4C` esistono soltanto nel branch;
+   l'interfaccia esterna resta `[B,T,C]`.
 
-3. **INTERMEDIATE STATE — Segui le consegne intermedie**
+3. **INTERMEDIATE STATE — Produci l'update non lineare**
 
-   Fermati su ciascuna riga centrale della traccia. Questi valori non sono
-   decorativi: rendono visibile ciò che il programma deve aver già prodotto
-   prima di poter continuare.
+   `MLP(LN₂(U))` restituisce un tensor `[B,T,C]` con un update calcolato
+   separatamente per ogni posizione.
 
-   **Cosa osservare:** se uno stato intermedio manca o ha significato diverso,
-   la freccia successiva non possiede l'input corretto.
+   **Cosa osservare:** il MLP usa gli stessi parametri in tutte le posizioni,
+   ma input diversi producono update diversi.
 
-4. **CHECK — Proteggi il vincolo della lezione**
+4. **CHECK — Verifica il secondo skip path**
 
-   Verifichiamo che **gli assi batch/tempo e il vincolo causale restano intatti mentre cambiano le feature**. Il controllo separa una trasformazione
-   corretta da un risultato che sembra plausibile soltanto perché ha una shape
-   compatibile.
+   L'update deve avere la stessa shape di `U` per consentire la somma
+   elementwise.
 
-   **Cosa osservare:** il passaggio modifica solo ciò che dichiara di
-   modificare; l'informazione necessaria alle lezioni successive resta
-   allineata.
+   **Cosa osservare:** il branch non combina posizioni e non modifica la
+   causalità già definita dall'attention.
 
-5. **OUTPUT — Definisci il nuovo stato**
+5. **OUTPUT — Somma l'update allo stato residual**
 
-   Alla fine possediamo **un solo residual stream che contiene lo stato precedente e il suo update non lineare**. Questo è il nuovo punto di
-   partenza del corso, non un semplice valore temporaneo.
+   Il risultato è `R_next = U + MLP(LN₂(U))`, ancora con shape `[B,T,C]`.
 
-   **Cosa osservare:** l'output conferma l'obiettivo indicato nella sintesi iniziale e può essere
-   passato alla lezione successiva senza ricostruire il processo da zero.
+   **Cosa osservare:** lo stato dopo attention viene conservato e integrato con
+   l'update non lineare.
 
 ### Dove siamo arrivati
 
-La trasformazione è completa quando **un solo residual stream che contiene lo stato precedente e il suo update non lineare** è disponibile e il
-vincolo della lezione è ancora rispettato. A questo punto possiamo fermarci:
-anticipare il passaggio successivo renderebbe meno chiaro quale
-responsabilità appartiene a questa lezione.
+Il secondo branch residual è completo: normalizza `U`, calcola un update
+non lineare per ogni posizione e lo somma allo stato ricevuto.
 
-- **Cambiato:** feature contestuali con trasformazioni per posizione limitate sono diventate **uno stato residual arricchito da un update non lineare normalizzato**.
-- **Preservato:** gli assi batch/tempo e il vincolo causale restano intatti mentre cambiano le feature.
-- **Prossimo passo:** **Blocco Transformer** userà questo risultato come nuovo input.
+- **Cambiato:** lo stato dopo attention include ora anche l'update del MLP.
+- **Preservato:** shape `[B,T,C]`, assi batch/tempo e causalità.
+- **Prossimo passo:** riunire i due branch in un Transformer block
+  riutilizzabile.
 
-> **Se ricordi una sola cosa:** il risultato importante non è il nome
-> dell'operazione, ma il nuovo stato verificabile che essa produce:
-> **il secondo risultato residual $R_{next}=U+\operatorname{MLP}(\operatorname{LN}_2(U))$**.
+> **Se ricordi una sola cosa:** il MLP elabora ogni posizione separatamente e
+> restituisce un update `[B,T,C]` che viene sommato a `U`.
 
 ### Come leggere la matematica
 
@@ -5690,7 +5620,7 @@ Questa sezione mostra come il codice realizza direttamente la trasformazione mat
 ### Sintesi della lezione: obiettivo e risultato
 
 - **Prima:** componenti neurali separati
-- **Obiettivo:** Combina LayerNorm, attention, residual connection e MLP in un blocco riutilizzabile
+- **Obiettivo:** combinare LayerNorm, attention, residual connection e MLP in un blocco riutilizzabile
 - **Dopo:** un blocco Transformer componibile
 - **Vincolo:** gli assi batch/tempo e il vincolo causale restano intatti mentre cambiano le feature
 
@@ -5717,7 +5647,7 @@ Il primo branch aggiunge contesto; il secondo trasforma ciò che ogni posizione
 contiene. Entrambi usano pre-norm e residual addition. Questa lezione assembla
 i componenti senza ripetere i calcoli delle lezioni 22–24.
 
-Seguire i nomi degli stati evita un errore di wiring comune. Il branch MLP deve
+Seguire i nomi degli stati evita un errore comune nei collegamenti. Il branch MLP deve
 leggere `U`, cioè il risultato dopo il residual attention, e il suo skip path
 deve sommare nuovamente a `U`, non tornare al vecchio `R`. Il block contiene
 quindi due update consecutivi, non due alternative indipendenti. Il causal
@@ -5726,10 +5656,11 @@ posizione. Questo ordine fisso è il contratto riutilizzabile del block.
 Poiché input e output hanno entrambi `[B,T,C]`, il chiamante non deve conoscere
 i tensor temporanei dei branch e può trattare il block come una singola
 trasformazione shape-preserving.
-Questo confine stabile rende anche più semplice verificare e riutilizzare il modulo.
+Questa interfaccia stabile rende anche più semplice verificare e riutilizzare
+il modulo.
 
-Ogni pezzo del block protegge un problema specifico. LayerNorm mantiene
-controllati gli input dei branch, attention comunica lungo il prefisso
+Ogni componente del block svolge una funzione specifica. LayerNorm mantiene
+controllati gli input dei branch, attention integra il prefisso
 visibile, le residual addition conservano il percorso diretto e il MLP esegue
 calcolo non lineare per posizione. Dropout verrà introdotto più avanti come
 regolarizzatore attivo durante il training: deve migliorare la robustezza,
@@ -5737,74 +5668,63 @@ non cambiare il contratto deterministico di shape del block.
 
 ### Trasformazione, passo dopo passo
 
-1. **INPUT — Individua lo stato disponibile**
+1. **INPUT — Ricevi lo stato residual del block**
 
-   Il punto di partenza è **componenti neurali separati**. Prima di applicare qualsiasi
-   operazione, bisogna riconoscere con precisione quale oggetto esiste già e
-   quale informazione contiene.
+   Il block riceve `R[B,T,C]` e contiene già tutti i moduli necessari per i due
+   branch residual.
 
-   **Cosa osservare:** questo è l'input del passaggio, non il risultato che
-   vogliamo ottenere.
+   **Cosa osservare:** il chiamante fornisce un solo tensor e non gestisce gli
+   stati temporanei interni.
 
-2. **OPERATION — Blocco Transformer**
+2. **OPERATION — Esegui il branch di attention**
 
-   Applichiamo l'operazione **Combina LayerNorm, attention, residual connection e MLP in un blocco riutilizzabile**. La traccia seguente mostra
-   gli oggetti nell'ordine di lettura, trasformazione e uso nel
-   passaggio successivo:
+   Il primo branch calcola `U = R + MHA(LN₁(R))`. Il secondo usa poi `U`:
 
    ```learngpt-mermaid
    flowchart TD
-       R["Residual state"] --> A["Normalizza → causal attention → somma"]
+       R["Stato residual"] --> A["Normalizza → causal attention → somma"]
        A --> U["Stato arricchito dal contesto"]
        U --> F["Normalizza → feed-forward → somma"]
        F --> O["Output di un Transformer block"]
    ```
 
-   **Cosa osservare:** ogni freccia rappresenta un'operazione concreta; una
-   riga intermedia è sia l'output del passaggio precedente sia
-   l'input di quello successivo.
+   **Cosa osservare:** `U` è sia l'output del primo branch sia l'input e lo skip
+   path del secondo.
 
-3. **INTERMEDIATE STATE — Segui le consegne intermedie**
+3. **INTERMEDIATE STATE — Esegui il branch feed-forward**
 
-   Fermati su ciascuna riga centrale della traccia. Questi valori non sono
-   decorativi: rendono visibile ciò che il programma deve aver già prodotto
-   prima di poter continuare.
+   Il secondo branch calcola `R_next = U + MLP(LN₂(U))`.
 
-   **Cosa osservare:** se uno stato intermedio manca o ha significato diverso,
-   la freccia successiva non possiede l'input corretto.
+   **Cosa osservare:** la seconda somma usa `U`, non lo stato `R` precedente
+   all'attention.
 
-4. **CHECK — Proteggi il vincolo della lezione**
+4. **CHECK — Verifica l'interfaccia del block**
 
-   Verifichiamo che **gli assi batch/tempo e il vincolo causale restano intatti mentre cambiano le feature**. Il controllo separa una trasformazione
-   corretta da un risultato che sembra plausibile soltanto perché ha una shape
-   compatibile.
+   Input, stato intermedio e output devono avere tutti shape `[B,T,C]`.
 
-   **Cosa osservare:** il passaggio modifica solo ciò che dichiara di
-   modificare; l'informazione necessaria alle lezioni successive resta
-   allineata.
+   **Cosa osservare:** la causal mask appartiene all'attention; LayerNorm e MLP
+   non combinano posizioni.
 
-5. **OUTPUT — Definisci il nuovo stato**
+5. **OUTPUT — Restituisci lo stato del block**
 
-   Alla fine possediamo **un blocco Transformer componibile**. Questo è il nuovo punto di
-   partenza del corso, non un semplice valore temporaneo.
+   Il modulo restituisce `R_next[B,T,C]` e mantiene interni tutti i tensor
+   temporanei.
 
-   **Cosa osservare:** l'output conferma l'obiettivo indicato nella sintesi iniziale e può essere
-   passato alla lezione successiva senza ricostruire il processo da zero.
+   **Cosa osservare:** l'interfaccia invariata permette di disporre più block in
+   sequenza.
 
 ### Dove siamo arrivati
 
-La trasformazione è completa quando **un blocco Transformer componibile** è disponibile e il
-vincolo della lezione è ancora rispettato. A questo punto possiamo fermarci:
-anticipare il passaggio successivo renderebbe meno chiaro quale
-responsabilità appartiene a questa lezione.
+LayerNorm, attention, residual connection e MLP sono ora raccolti in un unico
+Transformer block con input e output `[B,T,C]`.
 
-- **Cambiato:** componenti neurali separati è diventato **un blocco Transformer componibile**.
-- **Preservato:** gli assi batch/tempo e il vincolo causale restano intatti mentre cambiano le feature.
-- **Prossimo passo:** **Più blocchi Transformer** userà questo risultato come nuovo input.
+- **Cambiato:** i componenti separati sono stati organizzati in due branch
+  residual eseguiti in ordine.
+- **Preservato:** shape `[B,T,C]`, ordine delle posizioni e causalità.
+- **Prossimo passo:** creare uno stack di più Transformer block indipendenti.
 
-> **Se ricordi una sola cosa:** il risultato importante non è il nome
-> dell'operazione, ma il nuovo stato verificabile che essa produce:
-> **un blocco Transformer componibile**.
+> **Se ricordi una sola cosa:** un block pre-norm esegue prima
+> `R + MHA(LN₁(R))` e poi `U + MLP(LN₂(U))`.
 
 ### Come leggere la matematica
 
@@ -5819,7 +5739,7 @@ Leggi le due equazioni dall'alto verso il basso: prima crea U con attention, poi
 
 ### Esempio visivo svolto
 
-> **Stato dell'esempio ricorrente:** seguiamo il residual state del prefix
+> **Stato dell'esempio ricorrente:** seguiamo lo stato residual del prefisso
 > canonico attraverso attention e MLP all'interno di un block completo.
 
 | Fase | Shape | Contenuto dello stato |
@@ -5890,8 +5810,8 @@ Il Transformer block riutilizzabile è definito in
 - `residual_after_feed_forward = residual_after_attention + feed_forward_output`
   completa la seconda skip connection; il return successivo espone quel
   risultato nominato del block.
-- L'input e l'output sono entrambi `[B, T, C]`. Questo contratto di conservazione di shape è ciò che
-  consente di incatenare un numero arbitrario di blocchi.
+- L'input e l'output sono entrambi `[B, T, C]`. Questo contratto di shape
+  consente di disporre un numero arbitrario di blocchi in sequenza.
 
 ### Codice ↔ matematica ↔ significato
 
@@ -5904,7 +5824,7 @@ Questa sezione mostra come il codice realizza direttamente la trasformazione mat
 
 ### Programmato rispetto ad appreso
 
-- **Definito dal programmatore:** l'ordine dei branch e il cablaggio residual.
+- **Definito dal programmatore:** l'ordine dei branch e la struttura residual.
 - **Appreso durante il gradient training:** tutti i parametri di proiezione, normalizzazione e MLP.
 
 ## Lezione 26 — Più blocchi Transformer
@@ -5912,8 +5832,8 @@ Questa sezione mostra come il codice realizza direttamente la trasformazione mat
 ### Sintesi della lezione: obiettivo e risultato
 
 - **Prima:** una trasformazione contestuale
-- **Obiettivo:** Ripetere il blocco Transformer più volte
-- **Dopo:** una gerarchia di $L$ trasformazioni contestuali
+- **Obiettivo:** ripetere il blocco Transformer più volte
+- **Dopo:** una sequenza di $L$ trasformazioni contestuali
 - **Vincolo:** gli assi batch/tempo e il vincolo causale restano intatti mentre cambiano le feature
 
 ### Comprendere la trasformazione
@@ -5948,73 +5868,63 @@ Invertire due block produrrebbe infatti un modello diverso.
 
 ### Trasformazione, passo dopo passo
 
-1. **INPUT — Individua lo stato disponibile**
+1. **INPUT — Crea una sequenza di block indipendenti**
 
-   Il punto di partenza è **una trasformazione contestuale**. Prima di applicare qualsiasi
-   operazione, bisogna riconoscere con precisione quale oggetto esiste già e
-   quale informazione contiene.
+   `nn.ModuleList` registra `L` Transformer block con la stessa architettura e
+   parametri distinti.
 
-   **Cosa osservare:** questo è l'input del passaggio, non il risultato che
-   vogliamo ottenere.
+   **Cosa osservare:** i block non condividono i pesi e vengono visitati
+   nell'ordine di costruzione.
 
-2. **OPERATION — Più blocchi Transformer**
+2. **OPERATION — Esegui i block in sequenza**
 
-   Applichiamo l'operazione **Ripetere il blocco Transformer più volte**. La traccia seguente mostra
-   gli oggetti nell'ordine di lettura, trasformazione e uso nel
-   passaggio successivo:
+   L'output di ogni block diventa l'input del successivo:
 
    ```learngpt-mermaid
    flowchart TD
-       E["Stati embedding"] -->|"Block 1"| R1["Stati più ricchi"]
-       R1 -->|"Block 2"| R2["Stati ulteriormente raffinati"]
-       R2 -->|"… → Block L"| RL["Stati raffinati progressivamente"]
+       E["Stati embedding"] -->|"Block 1"| R1["Stati dopo il block 1"]
+       R1 -->|"Block 2"| R2["Stati dopo il block 2"]
+       R2 -->|"… → Block L"| RL["Stati dopo il block L"]
    ```
 
-   **Cosa osservare:** ogni freccia rappresenta un'operazione concreta; una
-   riga intermedia è sia l'output del passaggio precedente sia
-   l'input di quello successivo.
+   **Cosa osservare:** i block non sono eseguiti in parallelo; l'ordine fa parte
+   della funzione del modello.
 
-3. **INTERMEDIATE STATE — Segui le consegne intermedie**
+3. **INTERMEDIATE STATE — Aggiorna lo stato a ogni block**
 
-   Fermati su ciascuna riga centrale della traccia. Questi valori non sono
-   decorativi: rendono visibile ciò che il programma deve aver già prodotto
-   prima di poter continuare.
+   Dopo il block `l`, il tensor `R_l[B,T,C]` viene sostituito da
+   `R_{l+1}[B,T,C]`.
 
-   **Cosa osservare:** se uno stato intermedio manca o ha significato diverso,
-   la freccia successiva non possiede l'input corretto.
+   **Cosa osservare:** i valori delle feature cambiano, mentre la shape resta
+   invariata.
 
-4. **CHECK — Proteggi il vincolo della lezione**
+4. **CHECK — Verifica tutti i block**
 
-   Verifichiamo che **gli assi batch/tempo e il vincolo causale restano intatti mentre cambiano le feature**. Il controllo separa una trasformazione
-   corretta da un risultato che sembra plausibile soltanto perché ha una shape
-   compatibile.
+   Ogni block deve accettare e restituire `[B,T,C]`; la causalità resta interna
+   a ciascun modulo attention.
 
-   **Cosa osservare:** il passaggio modifica solo ciò che dichiara di
-   modificare; l'informazione necessaria alle lezioni successive resta
-   allineata.
+   **Cosa osservare:** una singola interfaccia incompatibile interromperebbe lo
+   stack.
 
-5. **OUTPUT — Definisci il nuovo stato**
+5. **OUTPUT — Restituisci lo stato dopo il block finale**
 
-   Alla fine possediamo **una gerarchia di $L$ trasformazioni contestuali**. Questo è il nuovo punto di
-   partenza del corso, non un semplice valore temporaneo.
+   Dopo `L` trasformazioni, il modello restituisce `R_L[B,T,C]`.
 
-   **Cosa osservare:** l'output conferma l'obiettivo indicato nella sintesi iniziale e può essere
-   passato alla lezione successiva senza ricostruire il processo da zero.
+   **Cosa osservare:** aumentano profondità, parametri e calcolo, ma non il
+   numero di posizioni o la larghezza `C`.
 
 ### Dove siamo arrivati
 
-La trasformazione è completa quando **una gerarchia di $L$ trasformazioni contestuali** è disponibile e il
-vincolo della lezione è ancora rispettato. A questo punto possiamo fermarci:
-anticipare il passaggio successivo renderebbe meno chiaro quale
-responsabilità appartiene a questa lezione.
+Il modello contiene ora uno stack di `L` Transformer block indipendenti.
+Ciascun block riceve lo stato prodotto dal precedente e conserva la shape
+`[B,T,C]`.
 
-- **Cambiato:** una trasformazione contestuale è diventato **una gerarchia di $L$ trasformazioni contestuali**.
-- **Preservato:** gli assi batch/tempo e il vincolo causale restano intatti mentre cambiano le feature.
-- **Prossimo passo:** **LayerNorm finale e output head** userà questo risultato come nuovo input.
+- **Cambiato:** un solo block è diventato uno stack sequenziale di `L` block.
+- **Preservato:** shape `[B,T,C]`, ordine dei token e causalità.
+- **Prossimo passo:** normalizzare lo stato finale prima dell'output head.
 
-> **Se ricordi una sola cosa:** il risultato importante non è il nome
-> dell'operazione, ma il nuovo stato verificabile che essa produce:
-> **una gerarchia di $L$ trasformazioni contestuali**.
+> **Se ricordi una sola cosa:** i block hanno parametri indipendenti e vengono
+> eseguiti in sequenza, mantenendo sempre la shape `[B,T,C]`.
 
 ### Come leggere la matematica
 
@@ -6031,9 +5941,8 @@ block successivo.
 
 ### Esempio visivo svolto
 
-> **Stato dell'esempio ricorrente:** facciamo attraversare alla
-> rappresentazione di `The cat sleeps here.` più Transformer block,
-> preservando la geometria del tensor.
+> **Stato dell'esempio ricorrente:** applichiamo più Transformer block alla
+> rappresentazione di `The cat sleeps here.`, preservando la shape del tensor.
 
 ```learngpt-mermaid
 flowchart LR
@@ -6089,8 +5998,8 @@ Lo stack viene visualizzato in `study/snapshots/lesson_26/model.py`.
 - `[TransformerBlock(...) for _ in range(num_transformer_blocks)]` costruisce
   block indipendenti: tutti ricevono le stesse dimensioni architetturali, ma
   apprendono parametri propri.
-- `nn.ModuleList` registra ogni blocco per l'ottimizzazione, la serializzazione e
-  trasferimento tra device, pur permettendo un loop Python esplicito.
+- `nn.ModuleList` registra ogni blocco per l'ottimizzazione, la serializzazione
+  e il trasferimento tra device, pur permettendo un loop Python esplicito.
 - `for transformer_block in self.transformer_blocks` visita i block nell'ordine
   di costruzione.
 - A ogni iterazione, l'output precedente sostituisce `block_output`: i dati
@@ -6111,7 +6020,7 @@ Questa sezione mostra come il codice realizza direttamente la trasformazione mat
 ### Sintesi della lezione: obiettivo e risultato
 
 - **Prima:** vettori contestuali inviati direttamente all'output head introdotto nella lezione 17
-- **Obiettivo:** Normalizzare lo stack residual completo prima della projection sul vocabulary già esistente
+- **Obiettivo:** normalizzare lo stack residual completo prima della projection sul vocabulary già esistente
 - **Dopo:** stati finali normalizzati consumati dall'output head esistente
 - **Vincolo:** gli assi batch/tempo e il vincolo causale restano intatti mentre cambiano le feature
 
@@ -6129,7 +6038,7 @@ projection sul vocabulary già esistente.
 {
   "type": "tensor-flow",
   "title": "Inserisci Final LayerNorm prima del vocabulary head esistente",
-  "description": "L'unica nuova operazione stabilizza il vettore C finale; l'output head presente dalla lezione 17 crea poi V logits e softmax può renderne leggibile l'evidenza relativa.",
+  "description": "L'unica nuova operazione stabilizza il vettore C finale; l'output head presente dalla lezione 17 crea poi V logits e la softmax li converte in probabilità.",
   "stages": [
     {"label": "Stato finale", "shape": "[C=3]", "note": "[0.70, −0.20, 0.40]"},
     {"label": "Nuova Final LayerNorm", "shape": "[C=3]", "note": "h = [1.07, −1.34, 0.27]"},
@@ -6144,7 +6053,7 @@ direttamente i logits; la generation applica la softmax in seguito.
 
 Ogni logit corrisponde esattamente a un tokenizer ID: l'ordine del vocabulary è
 un contratto invariabile tra tokenizer e output matrix. Un logit alto è
-soltanto evidenza relativa e diventa probabilità dopo il confronto con tutti
+soltanto uno score relativo e diventa probabilità dopo il confronto con tutti
 gli altri logits. La nuova Final LayerNorm e l'output head già esistente
 vengono applicati indipendentemente in ogni posizione, producendo una
 previsione completa per ogni riga della context window. L'asse finale cambia da
@@ -6153,20 +6062,18 @@ Il tensor risultante è direttamente compatibile con loss e sampling.
 
 ### Trasformazione, passo dopo passo
 
-1. **INPUT — Individua lo stato disponibile**
+1. **INPUT — Ricevi gli stati contestuali finali**
 
-   Il punto di partenza è **vettori contestuali**. Prima di applicare qualsiasi
-   operazione, bisogna riconoscere con precisione quale oggetto esiste già e
-   quale informazione contiene.
+   Lo stack Transformer restituisce un tensor `[B,T,C]`, con un vettore
+   contestuale per ogni posizione.
 
-   **Cosa osservare:** questo è l'input del passaggio, non il risultato che
-   vogliamo ottenere.
+   **Cosa osservare:** questi vettori non sono ancora normalizzati dalla
+   LayerNorm finale.
 
-2. **OPERATION — Inserisci Final LayerNorm prima dell'output head esistente**
+2. **OPERATION — Applica la Final LayerNorm**
 
-   Applichiamo l'operazione **Normalizzare lo stack residual completo prima della projection sul vocabulary già esistente**. La traccia seguente mostra
-   gli oggetti nell'ordine di lettura, trasformazione e uso nel
-   passaggio successivo:
+   La nuova LayerNorm conserva `[B,T,C]`; l'output head già esistente applica
+   poi la projection `C → V`:
 
    ```learngpt-visual
    {
@@ -6174,7 +6081,7 @@ Il tensor risultante è direttamente compatibile con loss e sampling.
      "title": "Aggiungi una normalizzazione al vecchio confine stack-to-head",
      "description": "La nuova Final LayerNorm conserva B × T × C; l'output head esistente esegue poi la consueta projection da C a V.",
      "stages": [
-       {"label": "Residual state finali", "shape": "[B,T,C]", "note": "prima inviati direttamente all'head"},
+       {"label": "Stati residual finali", "shape": "[B,T,C]", "note": "prima inviati direttamente all'head"},
        {"label": "Nuova Final LayerNorm", "shape": "[B,T,C]", "note": "unica trasformazione nuova della lezione"},
        {"label": "Vocabulary output head esistente", "shape": "[B,T,V]", "note": "un logit per token possibile"},
        {"label": "Vocabulary logits", "shape": "[B,T,V]", "note": "usati direttamente dalla cross-entropy"}
@@ -6182,51 +6089,47 @@ Il tensor risultante è direttamente compatibile con loss e sampling.
    }
    ```
 
-   **Cosa osservare:** ogni freccia rappresenta un'operazione concreta; una
-   riga intermedia è sia l'output del passaggio precedente sia
-   l'input di quello successivo.
+   **Cosa osservare:** la sola operazione nuova è Final LayerNorm; l'output head
+   viene riutilizzato dalla lezione 17.
 
-3. **INTERMEDIATE STATE — Segui le consegne intermedie**
+3. **INTERMEDIATE STATE — Proietta sul vocabulary**
 
-   Fermati su ciascuna riga centrale della traccia. Questi valori non sono
-   decorativi: rendono visibile ciò che il programma deve aver già prodotto
-   prima di poter continuare.
+   L'output head applica la stessa trasformazione affine a ogni posizione e
+   produce `[B,T,V]`.
 
-   **Cosa osservare:** se uno stato intermedio manca o ha significato diverso,
-   la freccia successiva non possiede l'input corretto.
+   **Cosa osservare:** ogni colonna finale corrisponde allo stesso token ID
+   definito dal tokenizer.
 
-4. **CHECK — Proteggi il vincolo della lezione**
+4. **CHECK — Mantieni distinti logits e probabilità**
 
-   Verifichiamo che **gli assi batch/tempo e il vincolo causale restano intatti mentre cambiano le feature**. Il controllo separa una trasformazione
-   corretta da un risultato che sembra plausibile soltanto perché ha una shape
-   compatibile.
+   L'output head restituisce logits grezzi. La cross-entropy li usa
+   direttamente; la softmax viene applicata soltanto durante il sampling.
 
-   **Cosa osservare:** il passaggio modifica solo ciò che dichiara di
-   modificare; l'informazione necessaria alle lezioni successive resta
-   allineata.
+   **Cosa osservare:** applicare la softmax nel forward di training
+   cambierebbe il contratto atteso dalla loss.
 
-5. **OUTPUT — Definisci il nuovo stato**
+5. **OUTPUT — Restituisci i logits per ogni posizione**
 
-   Alla fine possediamo **vocabulary logits per ogni posizione**. Questo è il nuovo punto di
-   partenza del corso, non un semplice valore temporaneo.
+   Il risultato `[B,T,V]` assegna uno score a ogni token possibile in ogni
+   posizione.
 
-   **Cosa osservare:** l'output conferma l'obiettivo indicato nella sintesi iniziale e può essere
-   passato alla lezione successiva senza ricostruire il processo da zero.
+   **Cosa osservare:** batch e tempo restano invariati; l'ultimo asse cambia da
+   `C` a `V`.
 
 ### Dove siamo arrivati
 
-La trasformazione è completa quando **vocabulary logits per ogni posizione** sono disponibili e il
-vincolo della lezione è ancora rispettato. A questo punto possiamo fermarci:
-anticipare il passaggio successivo renderebbe meno chiaro quale
-responsabilità appartiene a questa lezione.
+Lo stato finale viene ora normalizzato prima della projection sul vocabulary.
+L'output head esistente produce logits `[B,T,V]` compatibili con
+cross-entropy e sampling.
 
-- **Cambiato:** i vettori contestuali finali vengono ora normalizzati prima che l'output head esistente produca **vocabulary logits per ogni posizione**.
-- **Preservato:** gli assi batch/tempo e il vincolo causale restano intatti mentre cambiano le feature.
-- **Prossimo passo:** **Transformer training** userà questo risultato come nuovo input.
+- **Cambiato:** è stata inserita Final LayerNorm tra lo stack e l'output head.
+- **Preservato:** output head, assi batch/tempo, causalità e ordine del
+  vocabulary.
+- **Prossimo passo:** allenare tutti i parametri del Transformer con la loss
+  next-token.
 
-> **Se ricordi una sola cosa:** il risultato importante non è il nome
-> dell'operazione, ma il nuovo stato verificabile che essa produce:
-> **il nuovo componente è Final LayerNorm; il vocabulary head viene riutilizzato dalla lezione 17**.
+> **Se ricordi una sola cosa:** la lezione aggiunge Final LayerNorm; l'output
+> head `C → V` esiste già dalla lezione 17.
 
 ### Come leggere la matematica
 
@@ -6267,8 +6170,7 @@ hanno shape `[B,T,V]`. Per uno stato `[0.7,-0.2,0.4]`, la normalizzazione può
 produrre `[1.07,-1.34,0.27]`; la proiezione affine può produrre
 `[0.2,1.4,-0.3,0.7]` e la softmax circa `[0.15,0.50,0.09,0.25]`.
 
-La final LayerNorm controlla la scala delle feature ricevute dal classifier sul
-vocabulary.
+La Final LayerNorm controlla la scala delle feature ricevute dall'output head.
 
 ### Codice di riferimento aggiunto in questa lezione
 
@@ -6319,9 +6221,9 @@ Questa sezione mostra come il codice realizza direttamente la trasformazione mat
 ### Sintesi della lezione: obiettivo e risultato
 
 - **Prima:** un modello completo con pesi iniziali
-- **Obiettivo:** Allena l'intero Transformer end to end
+- **Obiettivo:** allenare l'intero Transformer end to end
 - **Dopo:** lo stesso modello con pesi aggiornati dall'errore di previsione
-- **Vincolo:** architettura, tokenizer, corpus e train split restano fissi; i training batch vengono ricampionati mentre il control batch resta invariato
+- **Vincolo:** architettura, tokenizer, corpus e train split restano fissi; i training batch vengono ricampionati mentre il batch di controllo resta invariato
 
 ### Comprendere la trasformazione
 
@@ -6358,25 +6260,23 @@ Il confronto sullo stesso batch di controllo evita di confondere la variazione
 casuale tra batch con il cambiamento della loss osservata. In questo contesto,
 «dati fissi» significa corpus e train split fissi, non lo stesso batch ripetuto
 a ogni update: `create_batch` ricampiona le finestre di training a ogni step. Il
-control batch viene invece creato una volta e riutilizzato prima e dopo il
+batch di controllo viene invece creato una volta e riutilizzato prima e dopo il
 training.
 
 ### Trasformazione, passo dopo passo
 
-1. **INPUT — Individua lo stato disponibile**
+1. **INPUT — Prepara modello e batch di controllo**
 
-   Il punto di partenza è **un modello completo con pesi iniziali**. Prima di applicare qualsiasi
-   operazione, bisogna riconoscere con precisione quale oggetto esiste già e
-   quale informazione contiene.
+   Inizializziamo il Transformer, cloniamo un parametro e creiamo una volta il
+   batch usato per il confronto prima e dopo il training.
 
-   **Cosa osservare:** questo è l'input del passaggio, non il risultato che
-   vogliamo ottenere.
+   **Cosa osservare:** il batch di controllo resta fisso; i batch usati per gli
+   update verranno ricampionati.
 
-2. **OPERATION — Transformer training**
+2. **OPERATION — Esegui il training loop**
 
-   Applichiamo l'operazione **Allena l'intero Transformer end to end**. La traccia seguente mostra
-   gli oggetti nell'ordine di lettura, trasformazione e uso nel
-   passaggio successivo:
+   Ogni step campiona input e target, calcola la loss, azzera i gradienti,
+   esegue `backward()` e applica `optimizer.step()`:
 
    ```learngpt-mermaid
    flowchart TD
@@ -6387,51 +6287,49 @@ training.
        S --> P["Parametri del Transformer aggiornati"]
    ```
 
-   **Cosa osservare:** ogni freccia rappresenta un'operazione concreta; una
-   riga intermedia è sia l'output del passaggio precedente sia
-   l'input di quello successivo.
+   **Cosa osservare:** embedding, attention, LayerNorm, MLP e output head
+   partecipano allo stesso grafo autograd.
 
-3. **INTERMEDIATE STATE — Segui le consegne intermedie**
+3. **INTERMEDIATE STATE — Aggiorna tutti i parametri raggiunti dalla loss**
 
-   Fermati su ciascuna riga centrale della traccia. Questi valori non sono
-   decorativi: rendono visibile ciò che il programma deve aver già prodotto
-   prima di poter continuare.
+   `backward()` calcola i gradienti e AdamW modifica i parametri registrati
+   dall'optimizer.
 
-   **Cosa osservare:** se uno stato intermedio manca o ha significato diverso,
-   la freccia successiva non possiede l'input corretto.
+   **Cosa osservare:** i target supervisionano i logits, ma non vengono usati
+   come feature del forward pass.
 
-4. **CHECK — Proteggi il vincolo della lezione**
+4. **CHECK — Confronta lo stesso riferimento**
 
-   Verifichiamo che **architettura, tokenizer, corpus e train split restano fissi; i training batch vengono ricampionati mentre il control batch resta invariato**. Il controllo separa una trasformazione
-   corretta da un risultato che sembra plausibile soltanto perché ha una shape
-   compatibile.
+   Misuriamo il modello sullo stesso batch di controllo e confrontiamo anche il
+   parametro clonato prima del training.
 
-   **Cosa osservare:** il passaggio modifica solo ciò che dichiara di
-   modificare; l'informazione necessaria alle lezioni successive resta
-   allineata.
+   **Cosa osservare:** una differenza non nulla conferma che l'optimizer ha
+   aggiornato il modello; il confronto sullo stesso batch riduce l'effetto del
+   campionamento.
 
-5. **OUTPUT — Definisci il nuovo stato**
+5. **OUTPUT — Conserva il modello aggiornato**
 
-   Alla fine possediamo **lo stesso modello con pesi aggiornati dall'errore di previsione**. Questo è il nuovo punto di
-   partenza del corso, non un semplice valore temporaneo.
+   L'architettura è invariata, ma i parametri ora riflettono gli update prodotti
+   dalla loss next-token.
 
-   **Cosa osservare:** l'output conferma l'obiettivo indicato nella sintesi iniziale e può essere
-   passato alla lezione successiva senza ricostruire il processo da zero.
+   **Cosa osservare:** questo snapshot non contiene ancora Dropout, gradient
+   clipping o stime medie della loss.
 
 ### Dove siamo arrivati
 
-La trasformazione è completa quando **lo stesso modello con pesi aggiornati dall'errore di previsione** è disponibile e il
-vincolo della lezione è ancora rispettato. A questo punto possiamo fermarci:
-anticipare il passaggio successivo renderebbe meno chiaro quale
-responsabilità appartiene a questa lezione.
+Il Transformer completo può ora essere allenato end to end. La loss
+next-token aggiorna tutti i parametri collegati al forward pass, mentre
+architettura, tokenizer e dati di origine restano invariati.
 
-- **Cambiato:** un modello completo con pesi iniziali è diventato **lo stesso modello con pesi aggiornati dall'errore di previsione**.
-- **Preservato:** architettura, tokenizer, corpus e train split; cambiano soltanto le finestre di training campionate e i parametri, mentre il control batch viene riutilizzato.
-- **Prossimo passo:** **Stima della loss** userà questo risultato come nuovo input.
+- **Cambiato:** i parametri iniziali sono stati aggiornati da più step di
+  training.
+- **Preservato:** architettura, tokenizer, corpus, train split e batch di
+  controllo.
+- **Prossimo passo:** stimare training loss e validation loss su più batch.
 
-> **Se ricordi una sola cosa:** il risultato importante non è il nome
-> dell'operazione, ma il nuovo stato verificabile che essa produce:
-> **lo stesso modello con pesi aggiornati dall'errore di previsione**.
+> **Se ricordi una sola cosa:** una sola loss scalare aggiorna l'intero
+> Transformer perché tutti i suoi parametri partecipano allo stesso grafo
+> autograd.
 
 ### Come leggere la matematica
 
@@ -6564,7 +6462,7 @@ Questa sezione mostra come il codice realizza direttamente la trasformazione mat
 ### Sintesi della lezione: obiettivo e risultato
 
 - **Prima:** la loss rumorosa di un singolo batch
-- **Obiettivo:** Calcola la media di più loss per ottenere una misura più affidabile
+- **Obiettivo:** calcolare la media di più loss per ottenere una misura più affidabile
 - **Dopo:** stime stabili per training e validation
 - **Vincolo:** architettura, tokenizer e dati restano fissi mentre cambiano o vengono misurati i parametri
 
@@ -6575,7 +6473,7 @@ su un solo batch scelto casualmente. Immaginiamo che il batch contenga una
 continuazione facile di `The cat sleeps here.`: la loss potrebbe essere bassa
 anche se il modello non è migliorato in generale. Un altro batch potrebbe
 contenere transizioni più rare e restituire un valore molto più alto. Nessuna
-delle due misure è falsa; ciascuna osserva semplicemente una porzione troppo
+delle due misure è falsa; ciascuna osserva una porzione troppo
 piccola dei dati.
 
 Questa lezione cambia quindi **il modo in cui misuriamo il progresso**, non ciò
@@ -6793,13 +6691,13 @@ Questa sezione mostra come il codice realizza direttamente la trasformazione mat
 
 ### Comprendere la trasformazione
 
-Durante il training, lo stato utile del progetto vive nella memoria del
+Durante il training, lo stato utile del progetto si trova nella memoria del
 processo Python. Se il programma termina, i parametri aggiornati, i momenti
 dell'optimizer e il punto raggiunto dal ciclo scompaiono. Un **checkpoint**
 trasforma questo stato volatile in un artefatto persistente. Non è soltanto una
-copia dei pesi: è una fotografia strutturata dell'esperimento in un istante
-preciso, pensata per poter essere interpretata anche dopo che il processo
-originale non esiste più.
+copia dei pesi: contiene un insieme strutturato di valori e metadati riferiti a
+uno step preciso, che può essere interpretato anche dopo la chiusura del
+processo originale.
 
 Il campo `model_state_dict` conserva parametri e buffer del modello. Da solo,
 però, non basta a continuare lo stesso training. `optimizer_state_dict`
@@ -6824,8 +6722,8 @@ essere riletto in seguito. Prima viene creata la directory di destinazione, se
 necessario. La lezione scrive direttamente nel path finale: **non è ancora un
 salvataggio atomico**. Un'interruzione durante la scrittura potrebbe quindi
 lasciare un file incompleto. Il passaggio tramite file temporaneo e sostituzione
-atomica arriverà nell'hardening production; non va attribuito allo status quo
-di questa lezione.
+atomica verrà introdotto nell'hardening production; non fa parte dello stato
+attuale della lezione.
 
 Questo limite non rende inutile il checkpoint didattico. Il file separa già lo
 stato del modello dalla durata del processo e permette di esercitare
@@ -6848,9 +6746,9 @@ weights_only=True)` ricostruisce il dizionario; un modello compatibile deve
 esistere prima che `load_state_dict(...)` reinserisca i valori. Se viene
 fornito un optimizer, viene ricaricato anche il suo stato. Per la sola
 generazione basta un sottoinsieme dei campi; per un resume esatto servirebbero
-anche informazioni non presenti qui, come RNG e identità dei dati. Il risultato
-della lezione è quindi un confine verificabile tra calcolo temporaneo e
-**stato minimo recuperabile**, non una copia completa dell'ambiente.
+anche informazioni non presenti qui, come RNG e identità dei dati. La lezione
+definisce quindi lo **stato minimo recuperabile**, non una copia completa
+dell'ambiente.
 
 ### Trasformazione, passo dopo passo
 
@@ -6914,11 +6812,11 @@ della lezione è quindi un confine verificabile tra calcolo temporaneo e
 
 ### Dove siamo arrivati
 
-Il progetto può ora attraversare il confine tra due processi: uno salva lo
-stato raggiunto, un altro lo ricostruisce. I pesi non sono più legati alla sola
-memoria del run corrente e restano collegati a optimizer, configurazione,
-progresso e tokenizer. Questo rende possibile sia continuare l'esperimento sia
-usare il modello addestrato in una sessione separata.
+Un processo può ora salvare lo stato raggiunto e un processo successivo può
+ricostruirlo. I pesi non dipendono più dalla memoria del run corrente e restano
+associati a optimizer, configurazione, progresso e tokenizer. È quindi
+possibile continuare l'esperimento o usare il modello addestrato in una
+sessione separata.
 
 - **Cambiato:** lo stato volatile è diventato un artefatto persistente e ricaricabile.
 - **Preservato:** valori appresi e significato degli ID attraverso salvataggio e caricamento.
@@ -6983,7 +6881,7 @@ l'optimizer. Un resume esatto richiede invece informazioni ulteriori non
 presenti in $\mathcal C$, come RNG, dettagli dello schedule non ricavabili dallo
 step e identità verificata del dataset.
 
-L'operazione su file implementata è semplicemente
+L'operazione su file implementata è
 
 $$
 \operatorname{serialize}(\mathcal C)\longrightarrow P_{\mathrm{final}}.
@@ -7037,13 +6935,13 @@ Le funzioni di salvataggio e caricamento sono in `study/snapshots/lesson_30/chec
 ### Sintesi della lezione: obiettivo e risultato
 
 - **Prima:** un checkpoint e un prompt leggibile
-- **Obiettivo:** Ricostruisci un modello da un checkpoint e genera in modo indipendente
+- **Obiettivo:** ricostruire un modello da un checkpoint e generare in modo indipendente
 - **Dopo:** testo generato e decodificato
 - **Vincolo:** i pesi appresi e il tokenizer mantengono il loro significato attraverso salvataggio e generazione
 
 ### Comprendere la trasformazione
 
-Un checkpoint è davvero utile soltanto se il progetto può chiudere il processo
+Un checkpoint è utile soltanto se il progetto può chiudere il processo
 di training, ripartire dall'artefatto salvato e ottenere un modello
 funzionante. Questa lezione esegue proprio quel controllo. Non riutilizza
 l'oggetto rimasto in memoria dopo il training: legge `model_config`, crea un
@@ -7097,7 +6995,7 @@ o varie debbano essere le scelte casuali.
    **Cosa osservare:** il nuovo processo usa soltanto informazioni salvate in
    modo esplicito; non dipende dal modello di training rimasto in memoria.
 
-3. **INTERMEDIATE STATE — Fai crescere la sequenza di ID**
+3. **INTERMEDIATE STATE — Estendi la sequenza di ID**
 
    Ogni iterazione produce un ID successivo e lo aggiunge alla sequenza già
    disponibile.
@@ -7122,13 +7020,13 @@ o varie debbano essere le scelte casuali.
 
 ### Dove siamo arrivati
 
-Il checkpoint ha ora superato un confine concreto: un modello ricostruito da
-zero lo ha usato per trasformare un prompt leggibile in testo generato
-leggibile.
+Un nuovo processo ha ricostruito il modello dal checkpoint e lo ha usato per
+trasformare un prompt leggibile in testo generato.
 
 - **Cambiato:** un artefatto salvato e un prompt sono diventati **una continuazione generata in modo autoregressivo**.
 - **Preservato:** parametri appresi, compatibilità dell'architettura e significato degli ID.
-- **Prossimo passo:** **Controlli del sampling** modellerà le scelte compiute a ogni iterazione.
+- **Prossimo passo:** definire come temperature e top-k controllano le scelte
+  compiute a ogni iterazione.
 
 > **Se ricordi una sola cosa:** la generazione indipendente verifica in pratica
 > che checkpoint e tokenizer possano essere interpretati di nuovo.
@@ -7439,8 +7337,8 @@ Questa sezione mostra come il codice realizza direttamente la trasformazione mat
 
 ### Sintesi della lezione: obiettivo e risultato
 
-- **Prima:** stati valutati senza un vincitore di qualità conservato
-- **Obiettivo:** conserva lo stato con la validation loss stimata più bassa osservata finora
+- **Prima:** stati valutati senza conservare quello con la loss migliore
+- **Obiettivo:** conservare lo stato con la validation loss stimata più bassa osservata finora
 - **Dopo:** un best checkpoint scelto con una regola di validation coerente
 - **Vincolo:** i pesi appresi e il tokenizer mantengono il loro significato attraverso salvataggio e generazione
 
@@ -7468,12 +7366,13 @@ decisione è intenzionalmente meccanica. Un testo come `The cat sleeps here.`
 può sembrare migliore o peggiore per caso, ma quell'impressione non partecipa
 alla selezione.
 
-La parola **best** va quindi letta in senso preciso: è lo stato con la più bassa
+La parola **best** va quindi letta in senso preciso: indica lo stato con la più bassa
 stima della validation loss osservata in questo run. Le finestre casuali
 introducono comunque rumore, quindi il file non dimostra di essere il modello
-migliore in assoluto. È il vincitore secondo una regola quantitativa coerente.
-Questa lezione salva soltanto tale vincitore; il checkpoint `latest`, destinato
-al resume dello stato valutato più recente, arriverà nel progetto production.
+migliore in assoluto. È lo stato selezionato da una regola quantitativa
+coerente. Questa lezione salva soltanto il checkpoint `best`; il checkpoint
+`latest`, destinato al resume dello stato valutato più recente, verrà introdotto
+nel progetto production.
 
 ### Trasformazione, passo dopo passo
 
@@ -7502,7 +7401,7 @@ al resume dello stato valutato più recente, arriverà nel progetto production.
 
 3. **INTERMEDIATE STATE — Aggiorna prima il valore migliore**
 
-   Quando lo stato corrente vince, registra la nuova loss migliore prima di
+   Quando lo stato corrente migliora il record, registra la nuova loss prima di
    costruire il payload del checkpoint.
 
    **Cosa osservare:** la metrica salvata deve descrivere gli stessi pesi
@@ -7516,7 +7415,7 @@ al resume dello stato valutato più recente, arriverà nel progetto production.
    **Cosa osservare:** sostituire il best non deve separare i pesi dalle shape
    e dal significato degli ID necessari a ricaricarli.
 
-5. **OUTPUT — Conserva un solo vincitore**
+5. **OUTPUT — Conserva un solo best checkpoint**
 
    Il path del checkpoint indica lo stato con la più bassa stima di validation
    osservata finora.
@@ -7530,7 +7429,8 @@ La valutazione ora produce una decisione persistente, non soltanto un numero
 stampato. Il run conserva lo stato migliore osservato secondo una regola
 esplicita, anche se il training successivo peggiora.
 
-- **Cambiato:** gli stati valutati competono per **un unico best checkpoint conservato**.
+- **Cambiato:** il run conserva un unico checkpoint con la migliore validation
+  loss stimata finora.
 - **Preservato:** la regola di validation e l'interpretazione di modello e tokenizer salvati.
 - **Prossimo passo:** **Optimizer e scheduler** renderanno gli aggiornamenti più sicuri e dipendenti dallo step.
 
@@ -7703,8 +7603,9 @@ cresce e soltanto dopo decresce.
 ### Dove siamo arrivati
 
 Il training loop controlla ora sia le instabilità improvvise sia la dimensione
-del passo nel lungo periodo. Può iniziare con cautela, raggiungere il base
-learning rate e poi rifinire i pesi con passi progressivamente più piccoli.
+del passo nel lungo periodo. Il learning rate cresce dal valore iniziale fino
+al base learning rate e poi diminuisce, producendo update progressivamente più
+piccoli.
 
 - **Cambiato:** gradienti grezzi e rate fisso sono diventati **update adattativi con clipping, warmup e decay**.
 - **Preservato:** obiettivo next-token, significato del tokenizer e shape compatibili con i checkpoint.
@@ -7842,7 +7743,7 @@ Questa sezione mostra come il codice realizza direttamente la trasformazione mat
 ### Sintesi della lezione: obiettivo e risultato
 
 - **Prima:** rami deterministici e tabelle separate
-- **Obiettivo:** Regolarizza le attivazioni e condividi la tabella input/output token
+- **Obiettivo:** regolarizzare le attivazioni e condividere la tabella input/output token
 - **Dopo:** attivazioni regolarizzate e una geometria del vocabolario condivisa
 - **Vincolo:** i pesi appresi e il tokenizer mantengono il loro significato attraverso salvataggio e generazione
 
@@ -7858,7 +7759,7 @@ attivazioni e riscala quelle rimaste. Il modello non può dare per scontato che
 una singola feature o un particolare ramo siano sempre disponibili, quindi è
 spinto a distribuire l'informazione utile tra più percorsi. In evaluation mode
 Dropout viene disattivato: a parità di parametri, un prompt come
-`The cat sleeps here.` attraversa una rete deterministica.
+`The cat sleeps here.` produce quindi un risultato deterministico.
 
 Il **weight tying** interviene invece sui parametri persistenti. La token
 embedding table trasforma ogni ID del vocabolario in una rappresentazione larga
@@ -8033,7 +7934,7 @@ Questa sezione mostra come il codice realizza direttamente la trasformazione mat
 ### Sintesi della lezione: obiettivo e risultato
 
 - **Prima:** pochi dati character-level interamente in memoria
-- **Obiettivo:** Sostituisci percorsi di dati giocattolo e gestione ingenua dei parametri con quelli orientati alla produzione
+- **Obiettivo:** sostituire i dati didattici e la gestione uniforme dei parametri con componenti adatti a dataset più grandi
 - **Dopo:** memmap BPE e gruppi AdamW espliciti
 - **Vincolo:** l'obiettivo next-token e la semantica del modello restano invariati mentre il runtime diventa più robusto
 
@@ -8147,8 +8048,9 @@ finestre ordinate e ad apprendere lo stesso compito next-token.
 - **Preservato:** confini degli split, ordine dei token, target traslati e obiettivo causale next-token.
 - **Prossimo passo:** **Gradient accumulation** unirà più micro-batch compatibili con la memoria in un solo update.
 
-> **Se ricordi una sola cosa:** qui scalano storage e politica dell'optimizer;
-> il fingerprint del dataset e il gradient accumulation arrivano dopo.
+> **Se ricordi una sola cosa:** qui vengono estesi storage e politica
+> dell'optimizer; il fingerprint del dataset e il gradient accumulation sono
+> introdotti nelle lezioni successive.
 
 ### Come leggere la matematica
 
@@ -8618,7 +8520,7 @@ ma questa lezione non esegue una validazione completa della configurazione.
 > stesso esperimento di modellazione della frase, mantenendo espliciti i limiti
 > di questo resume di base.
 
-| Classe di configurazione | Esempio | Cosa registra davvero la lezione 38 |
+| Classe di configurazione | Esempio | Che cosa registra la lezione 38 |
 |---|---|---|
 | Modello strutturale | $C,H,L,V,T$ | `ModelConfig` e il `head_size` derivato |
 | Ottimizzazione | LR, decay, accumulation | `TrainingConfig` e stato dell'optimizer |
@@ -8716,7 +8618,7 @@ Le classi di configurazione sono in `study/snapshots/lesson_38/config.py`; il re
   `0.0` ricadono su infinito, perché l'implementazione usa `or`: è il
   comportamento letterale della lezione 38. `best_checkpoint_path =
   resume_checkpoint_path` mantiene valido il path restituito anche se il
-  segmento ripreso non trova un nuovo vincitore.
+  segmento ripreso non produce un nuovo best checkpoint.
 - `range(start_step, training_steps + 1)` include lo step finale configurato:
   `training_steps` è l'obiettivo totale, non il numero di step aggiuntivi.
 - `get_learning_rate(...)` e
@@ -8844,7 +8746,7 @@ l'indice meno uno seleziona l'ultima posizione temporale.
   "type": "labeled-grid",
   "title": "Training e generation usano viste diverse dell'output head",
   "description": "Il training assegna score a ogni posizione; la generation conserva l'asse temporale finale attraverso l'head e lo rimuove soltanto per il sampling.",
-  "columns": ["stato in input", "selezione delle posizioni", "output dell'head", "vista del consumer"],
+  "columns": ["stato in input", "selezione delle posizioni", "output dell'head", "vista del componente successivo"],
   "rows": [
     {"label": "Training", "cells": [{"value": "[B,T,C]"}, {"value": "tutte le T posizioni", "state": "highlighted"}, {"value": "[B,T,V]", "state": "highlighted"}, {"value": "supervisiona tutte le T posizioni"}]},
     {"label": "Generation", "cells": [{"value": "[B,T,C]"}, {"value": "select [-1] → [B,1,C]", "state": "highlighted"}, {"value": "[B,1,V]", "state": "highlighted"}, {"value": "seleziona la riga → [B,V]"}]}
@@ -9285,7 +9187,7 @@ flowchart LR
 
 Compilazione e precisione ridotta possono cambiare l'ordine delle operazioni e
 gli arrotondamenti, ma devono preservare l'obiettivo e la semantica
-dell'update. I controlli MPS più specializzati arrivano nella lezione 42.
+dell'update. I controlli MPS più specializzati sono introdotti nella lezione 42.
 
 ### Codice di riferimento aggiunto in questa lezione
 
@@ -9390,8 +9292,8 @@ modalità, ma soltanto la prima possiede un'identità del dataset verificata.
 Seguiamo ancora `The cat sleeps here.`. Per rendere visibile il flusso,
 indichiamo le sue parti come cinque token simbolici
 `[The][ cat][ sleeps][ here][.]`; gli ID numerici effettivi dipendono dal
-tokenizer salvato nella configurazione. Durante il training non consegniamo al
-modello la frase e la risposta come due oggetti separati. Creiamo due viste
+tokenizer salvato nella configurazione. Durante il training non forniamo al
+modello input e target come due sequenze indipendenti. Creiamo due viste
 sfalsate della stessa sequenza: l'input contiene, per esempio,
 `[The, cat, sleeps, here]`, mentre il target contiene
 `[cat, sleeps, here, .]`. A ogni posizione il compito rimane sempre lo stesso:
@@ -9416,10 +9318,10 @@ tra i quali il target corretto `here`.
 
 La cross-entropy confronta i logits con i target sfalsati e produce una loss
 scalare. Questo numero riassume molti errori: un errore per ogni posizione
-valida di ogni esempio del batch. Con la backpropagation, la responsabilità
-dell'errore attraversa il vocabulary head, i blocchi, le proiezioni di
-attention e le embedding. AdamW usa i gradienti per aggiornare i parametri. Il
-ciclo ripete nuovi batch, ma non procede alla cieca: controlla gradienti,
+valida di ogni esempio del batch. Con la backpropagation, i gradienti si
+propagano nel vocabulary head, nei blocchi, nelle proiezioni di attention e
+nelle embedding. AdamW usa i gradienti per aggiornare i parametri. Il
+ciclo ripete nuovi batch e controlla gradienti,
 learning rate e loss, e a intervalli stabiliti misura anche la validation loss,
 che usa dati non impiegati per quell'aggiornamento.
 
@@ -9454,15 +9356,15 @@ ID validi ma testo incoerente, possiamo separare sampling, modello e decode.
 Questa lettura per contratti evita di trattare la pipeline come un unico
 processo opaco e rende ogni errore localizzabile.
 
-È importante anche distinguere tre forme di stato salvate insieme ma non
-sono la stessa cosa. L'**architettura** descrive le operazioni possibili; i
+È importante distinguere tre forme di stato che vengono salvate insieme, ma
+non coincidono. L'**architettura** descrive le operazioni possibili; i
 **parametri appresi** registrano ciò che il training ha modificato; le
-**evidenze del run**, come metriche e dataset fingerprint, spiegano come quello
-stato è stato ottenuto. Un checkpoint affidabile mantiene coerenti queste tre parti,
-mentre la generation ne riusa soltanto la parte necessaria a calcolare il
-prossimo token.
+**informazioni di verifica del run**, come metriche e dataset fingerprint,
+descrivono come è stato ottenuto quello stato. Un checkpoint affidabile
+mantiene coerenti queste tre parti, mentre la generation usa soltanto ciò che
+serve per calcolare il token successivo.
 
-Possiamo quindi descrivere lo status quo finale senza saltare passaggi:
+Possiamo quindi descrivere lo stato finale senza omettere passaggi:
 **testo → ID → batch sfalsati → vettori → contesto → logits → loss →
 gradienti → parametri migliori → checkpoint → nuovi ID → testo**. Le
 ottimizzazioni del progetto — proiezioni suddivise, percorsi device-specific,
@@ -9508,7 +9410,7 @@ prossimo token dal prefisso visibile.
    ```
 
    **Cosa osservare:** input e target sono la stessa sequenza spostata di una
-   posizione; ogni colonna insegna una previsione successiva.
+   posizione; ogni colonna definisce il target della posizione corrispondente.
 
 3. **INTERMEDIATE STATE — Trasforma ID in residual stream**
 
@@ -9532,7 +9434,7 @@ prossimo token dal prefisso visibile.
 
    ```learngpt-mermaid
    flowchart TD
-       R["Residual state R"] --> LN1["LayerNorm"]
+       R["Stato residual R"] --> LN1["LayerNorm"]
        LN1 --> A["Causal attention"]
        A --> ADD1["Residual add"]
        R --> ADD1
@@ -9607,17 +9509,15 @@ prossimo token dal prefisso visibile.
 
 Ora il progetto possiede un ciclo di vita completo: può trasformare documenti
 in esempi, addestrare e valutare il modello, conservare uno stato riproducibile
-e ricaricarlo per generare. Ogni componente mantiene un compito circoscritto,
-ma il valore del sistema nasce dalla continuità dei contratti tra tutti i
-passaggi.
+e ricaricarlo per generare. Ogni componente mantiene un compito circoscritto e
+rispetta il contratto richiesto dal componente successivo.
 
 - **Cambiato:** le lezioni separate sono diventate una pipeline end-to-end eseguibile e recuperabile.
 - **Preservato:** obiettivo next-token, causalità e significato delle shape tra training e generation.
 - **Prossimo passo:** leggere e modificare il progetto finale seguendo i confini tra dati, modello, training e artefatti.
 
-> **Se ricordi una sola cosa:** LearnGPT è un'unica catena di trasformazioni;
-> ogni freccia è affidabile solo se l'output conserva il contratto richiesto
-> dall'operazione successiva.
+> **Se ricordi una sola cosa:** ogni componente di LearnGPT riceve un input
+> definito e produce un output compatibile con l'operazione successiva.
 
 #### Cosa hai costruito e cosa resta da fare
 

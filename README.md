@@ -20,26 +20,31 @@ and final PyTorch project used by the course.
 The course is maintained in a code-first guide and in an aligned bilingual
 graphical edition:
 
-- [course_en.md](course_en.md) — concise English path tied to lesson code.
-- [course_en_graphic.md](course_en_graphic.md) — detailed English narrative,
+- [course_en.md](course_en.md): concise English path tied to lesson code.
+- [course_en_graphic.md](course_en_graphic.md): detailed English narrative,
   mathematics, worked examples, and diagrams.
-- [course_it_graphic.md](course_it_graphic.md) — human-authored Italian
+- [course_it_graphic.md](course_it_graphic.md): human-authored Italian
   translation with international technical terms kept in English.
-- [How to train runbook](docs/FINAL_TRAINING_RUNBOOK.md) for the canonical
+- [Course authoring contract](docs/COURSE_AUTHORING_CONTRACT.md): durable rules
+  for lesson structure, natural Italian, panel ownership, code links, and
+  publication checks.
+- [How to train runbook](docs/FINAL_TRAINING_RUNBOOK.md): canonical
   macOS/MPS and Windows/CUDA workflow.
-- [CUDA training optimizations](CUDA_TRAINING_OPTIMIZATIONS.md) for measured
+- [CUDA training optimizations](CUDA_TRAINING_OPTIMIZATIONS.md): measured
   fused-attention, batching, logging, and VRAM tradeoffs on NVIDIA hardware.
-- [Video series guide](docs/VIDEO_SERIES_GUIDE.md) for teaching the 42
+- [Video series guide](docs/VIDEO_SERIES_GUIDE.md): teaching the 42
   checkpoints and the final experiment.
-- [Model memory and training limits](docs/MODEL_MEMORY_AND_TRAINING_LIMITS.md)
-  for understanding how parameters, activations, context, and optimizer state
-  affect an 8 GB local training run.
+- [Model memory and training limits](docs/MODEL_MEMORY_AND_TRAINING_LIMITS.md):
+  how parameters, activations, context, and optimizer state affect an 8 GB local
+  training run.
 
 All 42 lessons use the same bilingual readability contract: a continuous
 beginner-friendly narrative, a semantic timeline of three to seven steps
 according to the transformation's real complexity, and an explicit
 before/goal/after/invariant summary. English and Italian must always be updated
-together, with technical terms kept in their conventional English form.
+together, with technical terms kept in their conventional English form. The
+Italian edition is the default website experience and must read as natural
+Italian, not as a literal translation.
 
 ## What This Project Contains
 
@@ -68,6 +73,7 @@ LearnGPT/
   CUDA_TRAINING_OPTIMIZATIONS.md
 
   docs/
+    COURSE_AUTHORING_CONTRACT.md
     FINAL_TRAINING_RUNBOOK.md
     MODEL_MEMORY_AND_TRAINING_LIMITS.md
     VIDEO_SERIES_GUIDE.md
@@ -529,7 +535,7 @@ K, and V for every head together and runs one batched SDPA call per block.
 validation and checkpoint events controlled by `--eval-interval`.
 
 Follow the exact two-phase PowerShell procedure in
-[How to Train Runbook — Windows NVIDIA CUDA](docs/FINAL_TRAINING_RUNBOOK.md#6-windows-nvidia-cuda-smoke-gate-and-complete-run).
+[How to Train Runbook: Windows NVIDIA CUDA](docs/FINAL_TRAINING_RUNBOOK.md#6-windows-nvidia-cuda-smoke-gate-and-complete-run).
 It runs a 20-step gate with the real architecture, then resumes that same
 checkpoint to step 45,000. The section also includes 4, 6, and 8 GiB VRAM
 profiles and the matching generation command.
