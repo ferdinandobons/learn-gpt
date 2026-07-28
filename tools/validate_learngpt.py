@@ -1195,7 +1195,7 @@ def check_graphic_course(project_dir: Path, errors: list[str]) -> None:
             ),
             "orientation_required": (
                 "## Lesson 00 — How to use this course",
-                "Explain it like I am five",
+                "Quick orientation",
                 "What you need before you start",
                 "The companion GitHub repository",
                 "github.com/ferdinandobons/learn-gpt",
@@ -1255,7 +1255,7 @@ def check_graphic_course(project_dir: Path, errors: list[str]) -> None:
             ),
             "orientation_required": (
                 "## Lezione 00 — Come usare questo corso",
-                "Spiegamelo come se avessi cinque anni",
+                "Orientamento rapido",
                 "Che cosa ti serve prima di iniziare",
                 "Il repository GitHub collegato",
                 "github.com/ferdinandobons/learn-gpt",

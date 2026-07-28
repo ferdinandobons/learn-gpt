@@ -459,22 +459,23 @@ $$
   start reading. The course is still a step-by-step build from simple text to a
   small GPT.
 
-### Explain it like I am five
+### Quick orientation
 
-Think of this course as a guided build of a small machine.
+The course has two main parts: the website and the GitHub repository.
 
-The **website** is the instruction book. It tells you what piece we are adding
-now, why we need it, and what changes after we add it.
+The **website** contains the explanations. Each lesson tells you which step you
+are studying, why it matters, and what state the project reaches after that
+step.
 
-The **GitHub repository** is the box of parts. It contains the real Python
-files used by the course. When a lesson talks about a file such as
+The **GitHub repository** contains the real Python files used by the course.
+When a lesson talks about a file such as
 `study/lessons/01_read_text.py` or `study/snapshots/lesson_12/model.py`, that
 file lives in the repository.
 
-The **Programming** panel is the window into that box of parts. It shows the
-exact code for the current lesson, the diff from the previous lesson, and the
-complete snapshot of the project at that point. Use the repository link when
-you want to open the same code directly on GitHub.
+The **Programming** panel shows the exact code for the current lesson, the diff
+from the previous lesson, and the complete snapshot of the project at that
+point. Use the repository link when you want to open the same code directly on
+GitHub.
 
 You can read the course without installing anything. You only need the setup
 below if you want to run the code on your own computer.

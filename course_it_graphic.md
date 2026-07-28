@@ -1,4 +1,4 @@
-<!-- source-sha256: a092651ac74db0f7c0ece6e52cdc92ded593b9d534f0144279322f170321e37b -->
+<!-- source-sha256: 3ccc0e7b084d0e7a776d53390a6d5261ffaf1f43f2e1aeb7f92fa01400341519 -->
 
 # LearnGPT — Corso grafico e matematico
 
@@ -482,22 +482,24 @@ $$
   iniziare a leggere. Il corso resta una costruzione passo dopo passo, dal
   testo semplice a un piccolo GPT.
 
-### Spiegamelo come se avessi cinque anni
+### Orientamento rapido
 
-Pensa a questo corso come alla costruzione guidata di una piccola macchina.
+Il corso è composto da due parti principali: il sito web e il repository
+GitHub.
 
-Il **sito web** è il libretto di istruzioni. Ti dice quale pezzo stiamo
-aggiungendo adesso, perché serve e che cosa cambia dopo averlo aggiunto.
+Il **sito web** contiene le spiegazioni. Ogni lezione indica quale passaggio
+stai studiando, perché serve e quale stato raggiunge il progetto dopo quel
+passaggio.
 
-Il **repository GitHub** è la scatola dei pezzi. Contiene i file Python reali
-usati dal corso. Quando una lezione parla di un file come
+Il **repository GitHub** contiene i file Python reali usati dal corso. Quando
+una lezione parla di un file come
 `study/lessons/01_read_text.py` o `study/snapshots/lesson_12/model.py`, quel
 file si trova nel repository.
 
-Il pannello **Programmazione** è la finestra su quella scatola dei pezzi. Mostra
-il codice esatto della lezione corrente, il diff rispetto alla lezione
-precedente e lo snapshot completo del progetto in quel punto. Usa il link al
-repository quando vuoi aprire lo stesso codice direttamente su GitHub.
+Il pannello **Programmazione** mostra il codice esatto della lezione corrente,
+il diff rispetto alla lezione precedente e lo snapshot completo del progetto in
+quel punto. Usa il link al repository quando vuoi aprire lo stesso codice
+direttamente su GitHub.
 
 Puoi leggere il corso senza installare nulla. Il setup qui sotto ti serve solo
 se vuoi eseguire il codice sul tuo computer.
