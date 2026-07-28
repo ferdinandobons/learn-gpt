@@ -1192,6 +1192,14 @@ def check_graphic_course(project_dir: Path, errors: list[str]) -> None:
                 "### Transformation trace: input → output",
                 "### Status transition: before → after",
             ),
+            "orientation_required": (
+                "## Lesson 00 — How to use this course",
+                "Explain it like I am five",
+                "What you need before you start",
+                "The companion GitHub repository",
+                "github.com/ferdinandobons/learn-gpt",
+                "What each part of a lesson means",
+            ),
         },
         {
             "name": "course_it_graphic.md",
@@ -1244,10 +1252,18 @@ def check_graphic_course(project_dir: Path, errors: list[str]) -> None:
                 "### Traccia della trasformazione: input → output",
                 "### Stato: prima → dopo",
             ),
+            "orientation_required": (
+                "## Lezione 00 — Come usare questo corso",
+                "Spiegamelo come se avessi cinque anni",
+                "Che cosa ti serve prima di iniziare",
+                "Il repository GitHub collegato",
+                "github.com/ferdinandobons/learn-gpt",
+                "Che cosa significa ogni parte della lezione",
+            ),
         },
     )
 
-    expected_lessons = list(range(1, 43))
+    expected_lessons = [0, *range(1, 43)]
     for contract in course_contracts:
         graphic_course = contract["markdown"]
         if contract["running_contract"] not in graphic_course:
@@ -1264,7 +1280,8 @@ def check_graphic_course(project_dir: Path, errors: list[str]) -> None:
         found_lessons = [int(heading.group(1)) for heading in lesson_headings]
         if found_lessons != expected_lessons:
             errors.append(
-                f"{contract['name']} must contain ordered lessons 01 through 42"
+                f"{contract['name']} must contain lesson 00 followed by "
+                "ordered lessons 01 through 42"
             )
             continue
 
@@ -1280,6 +1297,21 @@ def check_graphic_course(project_dir: Path, errors: list[str]) -> None:
             body = graphic_course[heading.end():end]
 
             lesson_number = int(lesson)
+            if lesson_number == 0:
+                for marker in contract["orientation_required"]:
+                    if marker not in graphic_course:
+                        errors.append(
+                            f"{contract['name']} lesson 00 is missing "
+                            f"orientation marker {marker!r}"
+                        )
+                for field in contract["pilot_compass_fields"]:
+                    if body.count(field) < 1:
+                        errors.append(
+                            f"{contract['name']} lesson 00 is missing compass "
+                            f"field {field!r}"
+                        )
+                continue
+
             is_structured = lesson_number in structured_lessons
             structural_sections = (
                 contract["pilot_sections"]

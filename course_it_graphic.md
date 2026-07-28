@@ -1,4 +1,4 @@
-<!-- source-sha256: 5dd988c5e8e781e92bef192b0c71a558cbe0a96066e132a8e14c8e08b6b6214e -->
+<!-- source-sha256: ed5b0bc8d2bef6143f90be38544e3db1fe1b8d22e2c4a307cc77b83839769d0a -->
 
 # LearnGPT — Corso grafico e matematico
 
@@ -10,9 +10,11 @@ dell'architettura.
 
 ## Come orientarsi nel corso
 
-Il corso segue gli stessi 42 checkpoint di `course_en.md` e dell'indice di
-LearnGPT Web. Tutte le lezioni usano lo stesso contratto di leggibilità. La
-bussola rende espliciti quattro elementi:
+Il corso si apre con la Lezione 00, un orientamento scritto alla piattaforma
+LearnGPT Web, poi segue gli stessi 42 checkpoint di implementazione di
+`course_en.md` e dell'indice di LearnGPT Web. Tutte le lezioni di
+implementazione usano lo stesso contratto di leggibilità. La bussola rende
+espliciti quattro elementi:
 
 ```text
 prima → obiettivo → dopo → vincolo
@@ -104,6 +106,7 @@ coerente per mostrare le operazioni. Non provengono dal checkpoint addestrato.
 
 | Modulo | Lezioni | Trasformazione principale |
 |---|---:|---|
+| 0. Orientamento della piattaforma | 00 | layout della piattaforma $\rightarrow$ percorso del corso |
 | 1. Testo e token | 01–04 | testo $\rightarrow$ token ID |
 | 2. Batch e tensor | 05–11 | flusso di token $\rightarrow [B,T]$ esempi |
 | 3. Primo modello | 12–16 | ID $\rightarrow [B,T,V]$ logits e loss |
@@ -459,6 +462,129 @@ $$
 $$
 
 ---
+
+
+## Lezione 00 — Come usare questo corso
+
+### Bussola della lezione: cosa e perché
+
+- **Prima:** hai aperto il corso, ma non sai ancora che cosa installare, che cosa
+  cliccare o come entra in gioco il repository GitHub.
+- **Obiettivo:** capire la piattaforma, il repository di codice collegato e il
+  setup minimo prima della prima lezione tecnica.
+- **Dopo:** sai come leggere una lezione, dove trovare il suo codice, che cosa
+  significa ogni sezione del corso e che cosa serve sul computer se vuoi
+  eseguire il progetto.
+- **Vincolo:** non ti servono hardware costoso o competenze pregresse di AI per
+  iniziare a leggere. Il corso resta una costruzione passo dopo passo, dal
+  testo semplice a un piccolo GPT.
+
+### Spiegamelo come se avessi cinque anni
+
+Pensa a questo corso come alla costruzione guidata di una piccola macchina.
+
+Il **sito web** è il libretto di istruzioni. Ti dice quale pezzo stiamo
+aggiungendo adesso, perché serve e che cosa cambia dopo averlo aggiunto.
+
+Il **repository GitHub** è la scatola dei pezzi. Contiene i file Python reali
+usati dal corso. Quando una lezione parla di un file come
+`study/lessons/01_read_text.py` o `study/snapshots/lesson_12/model.py`, quel
+file si trova nel repository.
+
+Il pannello **Programmazione** è la finestra su quella scatola dei pezzi. Mostra
+il codice esatto della lezione corrente, il diff rispetto alla lezione
+precedente e lo snapshot completo del progetto in quel punto. Usa il link al
+repository quando vuoi aprire lo stesso codice direttamente su GitHub.
+
+Puoi leggere il corso senza installare nulla. Il setup qui sotto ti serve solo
+se vuoi eseguire il codice sul tuo computer.
+
+### Che cosa ti serve prima di iniziare
+
+Per leggere il corso ti basta un computer normale. Un laptop è sufficiente.
+
+Se vuoi eseguire il codice, il setup più semplice è:
+
+| Risorsa | Minimo | Perché serve |
+|---|---|---|
+| Computer | macOS, Linux o Windows | Il progetto è normale codice Python e PyTorch. |
+| CPU/RAM | CPU recente da laptop e 8 GB di RAM | Bastano per gli script didattici e gli esempi piccoli. |
+| GPU | Opzionale | Aiuta per training più lunghi, ma non serve per le prime lezioni. |
+| Python | Python 3.12 consigliato | Esegue gli script delle lezioni e il progetto finale. |
+| Git | Qualsiasi installazione recente di Git | Scarica il repository e permette di vedere le modifiche. |
+| Account GitHub | Opzionale per leggere, utile per star/fork | Puoi vedere il codice senza account, ma un account aiuta se vuoi una tua copia. |
+| Editor | VS Code o qualunque editor di codice | Utile quando vuoi aprire i file in locale. |
+
+Non devi conoscere il deep learning prima della Lezione 01. Devi solo essere a
+tuo agio nel leggere Python semplice, installare un pacchetto e usare il
+terminale a livello base. Token, tensor, loss, attention e training vengono
+introdotti quando diventano necessari.
+
+### Il repository GitHub collegato
+
+Il codice vive qui:
+
+[github.com/ferdinandobons/learn-gpt](https://github.com/ferdinandobons/learn-gpt)
+
+Usa il repository in tre modi:
+
+1. **Leggi lo script della lezione corrente.** I file in `study/lessons/` sono
+   piccoli script eseguibili per la lezione.
+2. **Ispeziona lo snapshot della lezione.** I file in
+   `study/snapshots/lesson_XX/` mostrano lo stato del progetto dopo una
+   lezione specifica.
+3. **Confronta che cosa è cambiato.** Il pannello Programmazione mostra il diff
+   per vedere solo le parti nuove o modificate.
+
+Il repository non è un compito separato. È il codice sorgente che il corso
+spiega. Sito e repository vanno usati insieme: leggi la spiegazione sul sito,
+poi apri il codice associato quando vuoi verificare l'implementazione esatta.
+
+### Che cosa significa ogni parte della lezione
+
+Ogni lezione tecnica ripete la stessa struttura, così non devi indovinare come
+leggerla.
+
+| Parte | Significato |
+|---|---|
+| **Prima** | Lo stato del progetto prima che questa lezione aggiunga qualcosa. |
+| **Obiettivo** | L'unico compito che la lezione cerca di completare. |
+| **Dopo** | Il nuovo stato quando la lezione è completa. |
+| **Vincolo** | La regola che deve restare vera mentre il progetto cambia. |
+| **Comprendere la trasformazione** | La spiegazione in linguaggio naturale. Parti da qui. |
+| **Trasformazione, passo dopo passo** | Il movimento preciso da input a output. |
+| **Dove siamo arrivati** | Che cosa è cambiato, che cosa è rimasto vero e che cosa viene dopo. |
+| **Grafico** | Dove si trova la lezione nell'intera pipeline GPT. |
+| **Matematica** | Tensor shape, notazione, formule e piccoli esempi svolti. |
+| **Programmazione** | Sintassi, diff del codice e snapshot completo del sorgente. |
+
+Se una lezione ti sembra difficile, non aprire tutti i pannelli insieme. Leggi
+prima la lezione centrale, poi apri solo il pannello che risponde alla domanda
+che hai in quel momento.
+
+### Il modo migliore per seguire il corso
+
+Usa questo ritmo:
+
+1. Leggi **Prima**, **Obiettivo**, **Dopo** e **Vincolo**.
+2. Leggi la spiegazione centrale.
+3. Apri **Grafico** se hai perso la visione d'insieme.
+4. Apri **Matematica** se ti servono shape o formule.
+5. Apri **Programmazione** se vuoi il codice.
+6. Usa il link GitHub della lezione quando vuoi la versione nel repository.
+7. Vai avanti solo quando sai spiegare il cambiamento in una frase.
+
+Il corso è cumulativo. La Lezione 01 parte dalla lettura del testo. Poi arrivano
+token ID, batch, tensor, primo modello, embedding, attention, blocchi
+Transformer, training, checkpoint, generation e runtime di training
+production-ready. Non compare tutto insieme.
+
+### Cosa succede dopo
+
+La Lezione 01 avvia la costruzione vera. Legge il piccolo file di testo
+didattico e trasforma testo esterno in una stringa Python. Sembra semplice
+perché è semplice. Il punto è rendere affidabile il primo contratto prima di
+aggiungere tokenizer, tensor, modelli e training.
 
 
 # Modulo 1 — Il testo diventa token

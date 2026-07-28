@@ -7,9 +7,11 @@
 
 ## How to orient yourself in this course
 
-The course follows the same 42 checkpoints as `course_en.md` and the LearnGPT
-Web **Course index**. Every lesson uses the same readability contract. Its
-compact compass exposes four facts:
+The course opens with Lesson 00, a written orientation for the LearnGPT Web
+platform, then follows the same 42 implementation checkpoints as
+`course_en.md` and the LearnGPT Web **Course index**. Every implementation
+lesson uses the same readability contract. Its compact compass exposes four
+facts:
 
 ```text
 before → goal → after → invariant
@@ -81,6 +83,7 @@ operation. They are not values extracted from the trained checkpoint.
 
 | Module | Lessons | Main transformation |
 |---|---:|---|
+| 0. Platform orientation | 00 | platform layout $\rightarrow$ course path |
 | 1. Text and tokens | 01–04 | text $\rightarrow$ token IDs |
 | 2. Batches and tensors | 05–11 | token stream $\rightarrow [B,T]$ examples |
 | 3. First model | 12–16 | IDs $\rightarrow [B,T,V]$ logits and loss |
@@ -436,6 +439,128 @@ $$
 $$
 
 ---
+
+
+## Lesson 00 — How to use this course
+
+### Lesson compass: what and why
+
+- **Before:** you have the course open, but you do not yet know what to install,
+  what to click, or how the GitHub repository fits into the lessons.
+- **Goal:** understand the platform, the companion code repository, and the
+  minimum setup before the first technical lesson.
+- **After:** you know how to read a lesson, where to find its code, what each
+  course section means, and what you need on your computer if you want to run
+  the project yourself.
+- **Invariant:** you do not need expensive hardware or prior AI expertise to
+  start reading. The course is still a step-by-step build from simple text to a
+  small GPT.
+
+### Explain it like I am five
+
+Think of this course as a guided build of a small machine.
+
+The **website** is the instruction book. It tells you what piece we are adding
+now, why we need it, and what changes after we add it.
+
+The **GitHub repository** is the box of parts. It contains the real Python
+files used by the course. When a lesson talks about a file such as
+`study/lessons/01_read_text.py` or `study/snapshots/lesson_12/model.py`, that
+file lives in the repository.
+
+The **Programming** panel is the window into that box of parts. It shows the
+exact code for the current lesson, the diff from the previous lesson, and the
+complete snapshot of the project at that point. Use the repository link when
+you want to open the same code directly on GitHub.
+
+You can read the course without installing anything. You only need the setup
+below if you want to run the code on your own computer.
+
+### What you need before you start
+
+You need only a normal computer to read the course. A laptop is enough.
+
+If you want to run the code, the easiest setup is:
+
+| Need | Minimum | Why it matters |
+|---|---|---|
+| Computer | macOS, Linux, or Windows | The project is ordinary Python and PyTorch code. |
+| CPU/RAM | A recent laptop CPU and 8 GB RAM | Enough for the small study scripts and educational examples. |
+| GPU | Optional | Helpful for longer training, not required for the first lessons. |
+| Python | Python 3.12 recommended | Runs the lesson scripts and final project. |
+| Git | Any recent Git install | Downloads the repository and lets you inspect changes. |
+| GitHub account | Optional for reading, useful for starring/forking | You can view the code without an account, but an account helps if you want your own copy. |
+| Editor | VS Code or any code editor | Useful when you want to open files locally. |
+
+You do **not** need to know deep learning before Lesson 01. You should be
+comfortable reading simple Python, installing a package, and using a terminal
+at a basic level. The course introduces tokens, tensors, loss, attention, and
+training when they become necessary.
+
+### The companion GitHub repository
+
+The code lives here:
+
+[github.com/ferdinandobons/learn-gpt](https://github.com/ferdinandobons/learn-gpt)
+
+Use the repository in three ways:
+
+1. **Read the current lesson script.** Files in `study/lessons/` are small
+   runnable scripts for the lesson.
+2. **Inspect the lesson snapshot.** Files in `study/snapshots/lesson_XX/` show
+   the project state after a specific lesson.
+3. **Compare what changed.** The Programming panel shows the diff so you can
+   see only the new or modified pieces.
+
+The repository is not separate homework. It is the source code that the course
+explains. The website and the repository are meant to be used together: read
+the explanation on the website, then open the associated code when you want to
+verify the exact implementation.
+
+### What each part of a lesson means
+
+Every technical lesson repeats the same structure so you never have to guess
+how to read it.
+
+| Part | Meaning |
+|---|---|
+| **Before** | The state of the project before this lesson adds anything. |
+| **Goal** | The one job this lesson is trying to accomplish. |
+| **After** | The new state once the lesson is complete. |
+| **Invariant** | The rule that must stay true while the project changes. |
+| **Understand the transformation** | The plain-English explanation. Start here. |
+| **Transformation, step by step** | The exact movement from input to output. |
+| **Where we are now** | What changed, what stayed true, and what comes next. |
+| **Graph** | Where this lesson sits in the whole GPT pipeline. |
+| **Mathematics** | Tensor shapes, notation, formulas, and small worked examples. |
+| **Programming** | Syntax, code diff, and complete source snapshot. |
+
+If a lesson feels hard, do not open every panel at once. Read the central
+lesson first, then open only the panel that answers your current question.
+
+### The best way to move through the course
+
+Use this rhythm:
+
+1. Read **Before**, **Goal**, **After**, and **Invariant**.
+2. Read the central explanation.
+3. Open **Graph** if you are lost in the big picture.
+4. Open **Mathematics** if you need shapes or formulas.
+5. Open **Programming** if you want the code.
+6. Use the GitHub link for the lesson when you want the repository version.
+7. Continue only when you can explain the change in one sentence.
+
+The course is cumulative. Lesson 01 starts with reading text. Later lessons add
+token IDs, batches, tensors, a first model, embeddings, attention, Transformer
+blocks, training, checkpoints, generation, and a production-ready training
+runtime. Nothing appears all at once.
+
+### What happens next
+
+Lesson 01 starts the real build. It reads the small study text file and turns
+external text into a Python string. That sounds simple because it is simple.
+The point is to make the first contract reliable before adding tokenizer logic,
+tensors, models, and training.
 
 
 # Module 1 — Text becomes tokens
