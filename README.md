@@ -17,15 +17,6 @@ and final PyTorch project used by the course.
 
 ## About
 
-Tags:
-`gpt`, `transformer`, `nanogpt`, `pytorch`, `decoder-only-transformer`,
-`language-model`, `llm`, `fineweb-edu`, `gpt-2-bpe`, `tokenization`,
-`causal-self-attention`, `multi-head-attention`, `layernorm`, `gelu`,
-`adamw`, `gradient-accumulation`, `checkpointing`, `text-generation`,
-`apple-silicon`, `mps`, `cuda`, `cpu`, `mixed-precision`, `torch-compile`,
-`fused-attention`,
-`machine-learning`, `deep-learning`, `education`, `study-project`.
-
 The course is maintained in a code-first guide and in an aligned bilingual
 graphical edition:
 
