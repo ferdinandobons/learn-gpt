@@ -441,6 +441,9 @@ $$
 ---
 
 
+# Module 0 — How to use this course
+
+
 ## Lesson 00 — How to use this course
 
 ### Lesson compass: what and why
@@ -475,6 +478,21 @@ you want to open the same code directly on GitHub.
 
 You can read the course without installing anything. You only need the setup
 below if you want to run the code on your own computer.
+
+### What this course actually builds
+
+This course builds a **small decoder-only GPT base model** from first
+principles. That means the model learns the pretraining task: given a visible
+prefix, predict the next token. It is not yet a ChatGPT-style assistant. The
+point is to make the machinery understandable before adding later adaptation
+layers.
+
+| Area | What you build here | What stays outside the core course |
+|---|---|---|
+| Base model | A small GPT-like Transformer trained on next-token prediction. | A conversational product with roles, tools, memory, moderation, or a hosted chat backend. |
+| Pretraining | The data path, tokenizer, batches, loss, optimizer, checkpoints, and generation loop for causal language modeling. | Internet-scale data collection, large distributed training, and production data governance beyond the implemented checks. |
+| Inference | Loading a saved checkpoint and sampling continuations from a prompt. | Retrieval, tool use, web browsing, long-term memory, or safety policy systems. |
+| Fine-tuning | The place where fine-tuning would fit after a base model exists. | Classification fine-tuning, instruction fine-tuning, RLHF, and LoRA are future paths, not required steps in this build. |
 
 ### What you need before you start
 
@@ -516,6 +534,15 @@ The repository is not separate homework. It is the source code that the course
 explains. The website and the repository are meant to be used together: read
 the explanation on the website, then open the associated code when you want to
 verify the exact implementation.
+
+When a lesson links to code, read the links this way:
+
+| Code location | How to use it |
+|---|---|
+| `study/lessons/XX_*.py` | Run or inspect the small script that demonstrates the lesson. |
+| `study/snapshots/lesson_XX/` | See the whole project state after that lesson is complete. |
+| Programming diff | Focus only on what changed since the previous lesson. |
+| GitHub repository link | Open the same files outside the course viewer, fork them, or clone them locally. |
 
 ### What each part of a lesson means
 
@@ -762,6 +789,15 @@ such as `c` directly as a row index. It needs an integer address. This lesson
 creates that address system without claiming that the number measures meaning:
 if `c` receives ID `4` and `a` receives ID `3`, `c` is not larger or more
 important than `a`. The IDs simply point to different rows.
+
+Modern GPT systems use the same idea, but with a stronger tokenizer. They do
+not usually assign one ID to every character or one ID to every word. A common
+production approach is BPE, where frequent byte or text fragments receive
+their own token IDs and rare text can still be decomposed into smaller pieces.
+Special tokens may also reserve IDs for boundaries such as end-of-text. This
+lesson deliberately starts with characters because the entire vocabulary is
+visible on the page. The concept to keep is the same one used later with BPE:
+the model receives token IDs, and the tokenizer defines what each ID means.
 
 The first operation is `set(text)`, which keeps one copy of every distinct
 character. A set deliberately has no vocabulary order, so it cannot by itself
@@ -1240,6 +1276,9 @@ The reusable implementation lives in `study/snapshots/lesson_04/tokenizer.py`;
   the module's public interface, so the script does not depend on its internal
   loops. That is the first module boundary in the project.
 
+# Module 2 — Sequences become training examples
+
+
 ## Lesson 05 — Training and validation
 
 ### Lesson compass: what and why
@@ -1442,6 +1481,15 @@ whole visible prefix. The input/target contract supports both.
 Nothing is predicted in this lesson. We are manufacturing supervised examples
 from ordered data. That separation matters: the correct answer comes from the
 shifted source sequence, not from the model or from a hand-written label.
+
+The same rule scales by sliding a window over the stream. A start index `s`
+selects `data[s : s + T + 1]`; the input is everything except the last token
+and the target is everything except the first token. If the next start is
+`s + 1`, the windows overlap heavily and the stride is one. A larger stride
+skips more positions and creates fewer examples. Later random batching chooses
+valid starts instead of walking through every stride, but every sampled window
+still asks the same question: “given this visible context, what is the token
+immediately after each position?”
 
 ### Transformation, step by step
 
@@ -3326,6 +3374,9 @@ This controlled comparison is in `study/lessons/16_bigram_limit.py`.
 - `all` and `fall` end with the same ID, so the model selects the same embedding
   row. A different prefix cannot matter until attention mixes positions.
 
+# Module 4 — Meaning and position
+
+
 ## Lesson 17 — Token embeddings
 
 ### Lesson compass: what and why
@@ -3670,6 +3721,9 @@ This bridge is included here because the code directly implements a mathematical
 - **Defined by the programmer:** the addition and position indices.
 - **Learned by gradient training:** the position vectors and token vectors.
 
+# Module 5 — Tokens share context
+
+
 ## Lesson 19 — Causal self-attention head
 
 ### Lesson compass: what and why
@@ -3689,6 +3743,15 @@ that problem by allowing each position to collect information from positions
 it is permitted to see. For `sleeps` in `The cat sleeps here.`, the visible
 prefix is `The cat sleeps`; `here` and `.` are still future tokens and must not
 influence this state.
+
+Before adding trainable query, key, and value projections, imagine the simpler
+shape of the idea. Pick one token position, score the visible tokens, turn
+those scores into weights that sum to one, and take a weighted average of the
+visible information. That is self-attention in its most basic reading: a token
+builds a new context vector by deciding how much to borrow from itself and
+from earlier tokens. The learned Q/K/V machinery below is the parameterized
+way a Transformer creates those scores and chooses which information can be
+mixed.
 
 The head creates three different views of every token state: a **query**, a
 **key**, and a **value**. A query expresses what the current token is looking
@@ -4214,6 +4277,13 @@ features interact. The output projection applies one learned affine
 transformation to the joined C-vector, so every output feature can use evidence
 from every head.
 
+This layer exists because multiple heads are useful only if the model can
+recombine them. Without the projection, later layers would receive fixed
+feature slices that still remember which head produced them. With the
+projection, the model can learn statements such as “use part of head 1 and
+part of head 3 together for this output feature” while keeping the same
+`[B,T,C]` interface.
+
 For `sleeps`, use the concatenated vector `[1.00,1.25,-0.20,0.80]`. A small
 illustrative projection makes the operation visible:
 
@@ -4369,6 +4439,9 @@ This bridge is included here because the code directly implements a mathematical
 - **Defined by the programmer:** the output projection.
 - **Learned by gradient training:** how evidence from heads is recombined.
 
+# Module 6 — Assemble the Transformer
+
+
 ## Lesson 22 — Attention residual connection
 
 ### Lesson compass: what and why
@@ -4384,6 +4457,11 @@ Attention has produced a contextual update, but replacing the old state with
 that update would discard the direct representation path. A residual
 connection treats attention as a correction: it adds the update to the state
 that entered the branch.
+
+The important idea is “add, do not overwrite.” Deep networks need a reliable
+path for information and gradients to cross many layers. The residual stream
+provides that path: each branch proposes an update, and the original state can
+continue forward even when an update is still poorly learned.
 
 For one `sleeps` vector, the operation is ordinary feature-wise addition:
 
@@ -4551,6 +4629,12 @@ This bridge is included here because the code directly implements a mathematical
 Repeated learned updates can give token features very different scales.
 Pre-norm LayerNorm prepares a normalized **branch input** for attention while
 the original residual stream bypasses normalization on the skip path.
+
+LayerNorm solves a practical optimization problem. Attention compares vectors
+with dot products, so feature scale affects how sharp or flat those comparison
+scores become. Normalizing each token's feature vector gives the attention
+branch a steadier input distribution, while learned scale and offset let the
+model recover useful magnitudes when training discovers them.
 
 For the toy state `[1,2,3]`, LayerNorm first calculates mean `2`, centers to
 `[-1,0,1]`, and divides by the stabilized standard deviation:
@@ -4749,6 +4833,13 @@ the learned branch; the unchanged state after attention remains available to
 the skip path. Their final elementwise addition produces the actual output of
 this lesson. Dropout is not part of this lesson's snapshot and will be
 introduced later.
+
+Read the MLP as the block's per-token thinking step. Attention decides which
+other positions can contribute information; the MLP then transforms each
+position's now-contextual vector without moving information between time
+steps. GELU matters because it bends the computation: without the activation,
+the expansion and contraction would still be only one larger linear map in
+disguise.
 
 The same feed-forward parameters are reused at every time position, but each
 token is processed independently. If two positions enter with different
@@ -4981,6 +5072,13 @@ position by position.
 
 This fixed ordering is the block's reusable contract.
 It also gives tests and later snapshots one stable boundary to inspect.
+
+Every piece in the block protects a specific failure mode. LayerNorm keeps
+branch inputs controlled, attention communicates across the visible prefix,
+residual additions preserve the direct path, and the MLP performs nonlinear
+per-position computation. Dropout is introduced later as a training-time
+regularizer for these updates; it should change robustness during training,
+not the deterministic shape contract of the block.
 
 ### Transformation, step by step
 
@@ -5518,6 +5616,9 @@ This bridge is included here because the code directly implements a mathematical
 |---|---|---|
 | `output_head(final_layer_norm(x))` | $Z=\operatorname{LN}_f(R_L)W_{vocab}^{\mathsf T}+b_{vocab}$ | score every vocabulary item |
 
+# Module 7 — Train and measure
+
+
 ## Lesson 28 — Transformer training
 
 ### Lesson compass: what and why
@@ -5790,6 +5891,13 @@ are still samples rather than exact averages over the complete splits, but
 combining several batches makes them less sensitive to one lucky or unlucky
 window.
 
+Cross-entropy is the value the optimizer uses, but perplexity is often the
+more readable translation for humans. When the loss uses natural logarithms,
+`perplexity = exp(loss)`. A perplexity of about 73 can be read loosely as “the
+model is as uncertain as choosing among roughly 73 equally plausible next
+tokens.” That reading is only comparable when the tokenizer, data split, and
+evaluation procedure are the same.
+
 Measurement must also leave the experiment untouched. The evaluator switches
 the model to evaluation mode, disables autograd because no gradients are
 needed, and performs no `backward()` or `optimizer.step()`. Lesson 29 does not
@@ -5973,6 +6081,9 @@ This bridge is included here because the code directly implements a mathematical
 | Code | Mathematical reading | Plain meaning |
 |---|---|---|
 | `sum(split_losses) / len(split_losses)` | $\widehat L=\frac1K\sum_k L_k$ | average noisy batch measurements |
+
+# Module 8 — Save, reload, and generate
+
 
 ## Lesson 30 — Checkpoint
 
@@ -7205,6 +7316,9 @@ This bridge is included here because the code directly implements a mathematical
 - **Defined by the programmer:** dropout probability and weight tying.
 - **Learned by gradient training:** the shared embedding values.
 
+# Module 9 — Production-ready training
+
+
 ## Lesson 36 — Production data and optimizer groups
 
 ### Lesson compass: what and why
@@ -7222,7 +7336,12 @@ fingerprint; verified data identity arrives in the final production project.
 
 The earlier character tokenizer and in-memory tensors make every operation
 easy to inspect, but they do not represent how a larger language-model run
-stores text. Here the corpus is encoded with the GPT-2 BPE tokenizer. A phrase
+stores text. This is the bridge from the educational tokenizer to the
+production tokenizer. The character tokenizer taught the address idea with a
+tiny vocabulary created from the current text. The GPT-2 BPE tokenizer brings
+a fixed external vocabulary, token IDs for common fragments, and explicit
+handling for the allowed special token `<|endoftext|>`. Here the corpus is
+encoded with that GPT-2 BPE tokenizer. A phrase
 such as `The cat sleeps here.` is no longer necessarily split into one ID per
 character: common byte sequences can share one token. The learning objective
 is still “predict the next ID,” but the vocabulary and sequence length now
@@ -7233,6 +7352,12 @@ opened as `numpy.memmap` arrays. A memmap lets the program read the requested
 window without loading the complete token stream into Python memory. Batch
 creation still selects a start position and produces shifted `[B,T]` input and
 target tensors. Storage changed; the next-token relationship did not.
+
+This is also where “real dataset” begins to mean “preprocessed artifact,” not
+just “a text file I opened in Python.” The training loop should consume stable
+token files whose tokenizer, split, dtype, and path are known. Later lessons
+add stronger identity checks around those artifacts; this lesson establishes
+the storage and optimizer conventions first.
 
 The optimizer side becomes explicit too. AdamW should apply weight decay to
 matrix-like weights, while biases and one-dimensional normalization parameters
@@ -8694,6 +8819,19 @@ resulting contract, and durable handoff.
 > **If you remember one thing:** the final system stays understandable when
 > every arrow preserves an explicit contract between the object before it and
 > the object after it.
+
+#### What you built versus what remains
+
+| Topic | Built in LearnGPT | Future path |
+|---|---|---|
+| Base model | A decoder-only Transformer trained with causal next-token prediction. | Scale data, training time, context length, and model width/depth carefully. |
+| Pretraining pipeline | Token files, batches, loss, optimizer, evaluation, checkpoints, resume, and generation. | Add stronger dataset governance, larger runs, and distributed execution if the project grows. |
+| Inference | Load a checkpoint and generate text by autoregressive sampling. | Wrap the model in a hosted service, UI, rate limits, logging, and safety controls. |
+| Classification fine-tuning | Not part of the main build. | Add a task-specific head or scoring rule after the base model exists. |
+| Instruction fine-tuning | Not part of the main build. | Train on prompt/response examples so the model learns to follow instructions. |
+| LoRA | Not part of the main build. | Add low-rank adapters to adapt selected weights without updating the whole model. |
+| Loading GPT-2 weights | Not part of the main build. | Map compatible pretrained weights into the implemented architecture as a separate lesson path. |
+| ChatGPT-like assistant | Not part of the main build. | Add instruction tuning, safety behavior, conversation formatting, retrieval or tools, serving infrastructure, and product UX. |
 
 ### How to read the mathematics
 

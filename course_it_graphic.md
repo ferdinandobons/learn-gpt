@@ -1,4 +1,4 @@
-<!-- source-sha256: ed5b0bc8d2bef6143f90be38544e3db1fe1b8d22e2c4a307cc77b83839769d0a -->
+<!-- source-sha256: a092651ac74db0f7c0ece6e52cdc92ded593b9d534f0144279322f170321e37b -->
 
 # LearnGPT — Corso grafico e matematico
 
@@ -464,6 +464,9 @@ $$
 ---
 
 
+# Modulo 0 — Come usare questo corso
+
+
 ## Lezione 00 — Come usare questo corso
 
 ### Bussola della lezione: cosa e perché
@@ -498,6 +501,21 @@ repository quando vuoi aprire lo stesso codice direttamente su GitHub.
 
 Puoi leggere il corso senza installare nulla. Il setup qui sotto ti serve solo
 se vuoi eseguire il codice sul tuo computer.
+
+### Che cosa costruisce davvero questo corso
+
+Questo corso costruisce da zero un **piccolo GPT decoder-only di base**. In
+pratica il modello impara il task di pretraining: dato un prefisso visibile,
+prevedere il token successivo. Non è ancora un assistente in stile ChatGPT. Lo
+scopo è rendere comprensibile il meccanismo prima di aggiungere eventuali
+livelli di adattamento successivi.
+
+| Area | Cosa costruisci qui | Cosa resta fuori dal corso principale |
+|---|---|---|
+| Base model | Un piccolo Transformer GPT-like addestrato con next-token prediction. | Un prodotto conversazionale con ruoli, tools, memory, moderation o backend chat ospitato. |
+| Pretraining | Percorso dati, tokenizer, batch, loss, optimizer, checkpoint e generation loop per causal language modeling. | Raccolta dati su scala internet, training distribuito grande e data governance di produzione oltre ai controlli implementati. |
+| Inference | Caricamento di un checkpoint salvato e sampling di continuazioni da un prompt. | Retrieval, tool use, web browsing, memoria a lungo termine o sistemi di safety policy. |
+| Fine-tuning | Il punto in cui il fine-tuning si inserirebbe dopo avere un base model. | Classification fine-tuning, instruction fine-tuning, RLHF e LoRA sono percorsi futuri, non passaggi richiesti in questa build. |
 
 ### Che cosa ti serve prima di iniziare
 
@@ -539,6 +557,15 @@ Usa il repository in tre modi:
 Il repository non è un compito separato. È il codice sorgente che il corso
 spiega. Sito e repository vanno usati insieme: leggi la spiegazione sul sito,
 poi apri il codice associato quando vuoi verificare l'implementazione esatta.
+
+Quando una lezione collega del codice, leggi quei link così:
+
+| Posizione del codice | Come usarla |
+|---|---|
+| `study/lessons/XX_*.py` | Esegui o ispeziona il piccolo script che dimostra la lezione. |
+| `study/snapshots/lesson_XX/` | Vedi l'intero stato del progetto dopo quella lezione. |
+| Diff di Programmazione | Concentrati solo su ciò che è cambiato rispetto alla lezione precedente. |
+| Link al repository GitHub | Apri gli stessi file fuori dal viewer, fai fork o clona il progetto in locale. |
 
 ### Che cosa significa ogni parte della lezione
 
@@ -807,6 +834,16 @@ Python può già leggere il testo, ma una rete neurale non può usare direttamen
 un carattere come `c` per scegliere una riga. Ha bisogno di un indirizzo
 intero. Se `c` riceve l'ID `4` e `a` l'ID `3`, questo non rende `c` più grande o
 più importante: i due numeri puntano soltanto a righe diverse.
+
+I sistemi GPT moderni usano la stessa idea, ma con un tokenizer più potente.
+Di solito non assegnano un ID a ogni singolo carattere né un ID a ogni parola.
+Un approccio di produzione comune è BPE, dove frammenti frequenti di byte o
+testo ricevono un proprio token ID e il testo raro può comunque essere
+scomposto in pezzi più piccoli. Alcuni token speciali possono inoltre
+riservare ID per confini come end-of-text. Questa lezione parte
+intenzionalmente dai caratteri perché l'intero vocabulary resta visibile sulla
+pagina. Il concetto da conservare è lo stesso che useremo più avanti con BPE:
+il modello riceve token ID, e il tokenizer definisce che cosa significa ogni ID.
 
 `set(text)` conserva una copia di ogni carattere distinto, ma un set non
 definisce un ordine stabile. `sorted(...)` aggiunge la regola necessaria alla
@@ -1303,6 +1340,9 @@ L'implementazione riutilizzabile vive in
   soltanto l'interfaccia pubblica del modulo, così lo script non dipende dai
   dettagli interni. È il primo vero confine modulare del progetto.
 
+# Modulo 2 — Le sequenze diventano esempi di training
+
+
 ## Lezione 05 — Training e validation
 
 ### Bussola della lezione: cosa e perché
@@ -1508,6 +1548,15 @@ sia ogni coppia verticale.
 
 Qui non avviene alcuna previsione: stiamo costruendo esempi supervisionati da
 dati ordinati.
+
+La stessa regola scala facendo scorrere una finestra sullo stream. Un indice
+iniziale `s` seleziona `data[s : s + T + 1]`; l'input è tutto tranne l'ultimo
+token e il target è tutto tranne il primo token. Se la finestra successiva
+parte da `s + 1`, le finestre si sovrappongono molto e lo stride è uno. Uno
+stride più grande salta più posizioni e crea meno esempi. Più avanti il
+batching casuale sceglierà start validi invece di percorrere ogni stride, ma
+ogni finestra campionata farà sempre la stessa domanda: “dato questo contesto
+visibile, qual è il token immediatamente successivo a ogni posizione?”
 
 ### Trasformazione, passo dopo passo
 
@@ -3602,6 +3651,9 @@ Questo confronto controllato è in `study/lessons/16_bigram_limit.py`.
   stessa riga della bigram table. Il resto del prefix non può influire finché
   attention non permette alle posizioni di comunicare.
 
+# Modulo 4 — Significato e posizione
+
+
 ## Lezione 17 — Token embedding
 
 ### Bussola della lezione: cosa e perché
@@ -4050,6 +4102,9 @@ Questo ponte è incluso qui perché il codice implementa direttamente una trasfo
 - **Definito dal programmatore:** la somma e gli indici di posizione.
 - **Appreso durante il gradient training:** i token vector e i position vector.
 
+# Modulo 5 — I token condividono il contesto
+
+
 ## Lezione 19 — Causal self-attention head
 
 ### Bussola della lezione: cosa e perché
@@ -4068,6 +4123,15 @@ informazioni da `The` o `cat`. La **self-attention** introduce precisamente
 questa comunicazione: per ogni posizione costruisce una nuova rappresentazione
 mescolando le informazioni dei token che quella posizione è autorizzata a
 vedere.
+
+Prima di introdurre query, key e value appresi, immagina la forma più semplice
+dell'idea. Scegli una posizione, assegna uno score ai token visibili, trasforma
+quegli score in pesi che sommano a uno e calcola una media pesata delle
+informazioni visibili. Letta così, la self-attention significa che un token
+costruisce un nuovo context vector decidendo quanto prendere da se stesso e
+dai token precedenti. La meccanica Q/K/V qui sotto è il modo parametrico con
+cui un Transformer produce quegli score e sceglie quali informazioni possano
+essere mescolate.
 
 Per capire il processo, separiamo tre ruoli. La **query** descrive che cosa sta
 cercando il token corrente; le **key** descrivono come ogni token si presenta
@@ -4727,6 +4791,13 @@ La concatenazione affianca le slice delle head, ma non le fa interagire.
 L'output projection applica una trasformazione affine appresa al vettore
 di larghezza `C`, permettendo a ogni feature di output di usare tutte le head.
 
+Questo layer esiste perché più head sono utili solo se il modello può
+ricombinarle. Senza projection, i layer successivi riceverebbero slice fisse
+che conservano ancora il confine della head che le ha prodotte. Con la
+projection, il modello può imparare regole del tipo “usa una parte della head
+1 e una parte della head 3 per questa feature di output”, mantenendo comunque
+la stessa interfaccia `[B,T,C]`.
+
 ```learngpt-visual
 {
   "type": "matrix-operation",
@@ -4918,6 +4989,9 @@ Questo ponte è incluso qui perché il codice implementa direttamente una trasfo
 - **Appreso durante il gradient training:** come ricombinare l'evidenza
   prodotta dalle diverse head.
 
+# Modulo 6 — Assemblare il Transformer
+
+
 ## Lezione 22 — Attention residual connection
 
 ### Bussola della lezione: cosa e perché
@@ -4932,6 +5006,12 @@ Questo ponte è incluso qui perché il codice implementa direttamente una trasfo
 Sostituire lo stato con l'attention update eliminerebbe il percorso diretto
 della rappresentazione originale. La residual connection tratta invece
 attention come una correzione da sommare allo stato in ingresso.
+
+L'idea importante è “aggiungi, non sovrascrivere”. Le reti profonde hanno
+bisogno di un percorso affidabile lungo il quale informazioni e gradienti
+possano attraversare molti layer. Il residual stream fornisce questo percorso:
+ogni branch propone un update e lo stato originale può continuare in avanti
+anche quando l'update non è ancora ben appreso.
 
 ```learngpt-visual
 {
@@ -5124,6 +5204,13 @@ Questo ponte è incluso qui perché il codice implementa direttamente una trasfo
 Aggiornamenti ripetuti possono produrre feature con scale molto diverse.
 Nell'architettura pre-norm, LayerNorm prepara il **branch input** per attention,
 mentre il residual stream originale passa invariato lungo lo skip path.
+
+LayerNorm risolve un problema pratico di ottimizzazione. Attention confronta
+vettori tramite dot product, quindi la scala delle feature influenza quanto
+gli score diventino appuntiti o piatti. Normalizzare il vettore di feature di
+ogni token dà al branch attention una distribuzione di input più stabile,
+mentre scale e offset appresi permettono al modello di recuperare grandezze
+utili quando il training le scopre.
 
 ```learngpt-visual
 {
@@ -5363,6 +5450,13 @@ La seconda LayerNorm prepara soltanto il branch appreso; lo stato invariato
 dopo attention resta disponibile per lo skip path. La somma elementwise finale
 dei due tensor produce l'output effettivo della lezione. Lo snapshot non
 contiene ancora Dropout.
+
+Leggi il MLP come il passaggio di elaborazione per-token del block. Attention
+decide quali altre posizioni possono contribuire informazione; il MLP
+trasforma poi ogni vettore ormai contestualizzato senza spostare informazione
+tra posizioni temporali. GELU è importante perché piega il calcolo: senza
+l'attivazione, espansione e contrazione sarebbero ancora soltanto una mappa
+lineare più grande mascherata da due layer.
 
 Gli stessi parametri feed-forward vengono riutilizzati in tutte le posizioni,
 ma ogni token è elaborato indipendentemente. Due posizioni con state
@@ -5621,6 +5715,13 @@ Poiché input e output hanno entrambi `[B,T,C]`, il chiamante non deve conoscere
 i tensor temporanei dei branch e può trattare il block come una singola
 trasformazione shape-preserving.
 Questo confine stabile rende anche più semplice verificare e riutilizzare il modulo.
+
+Ogni pezzo del block protegge un problema specifico. LayerNorm mantiene
+controllati gli input dei branch, attention comunica lungo il prefisso
+visibile, le residual addition conservano il percorso diretto e il MLP esegue
+calcolo non lineare per posizione. Dropout verrà introdotto più avanti come
+regolarizzatore attivo durante il training: deve migliorare la robustezza,
+non cambiare il contratto deterministico di shape del block.
 
 ### Trasformazione, passo dopo passo
 
@@ -6198,6 +6299,9 @@ Questo ponte è incluso qui perché il codice implementa direttamente una trasfo
 |---|---|---|
 | `output_head(final_layer_norm(x))` | $Z=\operatorname{LN}_f(R_L)W_{vocab}^{\mathsf T}+b_{vocab}$ | assegna uno score a ogni elemento del vocabulary |
 
+# Modulo 7 — Eseguire il training e misurare
+
+
 ## Lezione 28 — Transformer training
 
 ### Bussola della lezione: cosa e perché
@@ -6477,6 +6581,14 @@ utile anche fuori dai batch già visti. Rimangono stime campionarie, non medie
 esatte dell'intero corpus, ma più batch le rendono meno dipendenti da una
 singola finestra fortunata o sfortunata.
 
+La cross-entropy è il valore che l'optimizer usa direttamente, ma la perplexity
+è spesso la traduzione più leggibile per una persona. Quando la loss usa
+logaritmi naturali, `perplexity = exp(loss)`. Una perplexity intorno a 73 si
+può leggere in modo approssimativo come “il modello è incerto come se dovesse
+scegliere tra circa 73 token successivi ugualmente plausibili”. Questo
+confronto ha senso solo quando tokenizer, split dei dati e procedura di
+valutazione sono gli stessi.
+
 La misurazione deve inoltre lasciare intatto l'esperimento. Il valutatore passa
 temporaneamente a `model.eval()`, disabilita autograd e non chiama né
 `backward()` né `optimizer.step()`. Nella lezione 29 non esiste ancora
@@ -6654,6 +6766,9 @@ Questo ponte è incluso qui perché il codice implementa direttamente una trasfo
 | Codice | Lettura matematica | In parole semplici |
 |---|---|---|
 | `sum(split_losses) / len(split_losses)` | $\widehat L=\frac1K\sum_k L_k$ | media misure rumorose ottenute su più batch |
+
+# Modulo 8 — Salvare, ricaricare e generare
+
 
 ## Lezione 30 — Checkpoint
 
@@ -7898,6 +8013,9 @@ Questo ponte è incluso qui perché il codice implementa direttamente una trasfo
 - **Definito dal programmatore:** probabilità di dropout e weight tying.
 - **Appreso durante il gradient training:** valori condivisi degli embedding.
 
+# Modulo 9 — Training production-ready
+
+
 ## Lezione 36 — Dati di produzione e gruppi optimizer
 
 ### Bussola della lezione: cosa e perché
@@ -7916,8 +8034,13 @@ production finale.
 
 Il tokenizer character-level e i tensor interamente in memoria rendono
 semplice osservare ogni passaggio, ma non rappresentano il modo in cui un
-language model più grande gestisce il testo. Qui il corpus viene codificato con
-il tokenizer BPE di GPT-2. Una frase come `The cat sleeps here.` non viene più
+language model più grande gestisce il testo. Questo è il ponte dal tokenizer
+didattico al tokenizer di produzione. Il character tokenizer ha insegnato
+l'idea di indirizzo con un vocabulary minuscolo creato dal testo corrente. Il
+tokenizer GPT-2 BPE porta invece un vocabulary esterno fisso, token ID per
+frammenti frequenti e gestione esplicita del token speciale consentito
+`<|endoftext|>`. Qui il corpus viene codificato con quel tokenizer BPE di
+GPT-2. Una frase come `The cat sleeps here.` non viene più
 necessariamente suddivisa in un ID per carattere: sequenze di byte frequenti
 possono formare un solo token. L'obiettivo resta “prevedere l'ID successivo”,
 ma vocabolario e lunghezza della sequenza seguono ora la tokenizzazione BPE.
@@ -7928,6 +8051,13 @@ senza caricare l'intero stream di token nella memoria di Python. La creazione
 del batch sceglie ancora una posizione iniziale e produce tensor `[B,T]` di
 input e target traslati di una posizione. Cambia lo storage, non la relazione
 next-token.
+
+Qui “dataset reale” inizia anche a significare “artefatto preprocessato”, non
+soltanto “un file di testo aperto in Python”. Il training loop dovrebbe
+consumare file di token stabili, con tokenizer, split, dtype e path noti. Le
+lezioni successive aggiungeranno controlli di identità più forti attorno a
+quegli artefatti; questa lezione stabilisce prima le convenzioni di storage e
+optimizer.
 
 Anche il lato optimizer diventa esplicito. AdamW deve applicare il weight decay
 ai pesi simili a matrici, mentre bias e parametri monodimensionali delle
@@ -9476,6 +9606,19 @@ passaggi.
 > **Se ricordi una sola cosa:** LearnGPT è un'unica catena di trasformazioni;
 > ogni freccia è affidabile solo se l'output conserva il contratto richiesto
 > dall'operazione successiva.
+
+#### Cosa hai costruito e cosa resta da fare
+
+| Tema | Costruito in LearnGPT | Percorso futuro |
+|---|---|---|
+| Base model | Un Transformer decoder-only addestrato con causal next-token prediction. | Scalare con attenzione dati, durata del training, context length, larghezza e profondità del modello. |
+| Pipeline di pretraining | File di token, batch, loss, optimizer, valutazione, checkpoint, resume e generation. | Aggiungere data governance più forte, run più grandi ed esecuzione distribuita se il progetto cresce. |
+| Inference | Caricare un checkpoint e generare testo con sampling autoregressivo. | Incapsulare il modello in un servizio, UI, rate limit, logging e controlli di safety. |
+| Classification fine-tuning | Non fa parte della build principale. | Aggiungere una task-specific head o una regola di scoring dopo avere un base model. |
+| Instruction fine-tuning | Non fa parte della build principale. | Addestrare su esempi prompt/risposta per insegnare al modello a seguire istruzioni. |
+| LoRA | Non fa parte della build principale. | Aggiungere adapter low-rank per adattare pesi selezionati senza aggiornare tutto il modello. |
+| Loading di pesi GPT-2 | Non fa parte della build principale. | Mappare pesi pretrained compatibili nell'architettura implementata come percorso di lezione separato. |
+| Assistente ChatGPT-like | Non fa parte della build principale. | Aggiungere instruction tuning, comportamento di safety, formato conversazionale, retrieval o tools, serving infrastructure e product UX. |
 
 ### Come leggere la matematica
 
