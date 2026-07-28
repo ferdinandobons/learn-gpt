@@ -42,6 +42,7 @@ OLD_MODEL_NAMES = {
 
 EXPECTED_ROOT_ENTRIES = {
     "CUDA_TRAINING_OPTIMIZATIONS.md",
+    "LICENSE",
     "README.md",
     "course_en.md",
     "course_en_graphic.md",

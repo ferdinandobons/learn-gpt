@@ -10,6 +10,11 @@ the model behind compact production code, each concept is introduced step by
 step: tokenization, batches, embeddings, causal self-attention, multi-head
 attention, Transformer blocks, optimization, checkpointing, and generation.
 
+The interactive course is available at
+[learngpt.ferdinandobonsegna.com](https://learngpt.ferdinandobonsegna.com/).
+This repository is the canonical public source for the lesson code, snapshots,
+and final PyTorch project used by the course.
+
 ## About
 
 Tags:
@@ -118,7 +123,13 @@ tracked by Git.
 ## Quick Start: Study The Course
 
 Use Python 3.12 or newer; Python 3.13 is the recommended and CI-tested version.
-Create a local virtual environment on macOS or Linux:
+Clone the repository, then create a local virtual environment on macOS or
+Linux:
+
+```bash
+git clone https://github.com/ferdinandobons/learn-gpt.git
+cd learn-gpt
+```
 
 ```bash
 python -m venv .venv
@@ -629,3 +640,7 @@ and verbose names so every tensor shape is inspectable. It keeps mixed precision
 and `torch.compile` optional, explains DDP without launching it, and adds
 reproducible FineWeb-Edu subsets, MPS gradient-integrity checks, and target-aware
 context diagnostics for compute-bounded local experiments.
+
+## License
+
+LearnGPT is released under the [MIT License](LICENSE).
