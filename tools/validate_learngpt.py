@@ -1149,7 +1149,7 @@ def check_graphic_course(project_dir: Path, errors: list[str]) -> None:
             "final_heading": "\n## Final mental model",
             "running_contract": "## Running example used by every lesson",
             "shared_sections": (
-                "### Lesson compass: what and why",
+                "### Lesson summary: goal and result",
                 "### How to read the mathematics",
                 "### Visual worked example",
                 "### Reference code added in this lesson",
@@ -1209,7 +1209,7 @@ def check_graphic_course(project_dir: Path, errors: list[str]) -> None:
             "final_heading": "\n## Modello mentale finale",
             "running_contract": "## Esempio ricorrente usato in ogni lezione",
             "shared_sections": (
-                "### Bussola della lezione: cosa e perché",
+                "### Sintesi della lezione: obiettivo e risultato",
                 "### Come leggere la matematica",
                 "### Esempio visivo svolto",
                 "### Codice di riferimento aggiunto in questa lezione",

@@ -10,14 +10,14 @@
 The course opens with Lesson 00, a written orientation for the LearnGPT Web
 platform, then follows the same 42 implementation checkpoints as
 `course_en.md` and the LearnGPT Web **Course index**. Every implementation
-lesson uses the same readability contract. Its compact compass exposes four
+lesson uses the same readability contract. Its opening summary exposes four
 facts:
 
 ```text
 before → goal → after → invariant
 ```
 
-The compass is followed by one continuous explanation and one ordered
+The summary is followed by one continuous explanation and one ordered
 transformation timeline. Every timeline step names its role, the concrete
 object being transformed, and what the reader should observe. The same
 structure is used from raw text to the final project so the learner never has
@@ -25,7 +25,7 @@ to rediscover how a lesson should be read.
 
 The views have a clear division of responsibility:
 
-- The **central lesson** supplies the narrative thread and the smallest
+- The **central lesson** supplies the ordered explanation and the smallest
   concrete text, tensor, matrix, or state calculation needed to understand the
   transformation.
 - The **Mathematics** panel generalizes that concrete case through notation,
@@ -39,7 +39,7 @@ The views have a clear division of responsibility:
   clarifies the lesson.
 
 These views describe the same transformation at different depths, rather than
-four separate stories. Start in the centre and ask: “What entered, why did it
+four separate explanations. Start in the centre and ask: “What entered, why did it
 need to change, what operation happened, what exists now, and what stayed
 true?” Open a supporting panel only when you want to verify that answer in
 mathematics, code, or system context.
@@ -446,7 +446,7 @@ $$
 
 ## Lesson 00 — How to use this course
 
-### Lesson compass: what and why
+### Lesson summary: goal and result
 
 - **Before:** you have the course open, but you do not yet know what to install,
   what to click, or how the GitHub repository fits into the lessons.
@@ -485,7 +485,7 @@ below if you want to run the code on your own computer.
 This course builds a **small decoder-only GPT base model** from first
 principles. That means the model learns the pretraining task: given a visible
 prefix, predict the next token. It is not yet a ChatGPT-style assistant. The
-point is to make the machinery understandable before adding later adaptation
+point is to make the mechanism understandable before adding later adaptation
 layers.
 
 | Area | What you build here | What stays outside the core course |
@@ -597,7 +597,7 @@ tensors, models, and training.
 
 ## Lesson 01 — Read the text
 
-### Lesson compass: what and why
+### Lesson summary: goal and result
 
 - **Before:** bytes stored in a text file, still outside the program
 - **Goal:** bring the text into Python in a deterministic, readable form
@@ -776,7 +776,7 @@ The complete runnable entry point is `study/lessons/01_read_text.py`.
 
 ## Lesson 02 — Character tokenizer
 
-### Lesson compass: what and why
+### Lesson summary: goal and result
 
 - **Before:** one decoded string whose characters have no numeric addresses
 - **Goal:** assign every distinct character one stable integer ID and build the inverse lookup
@@ -953,7 +953,7 @@ The code is exercised by `study/lessons/02_character_tokenizer.py`.
 
 ## Lesson 03 — Encode and decode
 
-### Lesson compass: what and why
+### Lesson summary: goal and result
 
 - **Before:** a readable string plus two inverse character/ID maps
 - **Goal:** convert a complete sequence to ordered IDs and reconstruct it exactly
@@ -1130,7 +1130,7 @@ This is the same explicit-loop implementation used by
 
 ## Lesson 04 — Tokenizer module
 
-### Lesson compass: what and why
+### Lesson summary: goal and result
 
 - **Before:** correct vocabulary and round-trip logic duplicated inside lesson scripts
 - **Goal:** expose vocabulary creation, encoding, and decoding through one importable module
@@ -1282,7 +1282,7 @@ The reusable implementation lives in `study/snapshots/lesson_04/tokenizer.py`;
 
 ## Lesson 05 — Training and validation
 
-### Lesson compass: what and why
+### Lesson summary: goal and result
 
 - **Before:** one ordered token stream with no separation between learning and measurement
 - **Goal:** reserve a prefix for training and a held-out suffix for validation
@@ -1444,7 +1444,7 @@ This split is demonstrated in `study/lessons/05_split_dataset.py`.
 
 ### Code ↔ mathematics ↔ meaning
 
-This bridge is included here because the code directly implements a mathematical transformation.
+This section is included here because the code directly implements a mathematical transformation.
 
 | Code | Mathematical reading | Plain meaning |
 |---|---|---|
@@ -1452,7 +1452,7 @@ This bridge is included here because the code directly implements a mathematical
 
 ## Lesson 06 — Input and target
 
-### Lesson compass: what and why
+### Lesson summary: goal and result
 
 - **Before:** an ordered token stream with no explicit prediction labels
 - **Goal:** turn one window of `T+1` tokens into `T` inputs and `T` next-token targets
@@ -1611,7 +1611,7 @@ See the printed prefix-to-next-token pairs in
 
 ### Code ↔ mathematics ↔ meaning
 
-This bridge is included here because the code directly implements a mathematical transformation.
+This section is included here because the code directly implements a mathematical transformation.
 
 | Code | Mathematical reading | Plain meaning |
 |---|---|---|
@@ -1620,7 +1620,7 @@ This bridge is included here because the code directly implements a mathematical
 
 ## Lesson 07 — Random examples
 
-### Lesson compass: what and why
+### Lesson summary: goal and result
 
 - **Before:** one correctly shifted example fixed at one location
 - **Goal:** sample different `T+1` windows without ever reading beyond the selected split
@@ -1771,7 +1771,7 @@ The function is introduced in `study/lessons/07_random_examples.py`.
 
 ### Code ↔ mathematics ↔ meaning
 
-This bridge is included here because the code directly implements a mathematical transformation.
+This section is included here because the code directly implements a mathematical transformation.
 
 | Code | Mathematical reading | Plain meaning |
 |---|---|---|
@@ -1779,7 +1779,7 @@ This bridge is included here because the code directly implements a mathematical
 
 ## Lesson 08 — Python batch
 
-### Lesson compass: what and why
+### Lesson summary: goal and result
 
 - **Before:** one sampled input/target pair per function call
 - **Goal:** collect `B` independent pairs into two rectangular Python lists
@@ -1861,7 +1861,7 @@ lacks tensor metadata and PyTorch operations.
 - **Next:** convert the same values to PyTorch tensors.
 
 > **If you remember one thing:** a batch adds independent rows; it never merges
-> their token histories.
+> their token prefixes.
 
 ### How to read the mathematics
 
@@ -1937,7 +1937,7 @@ The nested-list representation is visible in
 
 ### Code ↔ mathematics ↔ meaning
 
-This bridge is included here because the code directly implements a mathematical transformation.
+This section is included here because the code directly implements a mathematical transformation.
 
 | Code | Mathematical reading | Plain meaning |
 |---|---|---|
@@ -1945,7 +1945,7 @@ This bridge is included here because the code directly implements a mathematical
 
 ## Lesson 09 — PyTorch batch
 
-### Lesson compass: what and why
+### Lesson summary: goal and result
 
 - **Before:** paired rectangular Python lists with only conceptual `[B,T]` structure
 - **Goal:** convert both grids to rank-2 PyTorch tensors and inspect their shape
@@ -2096,7 +2096,7 @@ The conversion and indexing examples are in
 
 ## Lesson 10 — Batching module
 
-### Lesson compass: what and why
+### Lesson summary: goal and result
 
 - **Before:** correct sampling and tensor conversion copied inside lesson scripts
 - **Goal:** move that exact behavior into one importable `create_batch` function
@@ -2257,7 +2257,7 @@ The implementation moves to `study/snapshots/lesson_10/batching.py`, while
 
 ### Code ↔ mathematics ↔ meaning
 
-This bridge is included here because the code directly implements a mathematical transformation.
+This section is included here because the code directly implements a mathematical transformation.
 
 | Code | Mathematical reading | Plain meaning |
 |---|---|---|
@@ -2267,7 +2267,7 @@ This bridge is included here because the code directly implements a mathematical
 
 ## Lesson 11 — Verify PyTorch
 
-### Lesson compass: what and why
+### Lesson summary: goal and result
 
 - **Before:** Lessons 09–10 already create random `[B,T]` tensor batches and inspect their shapes
 - **Goal:** isolate row/column indexing, integer dtype, and the installed PyTorch version on one tiny deterministic tensor
@@ -2415,7 +2415,7 @@ index rules do not depend on those particular values.
 
 The colon means “keep every valid index on this axis.” Thus `tensor[:, 1]`
 fixes the time index to the second position and keeps all batch rows. No
-arithmetic mixes the selected values, and their order remains the order already
+arithmetic combines the selected values, and their order remains the order already
 stored in $X$.
 
 Shape and `dtype` protect different contracts. The shape says how values are
@@ -2460,7 +2460,7 @@ Run `study/lessons/11_verify_pytorch.py` before introducing a model.
 
 ### Code ↔ mathematics ↔ meaning
 
-This bridge is included here because the code directly implements a mathematical transformation.
+This section is included here because the code directly implements a mathematical transformation.
 
 | Code | Mathematical reading | Plain meaning |
 |---|---|---|
@@ -2475,7 +2475,7 @@ This bridge is included here because the code directly implements a mathematical
 
 ## Lesson 12 — First bigram model
 
-### Lesson compass: what and why
+### Lesson summary: goal and result
 
 - **Before:** integer input tensors with no mechanism that scores a next token
 - **Goal:** use each current ID to select one trainable row of vocabulary logits
@@ -2619,12 +2619,12 @@ by `study/lessons/12_bigram_model.py`.
 
 - `class LanguageModel(nn.Module):` creates a model type that participates in
   PyTorch parameter registration, device transfer, and serialization.
-- `super().__init__()` initializes the `nn.Module` registration machinery before
+- `super().__init__()` initializes the `nn.Module` registration mechanism before
   assigning any child layer to `self`.
 - `nn.Embedding(V, V)` is a trainable matrix with `V` rows and `V` columns.
   Indexing a token ID selects its row; that row is used directly as `V` logits.
 - Calling `model(input_ids)` dispatches to `forward` through `nn.Module`'s call
-  machinery. For input `[B, T]`, the result is `[B, T, V]`.
+  mechanism. For input `[B, T]`, the result is `[B, T, V]`.
 - `return self.token_embedding_table(input_ids)` performs one vectorized lookup
   for every batch and time position without an explicit Python loop.
 - A logit is an unnormalized score. No `softmax` is required yet because loss
@@ -2632,7 +2632,7 @@ by `study/lessons/12_bigram_model.py`.
 
 ### Code ↔ mathematics ↔ meaning
 
-This bridge is included here because the code directly implements a mathematical transformation.
+This section is included here because the code directly implements a mathematical transformation.
 
 | Code | Mathematical reading | Plain meaning |
 |---|---|---|
@@ -2645,7 +2645,7 @@ This bridge is included here because the code directly implements a mathematical
 
 ## Lesson 13 — Bigram loss
 
-### Lesson compass: what and why
+### Lesson summary: goal and result
 
 - **Before:** `[B,T,V]` logits and aligned `[B,T]` target IDs
 - **Goal:** measure how much probability the logits assign to every correct next token
@@ -2825,7 +2825,7 @@ The implementation is in `study/snapshots/lesson_13/model.py`.
 
 ### Code ↔ mathematics ↔ meaning
 
-This bridge is included here because the code directly implements a mathematical transformation.
+This section is included here because the code directly implements a mathematical transformation.
 
 | Code | Mathematical reading | Plain meaning |
 |---|---|---|
@@ -2833,7 +2833,7 @@ This bridge is included here because the code directly implements a mathematical
 
 ## Lesson 14 — Bigram training
 
-### Lesson compass: what and why
+### Lesson summary: goal and result
 
 - **Before:** a trainable bigram table and a scalar loss, but no update process
 - **Goal:** repeatedly compute gradients and let AdamW update the registered parameters
@@ -3010,7 +3010,7 @@ The complete loop and its periodic and final loss reporting are in
 
 ### Code ↔ mathematics ↔ meaning
 
-This bridge is included here because the code directly implements a mathematical transformation.
+This section is included here because the code directly implements a mathematical transformation.
 
 | Code | Mathematical reading | Plain meaning |
 |---|---|---|
@@ -3024,7 +3024,7 @@ This bridge is included here because the code directly implements a mathematical
 
 ## Lesson 15 — Bigram generation
 
-### Lesson compass: what and why
+### Lesson summary: goal and result
 
 - **Before:** a trained bigram model and a fixed prompt
 - **Goal:** reuse next-token prediction repeatedly to extend the prompt
@@ -3203,7 +3203,7 @@ Generation is exercised by `study/lessons/15_bigram_generation.py`.
 
 ### Code ↔ mathematics ↔ meaning
 
-This bridge is included here because the code directly implements a mathematical transformation.
+This section is included here because the code directly implements a mathematical transformation.
 
 | Code | Mathematical reading | Plain meaning |
 |---|---|---|
@@ -3211,7 +3211,7 @@ This bridge is included here because the code directly implements a mathematical
 
 ## Lesson 16 — Bigram limitation
 
-### Lesson compass: what and why
+### Lesson summary: goal and result
 
 - **Before:** a generator that can extend a prompt
 - **Goal:** expose exactly which part of the prompt the bigram model ignores
@@ -3225,13 +3225,13 @@ bigram model chooses its score row from the **current token ID only**. Passing
 a longer tensor does not create communication between positions; the final
 logit row still depends only on the final ID.
 
-Compare `The cat` with `A noisy cat`. The histories differ, but both prefixes
+Compare `The cat` with `A noisy cat`. The prefixes differ, but both sequences
 end in `cat`. The model therefore addresses the same table row and returns the
 same next-token distribution. This is an architectural limit, not merely a
 training error that more iterations will repair: the earlier tokens are not
 available to the prediction.
 
-Nothing is added to the model here. We isolate one variable—the history—while
+Nothing is added to the model here. We isolate one variable, the prefix, while
 holding the final token fixed, then observe whether the output can change.
 
 The comparison also explains why generation can appear locally plausible yet
@@ -3243,7 +3243,7 @@ from the visible prefix.
 
 ### Transformation, step by step
 
-1. **INPUT — Prepare two different histories**
+1. **INPUT — Prepare two different prefixes**
 
    ```text
    prefix A: [The, cat]
@@ -3276,10 +3276,10 @@ from the visible prefix.
 4. **OUTPUT — Compare the distributions**
 
    ```learngpt-visual
-   {"type":"labeled-grid","title":"Different histories collapse to the same distribution","description":"Because both prefixes end in cat, the bigram model selects the same row and returns identical next-token probabilities.","columns":["sleeps","sits","runs"],"rows":[{"label":"p(next | The cat)","cells":[{"value":"0.10","state":"default"},{"value":"0.65","state":"highlighted"},{"value":"0.25","state":"default"}]},{"label":"p(next | A noisy cat)","cells":[{"value":"0.10","state":"default"},{"value":"0.65","state":"highlighted"},{"value":"0.25","state":"default"}]}]}
+   {"type":"labeled-grid","title":"Different prefixes collapse to the same distribution","description":"Because both prefixes end in cat, the bigram model selects the same row and returns identical next-token probabilities.","columns":["sleeps","sits","runs"],"rows":[{"label":"p(next | The cat)","cells":[{"value":"0.10","state":"default"},{"value":"0.65","state":"highlighted"},{"value":"0.25","state":"default"}]},{"label":"p(next | A noisy cat)","cells":[{"value":"0.10","state":"default"},{"value":"0.65","state":"highlighted"},{"value":"0.25","state":"default"}]}]}
    ```
 
-   **What to observe:** different histories collapse to the same output.
+   **What to observe:** different prefixes collapse to the same output.
 
 5. **CHECK — Name the missing capability**
 
@@ -3293,10 +3293,10 @@ from the visible prefix.
 
 - **Changed:** an intuitive suspicion became a reproducible context test.
 - **Preserved:** model, vocabulary, final token, and prediction task.
-- **Next:** **Token embeddings** will create compact features that attention can compare and mix.
+- **Next:** **Token embeddings** will create compact features that attention can compare and combine.
 
 > **If you remember one thing:** equal final tokens force equal predictions in
-> this bigram model, regardless of the preceding history.
+> this bigram model, regardless of the preceding prefix.
 
 ### How to read the mathematics
 
@@ -3309,14 +3309,14 @@ The equality says that the complete prefix is being reduced to its final token o
 
 ### Visual worked example
 
-> **Running example state:** compare `The cat` with another prefix ending in `cat` to expose what the bigram model forgets about the canonical history.
+> **Running example state:** compare `The cat` with another prefix ending in `cat` to expose what the bigram model ignores about the earlier prefix.
 
 | Prefix | Last token | Bigram next-token distribution |
 |---|---|---|
 | `The cat` | `cat` | `[0.10, 0.65, 0.25]` |
 | `A noisy cat` | `cat` | `[0.10, 0.65, 0.25]` |
 
-Different histories collapse to the same prediction because the lookup uses only
+Different prefixes collapse to the same prediction because the lookup uses only
 the final token ID.
 
 The table conditions only on $x_t$:
@@ -3373,14 +3373,14 @@ This controlled comparison is in `study/lessons/16_bigram_limit.py`.
 - `torch.allclose(a, b)` checks elementwise numerical equality with
   floating-point tolerances.
 - `all` and `fall` end with the same ID, so the model selects the same embedding
-  row. A different prefix cannot matter until attention mixes positions.
+  row. A different prefix cannot matter until attention combines information across positions.
 
 # Module 4 — Meaning and position
 
 
 ## Lesson 17 — Token embeddings
 
-### Lesson compass: what and why
+### Lesson summary: goal and result
 
 - **Before:** integer token IDs that identify categories but carry no usable geometry
 - **Goal:** replace every ID with a learned C-feature vector
@@ -3538,7 +3538,7 @@ The separated representation and output layers live in
 
 ### Code ↔ mathematics ↔ meaning
 
-This bridge is included here because the code directly implements a mathematical transformation.
+This section is included here because the code directly implements a mathematical transformation.
 
 | Code | Mathematical reading | Plain meaning |
 |---|---|---|
@@ -3551,7 +3551,7 @@ This bridge is included here because the code directly implements a mathematical
 
 ## Lesson 18 — Position embeddings
 
-### Lesson compass: what and why
+### Lesson summary: goal and result
 
 - **Before:** token vectors that identify content but not where it appears
 - **Goal:** add a learned position vector to every token vector
@@ -3711,7 +3711,7 @@ Context limiting during generation is also added in
 
 ### Code ↔ mathematics ↔ meaning
 
-This bridge is included here because the code directly implements a mathematical transformation.
+This section is included here because the code directly implements a mathematical transformation.
 
 | Code | Mathematical reading | Plain meaning |
 |---|---|---|
@@ -3727,12 +3727,12 @@ This bridge is included here because the code directly implements a mathematical
 
 ## Lesson 19 — Causal self-attention head
 
-### Lesson compass: what and why
+### Lesson summary: goal and result
 
 - **Before:** each token has identity and position, but its state is still independent of the surrounding words
-- **Goal:** let every token gather a weighted mixture of useful information from itself and visible earlier tokens
+- **Goal:** let every token compute a weighted combination of useful information from itself and visible earlier tokens
 - **After:** one contextualized state per token and attention head
-- **Invariant:** sequence order, batch structure, and the causal rule that forbids looking into the future
+- **Invariant:** sequence order, batch structure, and the causal rule that forbids using future positions
 
 ### Understand the transformation
 
@@ -3749,17 +3749,17 @@ Before adding trainable query, key, and value projections, imagine the simpler
 shape of the idea. Pick one token position, score the visible tokens, turn
 those scores into weights that sum to one, and take a weighted average of the
 visible information. That is self-attention in its most basic reading: a token
-builds a new context vector by deciding how much to borrow from itself and
-from earlier tokens. The learned Q/K/V machinery below is the parameterized
+builds a new context vector by weighting information from itself and from
+earlier tokens. The learned Q/K/V mechanism below is the parameterized
 way a Transformer creates those scores and chooses which information can be
-mixed.
+combined.
 
 The head creates three different views of every token state: a **query**, a
-**key**, and a **value**. A query expresses what the current token is looking
-for. A key expresses what each candidate token offers for matching. A value
-carries the information that can actually be transferred. These roles are
-separate on purpose. The query and keys decide *where to look*; they do not
-carry out the final information mixture.
+**key**, and a **value**. A query encodes the comparison pattern for the
+current token. A key expresses what each candidate token offers for matching.
+A value carries the information that can actually be transferred. These roles
+are separate on purpose. The query and keys decide *which positions receive
+weight*; they do not perform the final weighted combination of information.
 
 Follow only the row belonging to `sleeps`. In this small numerical example its
 query is `q_sleeps = [1, 1]`. The key columns for
@@ -3781,8 +3781,8 @@ sum to one. The result is approximately `[0.25, 0.25, 0.50, 0, 0]`. We can now
 read the row directly: for this illustrative head, `sleeps` takes one quarter
 of the available information from `The`, one quarter from `cat`, and one half
 from its own position. The two future positions receive exactly zero weight.
-Softmax therefore changes arbitrary comparison scores into an interpretable
-mixing recipe.
+Softmax therefore changes arbitrary comparison scores into interpretable
+attention weights.
 
 The numbers in this example are fixed only so that the mechanics can be read
 by hand. In the real model, learned projection matrices create the query, key,
@@ -3793,16 +3793,16 @@ defines the attention mechanism, while gradient-based learning discovers
 useful comparisons inside that mechanism.
 The computational structure itself stays fixed.
 
-Only after that recipe exists do the values enter the final multiplication.
+Only after those weights exist do the values enter the final multiplication.
 With value rows `[2,0]`, `[0,3]`, `[1,1]`, `[4,4]`, and `[2,2]`, the rounded
-weighted mixture is approximately `[1.00, 1.25]`. Using the rounded weights,
+weighted combination is approximately `[1.00, 1.25]`. Using the rounded weights,
 the first output feature is
 `0.25×2 + 0.25×0 + 0.50×1 ≈ 1.00`; the second is
 `0.25×0 + 0.25×3 + 0.50×1 ≈ 1.25`. The future values are present in `V`, but
 their zero weights prevent them from contributing.
 
-This ordering is the essential logic of attention. `QKᵀ` decides where to
-look, softmax produces the weights, and `A×V` combines the information. It is
+This ordering is the essential logic of attention. `QKᵀ` decides which
+positions receive weight, softmax produces the weights, and `A×V` combines the information. It is
 **not** `Q×V`, and `V` is **not simply added** to the query. The rounded result
 `[1.00, 1.25]` is a new contextual representation for `sleeps` produced by one
 head. Other positions perform the same sequence of operations with their own
@@ -3813,7 +3813,7 @@ for all positions and all batch items together. That parallel organization is
 why the score tensor has a time-by-time part: one axis identifies the querying
 position and the other identifies the candidate key position. Reading those
 axes correctly makes the triangular mask intuitive. Every row has its own
-boundary between allowed history and forbidden future.
+boundary between allowed prefix and forbidden future.
 
 ### Transformation, step by step
 
@@ -3855,10 +3855,10 @@ boundary between allowed history and forbidden future.
    **What to observe:** `here` and `.` are later than `sleeps`, so their scores
    are excluded before normalization.
 
-5. **OPERATION — Turn scores into a mixing recipe**
+5. **OPERATION — Turn scores into attention weights**
 
    ```learngpt-visual
-   {"type":"labeled-grid","title":"softmax creates normalized mixing weights","description":"softmax       ≈  [0.25 0.25 0.50 0.00 0.00]; allowed positions sum to 1.00 and masked future positions receive zero weight.","columns":["The","cat","sleeps","here","."],"rows":[{"label":"masked scores","cells":[{"value":"0.71","state":"default"},{"value":"0.71","state":"default"},{"value":"1.41","state":"highlighted"},{"value":"−∞","state":"masked"},{"value":"−∞","state":"masked"}]},{"label":"softmax weight A_sleeps","cells":[{"value":"0.25","state":"default"},{"value":"0.25","state":"default"},{"value":"0.50","state":"highlighted"},{"value":"0.00","state":"masked"},{"value":"0.00","state":"masked"}]}]}
+   {"type":"labeled-grid","title":"softmax creates normalized attention weights","description":"softmax       ≈  [0.25 0.25 0.50 0.00 0.00]; allowed positions sum to 1.00 and masked future positions receive zero weight.","columns":["The","cat","sleeps","here","."],"rows":[{"label":"masked scores","cells":[{"value":"0.71","state":"default"},{"value":"0.71","state":"default"},{"value":"1.41","state":"highlighted"},{"value":"−∞","state":"masked"},{"value":"−∞","state":"masked"}]},{"label":"softmax weight A_sleeps","cells":[{"value":"0.25","state":"default"},{"value":"0.25","state":"default"},{"value":"0.50","state":"highlighted"},{"value":"0.00","state":"masked"},{"value":"0.00","state":"masked"}]}]}
    ```
 
    **What to observe:** the allowed weights sum to `1.00`, while masked future
@@ -3894,16 +3894,16 @@ context-aware states. The example followed only the `sleeps` row so that every
 number remained visible; the same pipeline is applied in parallel to every
 query position.
 
-- **Changed:** each token representation can include a learned mixture of visible contextual information.
+- **Changed:** each token representation can include a learned weighted combination of visible contextual information.
 - **Preserved:** token order, batch and time axes, head width, and the prohibition against future information.
 - **Next:** multi-head attention will run several such information-gathering views in parallel.
 
 > **If you remember one thing:** queries and keys create the lookup weights;
-> those weights, not the queries, are what mix the value vectors.
+> those weights, not the queries, combine the value vectors.
 
 ### How to read the mathematics
 
-Read $QK^T$ as every query compared with every key. Softmax turns those comparisons into mixing weights for the values.
+Read $QK^T$ as every query compared with every key. Softmax turns those comparisons into attention weights for the values.
 
 | Notation | Read it as | Meaning here |
 |---|---|---|
@@ -3911,7 +3911,7 @@ Read $QK^T$ as every query compared with every key. Softmax turns those comparis
 | $T$ | T | number of token positions in one context window |
 | $C$ | C | number of features used to represent one token |
 | $D=C/H$ | D equals C divided by H | feature width of one attention head |
-| $Q$ | Q | queries: what each token is looking for |
+| $Q$ | Q | queries: comparison patterns produced for each token |
 | $K$ | K | keys: what each token makes available for matching |
 | $V'$ | V prime | values: information that attention can combine |
 | $S$ | S | raw attention-comparison scores |
@@ -3930,7 +3930,7 @@ mathematical roles:
 |---|---|---|
 | $Q=RW_Q$ | `[B,T,D]` | provide one query row for every token position |
 | $K=RW_K$ | `[B,T,D]` | provide one candidate key row for every position |
-| $V'=RW_V$ | `[B,T,D]` | provide the information rows that can be mixed |
+| $V'=RW_V$ | `[B,T,D]` | provide the information rows that can be combined |
 
 Here $R\in\mathbb R^{B\times T\times C}$ and
 $W_Q,W_K,W_V\in\mathbb R^{C\times D}$. For each batch item $b$, query position
@@ -4052,21 +4052,21 @@ The complete `SelfAttentionHead` is in
   scores before normalization.
 - `F.softmax(attention_scores, dim=-1)` turns each allowed score row into weights
   that sum to one; masked positions receive zero weight.
-- `attention_weights @ values` mixes the value vectors into contextual outputs
+- `attention_weights @ values` combines the value vectors into contextual outputs
   of shape `[B, T, D]`.
 
 ### Code ↔ mathematics ↔ meaning
 
-This bridge is included here because the code directly implements a mathematical transformation.
+This section is included here because the code directly implements a mathematical transformation.
 
 | Code | Mathematical reading | Plain meaning |
 |---|---|---|
 | `queries @ keys.transpose(-2, -1)` | $QK^{\mathsf T}$ | compare every query with every key |
-| `weights @ values` | $AV'$ | mix information using normalized weights |
+| `weights @ values` | $AV'$ | combine information using normalized weights |
 
 ## Lesson 20 — Multi-head attention
 
-### Lesson compass: what and why
+### Lesson summary: goal and result
 
 - **Before:** one contextual view
 - **Goal:** Run several attention views in parallel
@@ -4094,7 +4094,7 @@ by the code.
 
 Every head receives the same input states but owns different Q, K, and V
 parameters. Consequently, two heads can produce different attention weights
-and different value mixtures for `sleeps`. Concatenation preserves those
+and different value combinations for `sleeps`. Concatenation preserves those
 differences so the next projection can combine them. Heads run in parallel
 conceptually; their outputs are not fed from head 1 into head 2.
 
@@ -4152,7 +4152,7 @@ conceptually; their outputs are not fed from head 1 into head 2.
    The final result is **H contextual views joined into C features**. This becomes the course's new
    starting point rather than a disposable temporary value.
 
-   **What to observe:** the output answers the opening compass and can be passed
+   **What to observe:** the output answers the opening summary and can be passed
    to the next lesson without rebuilding the process from scratch.
 
 ### Where we are now
@@ -4251,7 +4251,7 @@ This is the literal multi-head loop in
 
 ### Code ↔ mathematics ↔ meaning
 
-This bridge is included here because the code directly implements a mathematical transformation.
+This section is included here because the code directly implements a mathematical transformation.
 
 | Code | Mathematical reading | Plain meaning |
 |---|---|---|
@@ -4264,11 +4264,11 @@ This bridge is included here because the code directly implements a mathematical
 
 ## Lesson 21 — Attention output projection
 
-### Lesson compass: what and why
+### Lesson summary: goal and result
 
 - **Before:** separate head feature slices
 - **Goal:** Mix the concatenated attention heads back into the residual-stream feature space
-- **After:** one mixed attention update
+- **After:** one projected attention update
 - **Invariant:** the batch/time axes and causal constraint stay intact while features change
 
 ### Understand the transformation
@@ -4289,11 +4289,11 @@ For `sleeps`, use the concatenated vector `[1.00,1.25,-0.20,0.80]`. A small
 illustrative projection makes the operation visible:
 
 ```learngpt-visual
-{"type":"matrix-operation","title":"Project concatenated heads back into residual width","description":"A learned C×C matrix and C-wide bias mix every head slice into every output coordinate.","operands":[{"label":"Concatenated heads","shape":"[1,4]","values":[["1.00","1.25","−0.20","0.80"]]},{"label":"W_O","shape":"[4,4]","values":[["w00","w01","w02","w03"],["w10","w11","w12","w13"],["w20","w21","w22","w23"],["w30","w31","w32","w33"]]},{"label":"b_O","shape":"[1,4]","values":[["b0","b1","b2","b3"]]}],"operators":["×","+"],"result":{"label":"Mixed attention update","shape":"[1,4]","values":[["0.90","0.55","0.35","0.70"]]}}
+{"type":"matrix-operation","title":"Project concatenated heads back into residual width","description":"A learned C×C matrix and C-wide bias combine every head slice into every output coordinate.","operands":[{"label":"Concatenated heads","shape":"[1,4]","values":[["1.00","1.25","−0.20","0.80"]]},{"label":"W_O","shape":"[4,4]","values":[["w00","w01","w02","w03"],["w10","w11","w12","w13"],["w20","w21","w22","w23"],["w30","w31","w32","w33"]]},{"label":"b_O","shape":"[1,4]","values":[["b0","b1","b2","b3"]]}],"operators":["×","+"],"result":{"label":"Projected attention update","shape":"[1,4]","values":[["0.90","0.55","0.35","0.70"]]}}
 ```
 
 The exact numbers are learned. What matters is that the input and output are
-both C-wide while the output coordinates are mixtures, not untouched
+both C-wide while the output coordinates are learned combinations, not untouched
 head-specific slices. This produces one update compatible with the residual
 stream; the addition to that stream belongs to the next lesson.
 
@@ -4321,7 +4321,7 @@ shape contract is what permits a later elementwise residual addition.
    operation:
 
    ```learngpt-visual
-   {"type":"tensor-flow","title":"Preserve shape while mixing head features","description":"The output projection changes feature values at every position but keeps the [B,T,C] interface needed by the residual stream.","stages":[{"label":"Concatenated head outputs","shape":"[B,T,C]","note":"Head slices occupy fixed feature ranges."},{"label":"Learned output projection","shape":"[B,T,C]","note":"Every output feature may use every head."},{"label":"Compatible attention update","shape":"[B,T,C]","note":"Ready for elementwise residual addition."}]}
+   {"type":"tensor-flow","title":"Preserve shape while projecting head features","description":"The output projection changes feature values at every position but keeps the [B,T,C] interface needed by the residual stream.","stages":[{"label":"Concatenated head outputs","shape":"[B,T,C]","note":"Head slices occupy fixed feature ranges."},{"label":"Learned output projection","shape":"[B,T,C]","note":"Every output feature may use every head."},{"label":"Compatible attention update","shape":"[B,T,C]","note":"Ready for elementwise residual addition."}]}
    ```
 
    **What to observe:** every arrow represents a concrete operation; an
@@ -4347,26 +4347,26 @@ shape contract is what permits a later elementwise residual addition.
 
 5. **OUTPUT — Name the new state**
 
-   The final result is **one mixed attention update**. This becomes the course's new
+   The final result is **one projected attention update**. This becomes the course's new
    starting point rather than a disposable temporary value.
 
-   **What to observe:** the output answers the opening compass and can be passed
+   **What to observe:** the output answers the opening summary and can be passed
    to the next lesson without rebuilding the process from scratch.
 
 ### Where we are now
 
-The transformation is complete when **one mixed attention update** is available and the
+The transformation is complete when **one projected attention update** is available and the
 lesson constraint still holds. This is the right place to stop: performing the
 next operation already would blur the boundary of what this lesson is
 responsible for.
 
-- **Changed:** separate head feature slices became **one mixed attention update**.
+- **Changed:** separate head feature slices became **one projected attention update**.
 - **Preserved:** the batch/time axes and causal constraint stay intact while features change.
 - **Next:** **Attention residual connection** will use this result as its new input.
 
 > **If you remember one thing:** the important result is not the operation's
 > name; it is the new checkable state that the operation produces:
-> **one mixed attention update**.
+> **one projected attention update**.
 
 ### How to read the mathematics
 
@@ -4381,16 +4381,16 @@ Multiplication by $W_O$ maps C input features to C output features while preserv
 
 ### Visual worked example
 
-> **Running example state:** concatenate the head outputs computed for `sleeps`, then mix them into one update for that token.
+> **Running example state:** concatenate the head outputs computed for `sleeps`, then project them into one update for that token.
 
 ```learngpt-visual
-{"type":"tensor-flow","title":"Join head slices, then learn how to mix them","description":"Concatenation restores C channels and W_O converts those fixed slices into one mixed C-wide update.","stages":[{"label":"Head outputs · [0.8, −0.2] and [0.1, 0.6]","shape":"2 × [D=2]","note":"Two independent contextual views."},{"label":"Concatenated state · [0.8, −0.2, 0.1, 0.6]","shape":"[C=4]","note":"Slices are adjacent but not yet mixed."},{"label":"Multiply by W_O","shape":"[C]","note":"Learned feature mixing."},{"label":"Mixed C-wide update","shape":"[C]","note":"Compatible with the residual stream."}]}
+{"type":"tensor-flow","title":"Join head slices, then apply a learned projection","description":"Concatenation restores C channels and W_O converts those fixed slices into one projected C-wide update.","stages":[{"label":"Head outputs · [0.8, −0.2] and [0.1, 0.6]","shape":"2 × [D=2]","note":"Two independent contextual outputs."},{"label":"Concatenated state · [0.8, −0.2, 0.1, 0.6]","shape":"[C=4]","note":"Slices are adjacent before projection."},{"label":"Multiply by W_O","shape":"[C]","note":"Learned feature combination."},{"label":"Projected C-wide update","shape":"[C]","note":"Compatible with the residual stream."}]}
 ```
 
 $W_O$ lets every output feature use information from every head.
 
 Concatenated heads occupy fixed channel slices. A learned matrix
-$W_O\in\mathbb R^{C\times C}$ mixes them:
+$W_O\in\mathbb R^{C\times C}$ combines them:
 
 $$\operatorname{MHA}(R)=\operatorname{Concat}(O_1,\ldots,O_H)W_O+b_O.$$
 
@@ -4421,7 +4421,7 @@ The projection is introduced in `study/snapshots/lesson_21/model.py`.
   every batch and time position.
 - `torch.cat(attended_outputs, dim=-1)` first joins the head outputs into
   `[B, T, num_heads * D] = [B, T, C]`.
-- `self.output_projection(concatenated_embeddings)` mixes that joined feature
+- `self.output_projection(concatenated_embeddings)` combines that joined feature
   axis and restores `[B, T, C]`.
 - `return projected_embeddings, attention_weights_by_head` separates the
   representation used by the model from the attention maps inspected by the
@@ -4429,11 +4429,11 @@ The projection is introduced in `study/snapshots/lesson_21/model.py`.
 
 ### Code ↔ mathematics ↔ meaning
 
-This bridge is included here because the code directly implements a mathematical transformation.
+This section is included here because the code directly implements a mathematical transformation.
 
 | Code | Mathematical reading | Plain meaning |
 |---|---|---|
-| `self.output_projection(concatenated)` | $O_{cat}W_O$ | mix all head features |
+| `self.output_projection(concatenated)` | $O_{cat}W_O$ | combine all head features |
 
 ### Programmed versus learned
 
@@ -4445,7 +4445,7 @@ This bridge is included here because the code directly implements a mathematical
 
 ## Lesson 22 — Attention residual connection
 
-### Lesson compass: what and why
+### Lesson summary: goal and result
 
 - **Before:** a state and a separate attention result
 - **Goal:** Add the attention update instead of replacing the existing state
@@ -4530,7 +4530,7 @@ The result is now the single source passed to the next sublayer.
    The final result is **one residual stream containing both**. This becomes the course's new
    starting point rather than a disposable temporary value.
 
-   **What to observe:** the output answers the opening compass and can be passed
+   **What to observe:** the output answers the opening summary and can be passed
    to the next lesson without rebuilding the process from scratch.
 
 ### Where we are now
@@ -4605,7 +4605,7 @@ The skip connection appears in `study/snapshots/lesson_22/model.py`.
 
 ### Code ↔ mathematics ↔ meaning
 
-This bridge is included here because the code directly implements a mathematical transformation.
+This section is included here because the code directly implements a mathematical transformation.
 
 | Code | Mathematical reading | Plain meaning |
 |---|---|---|
@@ -4618,7 +4618,7 @@ This bridge is included here because the code directly implements a mathematical
 
 ## Lesson 23 — LayerNorm before attention
 
-### Lesson compass: what and why
+### Lesson summary: goal and result
 
 - **Before:** features with changing scale
 - **Goal:** Normalize each token's feature scale before attention
@@ -4645,7 +4645,7 @@ For the toy state `[1,2,3]`, LayerNorm first calculates mean `2`, centers to
 ```
 
 Normalization is performed across one token's C features, independently for
-every batch/time position; it never mixes tokens. Learned `γ` and `β` may
+every batch/time position; it never combines different tokens. Learned `γ` and `β` may
 rescale and shift the normalized coordinates, so “normalized branch input” is
 more precise than claiming the final values always have mean zero and variance
 one.
@@ -4654,8 +4654,7 @@ The placement before attention is essential. Attention reads the normalized
 copy, while residual addition later uses the untouched source. Moving
 LayerNorm after the addition would define a post-norm block with a different
 data path and different optimization behaviour. Here the goal is narrower:
-stabilize what the learned branch reads without interrupting the identity
-highway.
+stabilize the learned branch input without interrupting the identity connection.
 
 ### Transformation, step by step
 
@@ -4675,7 +4674,7 @@ highway.
    operation:
 
    ```learngpt-visual
-   {"type":"tensor-flow","title":"Prepare a stable branch input with LayerNorm","description":"Normalization acts within each token's C features and never mixes batch items or time positions.","stages":[{"label":"Token state with uneven feature scale","shape":"[B,T,C]","note":"One independent C-vector per position."},{"label":"Subtract mean and divide by spread","shape":"[B,T,C]","note":"Normalize across C only."},{"label":"Apply learned scale and offset","shape":"[B,T,C]","note":"Gamma and beta remain trainable."},{"label":"Stable attention-branch input","shape":"[B,T,C]","note":"Residual source remains untouched."}]}
+   {"type":"tensor-flow","title":"Prepare a stable branch input with LayerNorm","description":"Normalization acts within each token's C features and never combines batch items or time positions.","stages":[{"label":"Token state with uneven feature scale","shape":"[B,T,C]","note":"One independent C-vector per position."},{"label":"Subtract mean and divide by spread","shape":"[B,T,C]","note":"Normalize across C only."},{"label":"Apply learned scale and offset","shape":"[B,T,C]","note":"Gamma and beta remain trainable."},{"label":"Stable attention-branch input","shape":"[B,T,C]","note":"Residual source remains untouched."}]}
    ```
 
    **What to observe:** every arrow represents a concrete operation; an
@@ -4704,7 +4703,7 @@ highway.
    The final result is **standardized features entering attention**. This becomes the course's new
    starting point rather than a disposable temporary value.
 
-   **What to observe:** the output answers the opening compass and can be passed
+   **What to observe:** the output answers the opening summary and can be passed
    to the next lesson without rebuilding the process from scratch.
 
 ### Where we are now
@@ -4757,9 +4756,9 @@ $$\operatorname{LN}(x)_i=\gamma_i
 \frac{x_i-\mu}{\sqrt{\sigma^2+\epsilon}}+\beta_i.$$
 
 Normalization is across channels, independently for every batch/time location;
-it does not mix tokens. LearnGPT uses pre-norm:
+it does not combine different tokens. LearnGPT uses pre-norm:
 $R'=R+\operatorname{MHA}(\operatorname{LN}(R))$, preserving an unnormalized
-identity highway while stabilizing the branch input.
+identity connection while stabilizing the branch input.
 
 ### Reference code added in this lesson
 
@@ -4795,7 +4794,7 @@ Pre-normalization is introduced in `study/snapshots/lesson_23/model.py`.
 
 ### Code ↔ mathematics ↔ meaning
 
-This bridge is included here because the code directly implements a mathematical transformation.
+This section is included here because the code directly implements a mathematical transformation.
 
 | Code | Mathematical reading | Plain meaning |
 |---|---|---|
@@ -4808,7 +4807,7 @@ This bridge is included here because the code directly implements a mathematical
 
 ## Lesson 24 — Feed-forward network
 
-### Lesson compass: what and why
+### Lesson summary: goal and result
 
 - **Before:** contextual features with limited per-position transformation
 - **Goal:** Normalize, transform, and add a nonlinear update independently at every token position
@@ -4896,7 +4895,7 @@ division of labour makes the block easier to reason about.
    The final result is **one residual stream containing the previous state and its nonlinear update**. This becomes the course's new
    starting point rather than a disposable temporary value.
 
-   **What to observe:** the output answers the opening compass and can be passed
+   **What to observe:** the output answers the opening summary and can be passed
    to the next lesson without rebuilding the process from scratch.
 
 ### Where we are now
@@ -5017,7 +5016,7 @@ These are the literal new module and integration lines from
 
 ### Code ↔ mathematics ↔ meaning
 
-This bridge is included here because the code directly implements a mathematical transformation.
+This section is included here because the code directly implements a mathematical transformation.
 
 | Code | Mathematical reading | Plain meaning |
 |---|---|---|
@@ -5031,7 +5030,7 @@ This bridge is included here because the code directly implements a mathematical
 
 ## Lesson 25 — Transformer block
 
-### Lesson compass: what and why
+### Lesson summary: goal and result
 
 - **Before:** separate neural-network components
 - **Goal:** Combine normalization, attention, residuals, and the MLP into one reusable block
@@ -5132,7 +5131,7 @@ not the deterministic shape contract of the block.
    The final result is **one composable Transformer block**. This becomes the course's new
    starting point rather than a disposable temporary value.
 
-   **What to observe:** the output answers the opening compass and can be passed
+   **What to observe:** the output answers the opening summary and can be passed
    to the next lesson without rebuilding the process from scratch.
 
 ### Where we are now
@@ -5233,7 +5232,7 @@ The reusable block boundary is defined in
 
 ### Code ↔ mathematics ↔ meaning
 
-This bridge is included here because the code directly implements a mathematical transformation.
+This section is included here because the code directly implements a mathematical transformation.
 
 | Code | Mathematical reading | Plain meaning |
 |---|---|---|
@@ -5247,7 +5246,7 @@ This bridge is included here because the code directly implements a mathematical
 
 ## Lesson 26 — Multiple Transformer blocks
 
-### Lesson compass: what and why
+### Lesson summary: goal and result
 
 - **Before:** one contextual transformation
 - **Goal:** Repeat the Transformer block several times
@@ -5332,7 +5331,7 @@ Stacking changes depth and learned content, never the meaning of the tensor axes
    The final result is **a hierarchy of L contextual transformations**. This becomes the course's new
    starting point rather than a disposable temporary value.
 
-   **What to observe:** the output answers the opening compass and can be passed
+   **What to observe:** the output answers the opening summary and can be passed
    to the next lesson without rebuilding the process from scratch.
 
 ### Where we are now
@@ -5432,7 +5431,7 @@ The stack appears in `study/snapshots/lesson_26/model.py`.
 
 ### Code ↔ mathematics ↔ meaning
 
-This bridge is included here because the code directly implements a mathematical transformation.
+This section is included here because the code directly implements a mathematical transformation.
 
 | Code | Mathematical reading | Plain meaning |
 |---|---|---|
@@ -5440,7 +5439,7 @@ This bridge is included here because the code directly implements a mathematical
 
 ## Lesson 27 — Final LayerNorm before the existing output head
 
-### Lesson compass: what and why
+### Lesson summary: goal and result
 
 - **Before:** contextual vectors sent directly to the output head introduced in lesson 17
 - **Goal:** Normalize the completed residual stack before its existing vocabulary projection
@@ -5520,7 +5519,7 @@ next-token training prediction for each row of the context window.
    The final result is **vocabulary logits for every position**. This becomes the course's new
    starting point rather than a disposable temporary value.
 
-   **What to observe:** the output answers the opening compass and can be passed
+   **What to observe:** the output answers the opening summary and can be passed
    to the next lesson without rebuilding the process from scratch.
 
 ### Where we are now
@@ -5611,7 +5610,7 @@ before the pre-existing head in `study/snapshots/lesson_27/model.py`.
 
 ### Code ↔ mathematics ↔ meaning
 
-This bridge is included here because the code directly implements a mathematical transformation.
+This section is included here because the code directly implements a mathematical transformation.
 
 | Code | Mathematical reading | Plain meaning |
 |---|---|---|
@@ -5622,7 +5621,7 @@ This bridge is included here because the code directly implements a mathematical
 
 ## Lesson 28 — Transformer training
 
-### Lesson compass: what and why
+### Lesson summary: goal and result
 
 - **Before:** a complete model with initial weights
 - **Goal:** Train the complete Transformer end to end
@@ -5720,7 +5719,7 @@ forward logits still have the expected shape.
    The final result is **the same model with weights updated from prediction error**. This becomes the course's new
    starting point rather than a disposable temporary value.
 
-   **What to observe:** the output answers the opening compass and can be passed
+   **What to observe:** the output answers the opening summary and can be passed
    to the next lesson without rebuilding the process from scratch.
 
 ### Where we are now
@@ -5846,7 +5845,7 @@ The short seeded training run is `study/lessons/28_transformer_training.py`.
 
 ### Code ↔ mathematics ↔ meaning
 
-This bridge is included here because the code directly implements a mathematical transformation.
+This section is included here because the code directly implements a mathematical transformation.
 
 | Code | Mathematical reading | Plain meaning |
 |---|---|---|
@@ -5860,7 +5859,7 @@ This bridge is included here because the code directly implements a mathematical
 
 ## Lesson 29 — Loss estimation
 
-### Lesson compass: what and why
+### Lesson summary: goal and result
 
 - **Before:** one noisy batch loss
 - **Goal:** Average several losses to obtain a more reliable measurement
@@ -6077,7 +6076,7 @@ The reusable evaluator is in `study/snapshots/lesson_29/training.py`.
 
 ### Code ↔ mathematics ↔ meaning
 
-This bridge is included here because the code directly implements a mathematical transformation.
+This section is included here because the code directly implements a mathematical transformation.
 
 | Code | Mathematical reading | Plain meaning |
 |---|---|---|
@@ -6088,7 +6087,7 @@ This bridge is included here because the code directly implements a mathematical
 
 ## Lesson 30 — Checkpoint
 
-### Lesson compass: what and why
+### Lesson summary: goal and result
 
 - **Before:** useful model and optimizer state exists only inside the running process
 - **Goal:** collect and save the minimal implemented state needed to reload a compatible model and optimizer
@@ -6335,7 +6334,7 @@ Save and load functions are in `study/snapshots/lesson_30/checkpoint.py`.
 
 ## Lesson 31 — Generate from a checkpoint
 
-### Lesson compass: what and why
+### Lesson summary: goal and result
 
 - **Before:** a checkpoint plus readable prompt
 - **Goal:** Reconstruct a model from a checkpoint and generate independently
@@ -6543,7 +6542,7 @@ The independent loading path is in `study/snapshots/lesson_31/generate.py`.
 
 ## Lesson 32 — Sampling controls
 
-### Lesson compass: what and why
+### Lesson summary: goal and result
 
 - **Before:** one raw next-token score vector
 - **Goal:** Control how conservative or varied token sampling is
@@ -6716,7 +6715,7 @@ through `study/snapshots/lesson_32/generate.py`.
 
 ### Code ↔ mathematics ↔ meaning
 
-This bridge is included here because the code directly implements a mathematical transformation.
+This section is included here because the code directly implements a mathematical transformation.
 
 | Code | Mathematical reading | Plain meaning |
 |---|---|---|
@@ -6730,7 +6729,7 @@ This bridge is included here because the code directly implements a mathematical
 
 ## Lesson 33 — Best checkpoint
 
-### Lesson compass: what and why
+### Lesson summary: goal and result
 
 - **Before:** evaluated model states with no retained quality winner
 - **Goal:** retain the state with the lowest validation estimate observed so far
@@ -6899,7 +6898,7 @@ The selection rule is in `study/snapshots/lesson_33/training.py`.
 
 ## Lesson 34 — Optimizer and scheduler
 
-### Lesson compass: what and why
+### Lesson summary: goal and result
 
 - **Before:** raw gradients and one fixed step size
 - **Goal:** Make parameter updates adaptive and bounded while the learning rate warms up and then decays
@@ -7114,7 +7113,7 @@ The scheduler and optimizer helpers are in
 
 ### Code ↔ mathematics ↔ meaning
 
-This bridge is included here because the code directly implements a mathematical transformation.
+This section is included here because the code directly implements a mathematical transformation.
 
 | Code | Mathematical reading | Plain meaning |
 |---|---|---|
@@ -7127,7 +7126,7 @@ This bridge is included here because the code directly implements a mathematical
 
 ## Lesson 35 — Dropout and weight tying
 
-### Lesson compass: what and why
+### Lesson summary: goal and result
 
 - **Before:** deterministic branches and separate possible tables
 - **Goal:** Regularize activations and share the input/output token table
@@ -7306,7 +7305,7 @@ feed-forward path in `study/snapshots/lesson_35/model.py`.
 
 ### Code ↔ mathematics ↔ meaning
 
-This bridge is included here because the code directly implements a mathematical transformation.
+This section is included here because the code directly implements a mathematical transformation.
 
 | Code | Mathematical reading | Plain meaning |
 |---|---|---|
@@ -7322,7 +7321,7 @@ This bridge is included here because the code directly implements a mathematical
 
 ## Lesson 36 — Production data and optimizer groups
 
-### Lesson compass: what and why
+### Lesson summary: goal and result
 
 - **Before:** small in-memory character data
 - **Goal:** Replace toy data paths and naive parameter handling with production-oriented ones
@@ -7337,7 +7336,7 @@ fingerprint; verified data identity arrives in the final production project.
 
 The earlier character tokenizer and in-memory tensors make every operation
 easy to inspect, but they do not represent how a larger language-model run
-stores text. This is the bridge from the educational tokenizer to the
+stores text. This is the transition from the educational tokenizer to the
 production tokenizer. The character tokenizer taught the address idea with a
 tiny vocabulary created from the current text. The GPT-2 BPE tokenizer brings
 a fixed external vocabulary, token IDs for common fragments, and explicit
@@ -7577,7 +7576,7 @@ This production boundary spans `batching.py`, `tokenizer.py`, `device.py`,
 
 ## Lesson 37 — Gradient accumulation
 
-### Lesson compass: what and why
+### Lesson summary: goal and result
 
 - **Before:** one memory-limited micro-batch
 - **Goal:** Build one effective large-batch gradient from several smaller forward passes
@@ -7766,7 +7765,7 @@ The accumulation loop is in `study/snapshots/lesson_37/training.py`.
 
 ### Code ↔ mathematics ↔ meaning
 
-This bridge is included here because the code directly implements a mathematical transformation.
+This section is included here because the code directly implements a mathematical transformation.
 
 | Code | Mathematical reading | Plain meaning |
 |---|---|---|
@@ -7779,7 +7778,7 @@ This bridge is included here because the code directly implements a mathematical
 
 ## Lesson 38 — Configuration and resume
 
-### Lesson compass: what and why
+### Lesson summary: goal and result
 
 - **Before:** loose model, training, and generation values
 - **Goal:** group configuration values for serialization and restore model, optimizer, and step state explicitly
@@ -8003,7 +8002,7 @@ implemented in the matching `training.py`.
 
 ## Lesson 39 — Last-token output head
 
-### Lesson compass: what and why
+### Lesson summary: goal and result
 
 - **Before:** vocabulary scores at every prefix position
 - **Goal:** Project only the final token during generation
@@ -8166,7 +8165,7 @@ The conditional path is in `study/snapshots/lesson_39/model.py`.
 
 ### Code ↔ mathematics ↔ meaning
 
-This bridge is included here because the code directly implements a mathematical transformation.
+This section is included here because the code directly implements a mathematical transformation.
 
 | Code | Mathematical reading | Plain meaning |
 |---|---|---|
@@ -8174,7 +8173,7 @@ This bridge is included here because the code directly implements a mathematical
 
 ## Lesson 40 — Scaled dot-product attention
 
-### Lesson compass: what and why
+### Lesson summary: goal and result
 
 - **Before:** separate attention operations
 - **Goal:** use PyTorch's SDPA operator for the same causal attention equation
@@ -8285,7 +8284,7 @@ The equation has not changed: compare, scale, mask, normalize, and mix values; o
 
 | Notation | Read it as | Meaning here |
 |---|---|---|
-| $Q$ | Q | queries: what each token is looking for |
+| $Q$ | Q | queries: comparison patterns produced for each token |
 | $K$ | K | keys: what each token makes available for matching |
 | $V'$ | V prime | values: information that attention can combine |
 | $D=C/H$ | D equals C divided by H | feature width of one attention head |
@@ -8374,7 +8373,7 @@ Both paths coexist in `study/snapshots/lesson_40/model.py`.
 
 ### Code ↔ mathematics ↔ meaning
 
-This bridge is included here because the code directly implements a mathematical transformation.
+This section is included here because the code directly implements a mathematical transformation.
 
 | Code | Mathematical reading | Plain meaning |
 |---|---|---|
@@ -8387,7 +8386,7 @@ This bridge is included here because the code directly implements a mathematical
 
 ## Lesson 41 — Performance flags
 
-### Lesson compass: what and why
+### Lesson summary: goal and result
 
 - **Before:** one correct single-process loop with device-aware fused AdamW selection, but no compilation or mixed precision
 - **Goal:** enable supported compilation and mixed-precision paths without changing the training objective
@@ -8416,7 +8415,7 @@ The three new paths are independent rather than one all-or-nothing fast mode.
 Compilation can be enabled while mixed precision is disabled; autocast can use
 a supported dtype without enabling CUDA float16 loss scaling; unsupported
 combinations keep the conservative path or fail explicitly. In particular,
-the controlled MPS recipe leaves mixed precision disabled. These features do
+the controlled MPS configuration leaves mixed precision disabled. These features do
 not require a different loss definition or optimizer policy. Separately, this
 lesson snapshot resets the `TrainingConfig.gradient_accumulation_steps`
 default from `2` to `1` for its small demonstration. The accumulation
@@ -8577,7 +8576,7 @@ These optional runtime paths are in `study/snapshots/lesson_41/training.py`.
   GradScaler's own logic.
 - `scaler.step(optimizer)` conditionally applies the update, and
   `scaler.update()` adjusts the scale for the next iteration.
-- `mixed_precision=False` is required by the controlled MPS recipe. Lesson 42 adds
+- `mixed_precision=False` is required by the controlled MPS configuration. Lesson 42 adds
   persistent MPS gradient buffers, warm-up, CPU parity self-checks, and raw-norm
   integrity gates before any real update.
 - `TrainingConfig.gradient_accumulation_steps` defaults to `1` in this snapshot,
@@ -8598,7 +8597,7 @@ These optional runtime paths are in `study/snapshots/lesson_41/training.py`.
 
 ## Lesson 42 — Final project
 
-### Lesson compass: what and why
+### Lesson summary: goal and result
 
 - **Before:** every data, model, training, evaluation, and checkpoint component works in isolation
 - **Goal:** connect those components into one reproducible train-evaluate-save-generate lifecycle
@@ -8690,11 +8689,11 @@ gradient accumulation, retry safeguards, and performance flags make this
 lifecycle more robust or efficient. They must not change its semantic core.
 Whether the calculation runs on CPU, MPS, or one CUDA device, the model is
 still learning the same causal next-token objective from the same ordered IDs.
-That invariant is the thread that lets us reason about a large implementation
+That invariant lets us reason about a large implementation
 as a sequence of small, checkable transformations. Distributed execution is a
 possible future extension, not a capability implemented by this project.
 
-This perspective also gives a practical debugging method. When the lifecycle
+This view also gives a practical debugging method. When the lifecycle
 fails, ask which object was last known to satisfy its contract: decoded text,
 token IDs, a shifted batch, a residual stream, logits, a finite loss, accepted
 gradients, or a reloadable checkpoint. The answer narrows the problem to one
@@ -9075,8 +9074,8 @@ The runnable integration is `study/lessons/42_final_project.py`. The files under
 ## Final mental model
 
 A GPT is a differentiable next-token classifier reused at every position. Text
-becomes categorical IDs; tables turn IDs into vectors; causal attention mixes
-only visible history; MLPs transform each position; residual paths preserve and
+becomes categorical IDs; tables turn IDs into vectors; causal attention combines
+only the visible prefix; MLPs transform each position; residual paths preserve and
 accumulate information; the vocabulary head produces scores; cross entropy
 measures the correct next token; backpropagation assigns responsibility through
 all matrix operations; AdamW updates the parameters; checkpoints preserve the
@@ -9094,7 +9093,7 @@ $$
 
 ## Source map
 
-- Educational narrative and runnable checkpoints: `course_en.md` and
+- Educational lessons and runnable checkpoints: `course_en.md` and
   `study/lessons/01_*.py` through `study/lessons/42_*.py`.
 - Production architecture: `final_project/model.py`.
 - Production tokenizer: `final_project/tokenizer.py`.

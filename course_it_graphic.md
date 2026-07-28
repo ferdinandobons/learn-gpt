@@ -1,10 +1,10 @@
-<!-- source-sha256: 3ccc0e7b084d0e7a776d53390a6d5261ffaf1f43f2e1aeb7f92fa01400341519 -->
+<!-- source-sha256: 8d86f6ad019e8f1acb3f7b92e15f53d8337cad9e8c5358bc0138def0482643f9 -->
 
 # LearnGPT — Corso grafico e matematico
 
 Una spiegazione raccolta in un unico file, lezione per lezione, di come il testo
 grezzo diventa un decoder-only Transformer addestrato. Il documento approfondisce
-il percorso visivo di LearnGPT Web con shape esplicite dei tensor, operazioni tra
+la rappresentazione visiva di LearnGPT Web con shape esplicite dei tensor, operazioni tra
 matrici, esempi numerici svolti, riferimenti all'implementazione e mappe
 dell'architettura.
 
@@ -13,14 +13,14 @@ dell'architettura.
 Il corso si apre con la Lezione 00, un orientamento scritto alla piattaforma
 LearnGPT Web, poi segue gli stessi 42 checkpoint di implementazione di
 `course_en.md` e dell'indice di LearnGPT Web. Tutte le lezioni di
-implementazione usano lo stesso contratto di leggibilità. La bussola rende
+implementazione usano lo stesso contratto di leggibilità. La sintesi iniziale rende
 espliciti quattro elementi:
 
 ```text
 prima → obiettivo → dopo → vincolo
 ```
 
-Dopo la bussola viene una spiegazione discorsiva continua, seguita da una
+Dopo la sintesi iniziale viene una spiegazione discorsiva continua, seguita da una
 timeline ordinata della trasformazione. Ogni passaggio indica il proprio ruolo,
 l'oggetto concreto che cambia e che cosa bisogna osservare. La struttura resta
 uguale dal testo grezzo al progetto finale, così chi studia non deve ogni volta
@@ -28,7 +28,7 @@ capire da capo come leggere la lezione.
 
 Le diverse aree hanno responsabilità distinte:
 
-- **Spiegazione centrale:** costruisce il filo narrativo e contiene il minimo
+- **Spiegazione centrale:** costruisce l’ordine della spiegazione e contiene il minimo
   esempio concreto di testo, tensor, matrice o stato necessario a comprendere
   la trasformazione.
 - **Matematica:** generalizza quel caso con notazione, tensor shape, equazioni
@@ -44,7 +44,7 @@ cambi la rappresentazione, non il punto di partenza. I blocchi
 distinguere una regola scritta nel codice da un valore scoperto durante il
 training.
 
-Quando una sezione diventa densa, torna alla bussola e chiediti: «Da che stato
+Quando una sezione diventa densa, rileggi la sintesi iniziale e chiediti: «Da che stato
 parto? Perché deve cambiare? Quale operazione applico? Che cosa possiedo dopo e
 che cosa deve restare vero?».
 
@@ -469,7 +469,7 @@ $$
 
 ## Lezione 00 — Come usare questo corso
 
-### Bussola della lezione: cosa e perché
+### Sintesi della lezione: obiettivo e risultato
 
 - **Prima:** hai aperto il corso, ma non sai ancora che cosa installare, che cosa
   cliccare o come entra in gioco il repository GitHub.
@@ -479,8 +479,8 @@ $$
   significa ogni sezione del corso e che cosa serve sul computer se vuoi
   eseguire il progetto.
 - **Vincolo:** non ti servono hardware costoso o competenze pregresse di AI per
-  iniziare a leggere. Il corso resta una costruzione passo dopo passo, dal
-  testo semplice a un piccolo GPT.
+  iniziare a leggere. Il corso procede con passaggi incrementali, dal testo
+  semplice a un piccolo GPT.
 
 ### Orientamento rapido
 
@@ -622,7 +622,7 @@ aggiungere tokenizer, tensor, modelli e training.
 
 ## Lezione 01 — Leggi il testo
 
-### Bussola della lezione: cosa e perché
+### Sintesi della lezione: obiettivo e risultato
 
 - **Prima:** byte memorizzati in un file, ancora esterni al programma
 - **Obiettivo:** caricare il testo in Python senza alterarne contenuto e ordine
@@ -633,8 +633,8 @@ aggiungere tokenizer, tensor, modelli e training.
 
 Il corso comincia da un'operazione volutamente semplice: **portare il testo dal
 disco dentro il programma**. Lo script reale legge il file più lungo
-`data/study_sample.txt`; per rendere visibile la trasformazione, il corso
-immagina anche un mini-file didattico che contiene `The cat sleeps here.`.
+`data/study_sample.txt`; per rendere visibile la trasformazione, il corso usa
+anche un mini-file didattico che contiene `The cat sleeps here.`.
 Quella frase è l'esempio condiviso, non il contenuto letterale della prima riga
 del dataset reale. In entrambi i casi, sul disco esiste soltanto una sequenza di
 byte che Python deve interpretare con l'encoding `UTF-8`.
@@ -823,7 +823,7 @@ Il punto di ingresso completo è `study/lessons/01_read_text.py`.
 
 ## Lezione 02 — Character tokenizer
 
-### Bussola della lezione: cosa e perché
+### Sintesi della lezione: obiettivo e risultato
 
 - **Prima:** una stringa decodificata i cui caratteri non hanno indirizzi numerici
 - **Obiettivo:** assegnare a ogni carattere distinto un ID stabile e costruire la mappa inversa
@@ -999,7 +999,7 @@ Il codice è esercitato da `study/lessons/02_character_tokenizer.py`.
 
 ## Lezione 03 — Codifica e decodifica
 
-### Bussola della lezione: cosa e perché
+### Sintesi della lezione: obiettivo e risultato
 
 - **Prima:** una stringa leggibile e due mappe inverse carattere/ID
 - **Obiettivo:** convertire un'intera sequenza in ID ordinati e ricostruirla esattamente
@@ -1193,7 +1193,7 @@ Questo è lo stesso codice a loop espliciti usato in
 
 ## Lezione 04 — Tokenizer module
 
-### Bussola della lezione: cosa e perché
+### Sintesi della lezione: obiettivo e risultato
 
 - **Prima:** vocabulary e round trip corretti ma duplicati nei lesson script
 - **Obiettivo:** esporre creazione del vocabulary, encode e decode da un unico modulo
@@ -1216,7 +1216,7 @@ Il vocabulary continua a essere costruito sull'intero testo sorgente. Il sample
 può essere codificato solo se i suoi caratteri sono presenti in quella mappa;
 le stesse mappe attraversano poi l'intero round trip.
 
-L'import rende inoltre visibile la dipendenza. Guardando lo script sappiamo da
+L'import rende inoltre visibile la dipendenza. Leggendo lo script sappiamo da
 quale snapshot arriva il contratto e possiamo eseguire la lezione anche se i
 moduli futuri cambieranno. Il modulo non introduce una classe, uno stato
 nascosto o una nuova codifica: espone semplicemente tre funzioni con input e
@@ -1347,7 +1347,7 @@ L'implementazione riutilizzabile vive in
 
 ## Lezione 05 — Training e validation
 
-### Bussola della lezione: cosa e perché
+### Sintesi della lezione: obiettivo e risultato
 
 - **Prima:** un token stream ordinato senza separazione tra apprendimento e misura
 - **Obiettivo:** riservare un prefisso al training e una coda separata alla validation
@@ -1446,7 +1446,7 @@ nella formula svolge lo stesso ruolo di uno slice Python.
 ### Esempio visivo svolto
 
 > **Stato dell'esempio ricorrente:** ripetiamo la frase canonica per formare un
-> corpus ordinato, poi dividiamo il flusso senza mescolarlo.
+> corpus ordinato, poi dividiamo la sequenza senza cambiarne l'ordine.
 
 ```learngpt-mermaid
 flowchart LR
@@ -1510,7 +1510,7 @@ Questa divisione è dimostrata in `study/lessons/05_split_dataset.py`.
 
 ### Codice ↔ matematica ↔ significato
 
-Questo ponte è incluso qui perché il codice implementa direttamente una trasformazione matematica.
+Questa sezione mostra come il codice realizza direttamente la trasformazione matematica.
 
 | Codice | Lettura matematica | In parole semplici |
 |---|---|---|
@@ -1518,7 +1518,7 @@ Questo ponte è incluso qui perché il codice implementa direttamente una trasfo
 
 ## Lezione 06 — Input e target
 
-### Bussola della lezione: cosa e perché
+### Sintesi della lezione: obiettivo e risultato
 
 - **Prima:** un token stream ordinato senza label di previsione esplicite
 - **Obiettivo:** trasformare `T+1` token in `T` input e `T` next-token target
@@ -1542,7 +1542,7 @@ seguito l'intero prefisso visibile. La coppia input/target è valida per entramb
 
 Le quattro colonne non sono quattro sequenze scollegate. Sono quattro punti di
 supervisione ricavati dalla stessa finestra ordinata: alla posizione `t`,
-l'input contiene il token che il modello può osservare e `Y[t]` contiene
+l'input contiene il token che il modello può usare e `Y[t]` contiene
 l'unica risposta corretta per il passo seguente. Più avanti la mask causale
 stabilirà quanta parte del prefix è visibile a ciascuna posizione, ma non
 cambierà questo abbinamento. Perciò conviene controllare ora sia la lunghezza
@@ -1699,7 +1699,7 @@ Vedere le coppie `prefisso → token successivo` stampate in `study/lessons/06_i
 
 ### Codice ↔ matematica ↔ significato
 
-Questo ponte è incluso qui perché il codice implementa direttamente una trasformazione matematica.
+Questa sezione mostra come il codice realizza direttamente la trasformazione matematica.
 
 | Codice | Lettura matematica | In parole semplici |
 |---|---|---|
@@ -1708,7 +1708,7 @@ Questo ponte è incluso qui perché il codice implementa direttamente una trasfo
 
 ## Lezione 07 — Esempi casuali
 
-### Bussola della lezione: cosa e perché
+### Sintesi della lezione: obiettivo e risultato
 
 - **Prima:** un solo esempio correttamente sfalsato, fissato in una posizione
 - **Obiettivo:** campionare finestre diverse di `T+1` token senza uscire dallo split selezionato
@@ -1733,7 +1733,7 @@ dell'input senza il proprio token target.
 
 Scelto l'indice `s`, l'input è `data[s:s+T]` e il target è
 `data[s+1:s+T+1]`. I due slice sono viste adiacenti della stessa sequenza
-locale. Il campionamento casuale non rimescola i caratteri e non supera il
+locale. Il campionamento casuale non cambia l'ordine dei caratteri e non supera il
 confine dello split passato alla funzione.
 
 Infine, `random.seed(42)` rende dimostrabile il comportamento: a ogni nuova
@@ -1912,7 +1912,7 @@ La funzione è introdotta in `study/lessons/07_random_examples.py`.
 
 ### Codice ↔ matematica ↔ significato
 
-Questo ponte è incluso qui perché il codice implementa direttamente una trasformazione matematica.
+Questa sezione mostra come il codice realizza direttamente la trasformazione matematica.
 
 | Codice | Lettura matematica | In parole semplici |
 |---|---|---|
@@ -1920,7 +1920,7 @@ Questo ponte è incluso qui perché il codice implementa direttamente una trasfo
 
 ## Lezione 08 — Python batch
 
-### Bussola della lezione: cosa e perché
+### Sintesi della lezione: obiettivo e risultato
 
 - **Prima:** una coppia input/target per chiamata
 - **Obiettivo:** raccogliere `B` coppie in due liste Python rettangolari
@@ -2012,7 +2012,7 @@ Il progetto possiede ora due liste annidate leggibili e allineate.
 - **Prossimo passo:** convertire gli stessi valori in PyTorch tensor.
 
 > **Se ricordi una sola cosa:** il batch aggiunge esempi indipendenti, non
-> unisce le loro storie.
+> unisce i loro contesti.
 
 ### Come leggere la matematica
 
@@ -2085,7 +2085,7 @@ La rappresentazione della lista annidata è visibile in `study/lessons/08_python
 
 ### Codice ↔ matematica ↔ significato
 
-Questo ponte è incluso qui perché il codice implementa direttamente una trasformazione matematica.
+Questa sezione mostra come il codice realizza direttamente la trasformazione matematica.
 
 | Codice | Lettura matematica | In parole semplici |
 |---|---|---|
@@ -2093,7 +2093,7 @@ Questo ponte è incluso qui perché il codice implementa direttamente una trasfo
 
 ## Lezione 09 — PyTorch batch
 
-### Bussola della lezione: cosa e perché
+### Sintesi della lezione: obiettivo e risultato
 
 - **Prima:** due liste Python rettangolari e abbinate, con una struttura `[B,T]` ancora soltanto concettuale
 - **Obiettivo:** convertire entrambe le griglie in tensor PyTorch di rango 2 e ispezionarne la shape
@@ -2245,7 +2245,7 @@ Gli esempi di conversione e indexing si trovano in
 
 ## Lezione 10 — Modulo di batching
 
-### Bussola della lezione: cosa e perché
+### Sintesi della lezione: obiettivo e risultato
 
 - **Prima:** campionamento e conversione in tensor copiati dentro i singoli script
 - **Obiettivo:** spostare lo stesso comportamento in una sola funzione importabile `create_batch`
@@ -2432,7 +2432,7 @@ L'implementazione si trova in `study/snapshots/lesson_10/batching.py`;
 
 ### Codice ↔ matematica ↔ significato
 
-Questo ponte mostra come il codice implementa direttamente la trasformazione.
+Questa sezione mostra come il codice implementa direttamente la trasformazione.
 
 | Codice | Lettura matematica | In parole semplici |
 |---|---|---|
@@ -2442,7 +2442,7 @@ Questo ponte mostra come il codice implementa direttamente la trasformazione.
 
 ## Lezione 11 — Verifica PyTorch
 
-### Bussola della lezione: cosa e perché
+### Sintesi della lezione: obiettivo e risultato
 
 - **Prima:** le lezioni 09–10 creano già batch tensoriali casuali `[B,T]` e ne ispezionano la shape
 - **Obiettivo:** isolare indexing per righe e colonne, dtype intero e versione PyTorch su un piccolo tensor deterministico
@@ -2478,7 +2478,7 @@ Lo script si ferma intenzionalmente all'ispezione. Stampa il tensor completo,
 la sua shape, la prima riga, la seconda colonna e il `dtype`. Poiché conosciamo
 in anticipo gli otto valori iniziali, ogni stampa ha un risultato atteso
 inequivocabile. Il ciclo di verifica è quindi molto concreto: costruiamo un
-oggetto, lo osserviamo da più direzioni e confrontiamo ciò che vediamo con il
+tensor, controlliamo più proprietà e confrontiamo i valori stampati con il
 contratto che volevamo creare. In questa lezione non compaiono ancora parametri
 del modello né matrix multiplication.
 
@@ -2496,7 +2496,7 @@ runtime che ha prodotto l'osservazione; il `dtype` descrive come sono
 memorizzati gli scalari. Lo script non seleziona e non verifica ancora CPU, MPS
 o CUDA: il device entrerà nel percorso più avanti. L'evidenza di questa lezione
 è più stretta e precisa: il runtime installato crea il tensor intero atteso e
-le operazioni di indexing stampano le viste previste. È un risultato modesto,
+le operazioni di indexing stampano le selezioni previste. È un risultato modesto,
 ma rende verificabile il substrato che userà il primo modello.
 
 ### Trasformazione, passo dopo passo
@@ -2595,7 +2595,7 @@ non dipendono da quei valori particolari.
 
 I due punti significano “mantieni ogni indice valido su questo asse”.
 `tensor[:, 1]` fissa quindi la seconda posizione e conserva tutte le righe del
-batch. Nessuna operazione aritmetica mescola i valori selezionati.
+batch. Nessuna operazione aritmetica combina tra loro i valori selezionati.
 
 Shape e `dtype` proteggono contratti diversi: la shape descrive
 l'organizzazione; il tipo intero stabilisce che ogni scalare può essere usato
@@ -2637,7 +2637,7 @@ Eseguire `study/lessons/11_verify_pytorch.py` prima di introdurre un modello.
 
 ### Codice ↔ matematica ↔ significato
 
-Questo ponte è incluso qui perché il codice implementa direttamente una trasformazione matematica.
+Questa sezione mostra come il codice realizza direttamente la trasformazione matematica.
 
 | Codice | Lettura matematica | In parole semplici |
 |---|---|---|
@@ -2652,7 +2652,7 @@ Questo ponte è incluso qui perché il codice implementa direttamente una trasfo
 
 ## Lezione 12 — Primo modello bigram
 
-### Bussola della lezione: cosa e perché
+### Sintesi della lezione: obiettivo e risultato
 
 - **Prima:** tensor di input interi, senza un meccanismo che assegni score ai possibili token successivi
 - **Obiettivo:** usare ogni ID corrente per selezionare una riga addestrabile di logits sul vocabulary
@@ -2840,7 +2840,7 @@ Il primo modello è definito in `study/snapshots/lesson_12/model.py` e usato da
 
 ## Lezione 13 — Bigram loss
 
-### Bussola della lezione: cosa e perché
+### Sintesi della lezione: obiettivo e risultato
 
 - **Prima:** logits `[B,T,V]` e target ID `[B,T]` correttamente allineati
 - **Obiettivo:** misurare quanta probabilità i logits assegnano a ciascun token successivo corretto
@@ -3052,7 +3052,7 @@ L'implementazione si trova in `study/snapshots/lesson_13/model.py`.
 
 ## Lezione 14 — Bigram training
 
-### Bussola della lezione: cosa e perché
+### Sintesi della lezione: obiettivo e risultato
 
 - **Prima:** una tabella bigram addestrabile e una loss scalare, ma nessun processo di aggiornamento
 - **Obiettivo:** calcolare ripetutamente i gradienti e lasciare che AdamW aggiorni i parametri registrati
@@ -3249,7 +3249,7 @@ Il loop completo e la stampa periodica e finale della loss si trovano in
 
 ## Lezione 15 — Bigram generation
 
-### Bussola della lezione: cosa e perché
+### Sintesi della lezione: obiettivo e risultato
 
 - **Prima:** un bigram model addestrato e un prompt fisso
 - **Obiettivo:** riutilizzare più volte la next-token prediction per estendere il prompt
@@ -3295,7 +3295,7 @@ esplorate, ma non riaddestra la bigram table.
 2. **OPERATION — Bigram generation**
 
    Applichiamo l'operazione **Genera testo campionando ripetutamente il token successivo previsto**. La traccia seguente mostra
-   gli oggetti nell'ordine in cui vengono letti, trasformati e consegnati al
+   gli oggetti nell'ordine di lettura, trasformazione e uso nel
    passaggio successivo:
 
    ```learngpt-visual
@@ -3319,7 +3319,7 @@ esplorate, ma non riaddestra la bigram table.
    ```
 
    **Cosa osservare:** ogni freccia rappresenta un'operazione concreta; una
-   riga intermedia è contemporaneamente l'output del passaggio precedente e
+   riga intermedia è sia l'output del passaggio precedente sia
    l'input di quello successivo.
 
 3. **INTERMEDIATE STATE — Segui le consegne intermedie**
@@ -3341,19 +3341,19 @@ esplorate, ma non riaddestra la bigram table.
    modificare; l'informazione necessaria alle lezioni successive resta
    allineata.
 
-5. **OUTPUT — Dai un nome al nuovo stato**
+5. **OUTPUT — Definisci il nuovo stato**
 
    Alla fine possediamo **un prompt esteso un token alla volta**. Questo è il nuovo punto di
    partenza del corso, non un semplice valore temporaneo.
 
-   **Cosa osservare:** l'output risponde alla bussola iniziale e può essere
+   **Cosa osservare:** l'output conferma l'obiettivo indicato nella sintesi iniziale e può essere
    passato alla lezione successiva senza ricostruire il processo da zero.
 
 ### Dove siamo arrivati
 
 La trasformazione è completa quando **un prompt esteso un token alla volta** è disponibile e il
 vincolo della lezione è ancora rispettato. A questo punto possiamo fermarci:
-aggiungere già il passaggio successivo renderebbe meno chiaro quale
+anticipare il passaggio successivo renderebbe meno chiaro quale
 responsabilità appartiene a questa lezione.
 
 - **Cambiato:** un prompt fisso è diventato **un prompt esteso un token alla volta**.
@@ -3450,7 +3450,7 @@ La generation è mostrata in `study/lessons/15_bigram_generation.py`.
 
 ### Codice ↔ matematica ↔ significato
 
-Questo ponte è incluso qui perché il codice implementa direttamente una trasformazione matematica.
+Questa sezione mostra come il codice realizza direttamente la trasformazione matematica.
 
 | Codice | Lettura matematica | In parole semplici |
 |---|---|---|
@@ -3458,7 +3458,7 @@ Questo ponte è incluso qui perché il codice implementa direttamente una trasfo
 
 ## Lezione 16 — Limite di bigramma
 
-### Bussola della lezione: cosa e perché
+### Sintesi della lezione: obiettivo e risultato
 
 - **Prima:** un generatore capace di estendere un prompt
 - **Obiettivo:** mostrare quale parte del prompt il bigram model ignora
@@ -3471,14 +3471,14 @@ Il generatore funziona, ma il bigram model sceglie la propria riga di score
 usando soltanto l'ID del token corrente. Fornire un tensor più lungo non crea
 comunicazione tra le posizioni.
 
-Confrontiamo `The cat` e `A noisy cat`. Le storie sono diverse, ma entrambi i
+Confrontiamo `The cat` e `A noisy cat`. I contesti precedenti sono diversi, ma entrambi i
 prefissi terminano con `cat`: il modello seleziona quindi la stessa riga e
 restituisce la stessa distribuzione. Non è un semplice errore di training, ma
 un limite architetturale: i token precedenti non sono disponibili alla
 previsione.
 
 Questa lezione non aggiunge componenti. Mantiene fisso il token finale, cambia
-soltanto la storia e verifica se l'output può cambiare.
+soltanto il prefisso precedente e verifica se l'output può cambiare.
 
 Il confronto spiega perché la generation può sembrare plausibile a livello
 locale e perdere un soggetto, un tema o una dipendenza più lunga. Il modello
@@ -3502,7 +3502,7 @@ dubbio generico in una prova riproducibile del requisito architetturale.
 2. **OPERATION — Limite di bigramma**
 
    Applichiamo l'operazione **Mostra perché una memoria limitata a un solo token non è sufficiente**. La traccia seguente mostra
-   gli oggetti nell'ordine in cui vengono letti, trasformati e consegnati al
+   gli oggetti nell'ordine di lettura, trasformazione e uso nel
    passaggio successivo:
 
    ```learngpt-mermaid
@@ -3527,7 +3527,7 @@ dubbio generico in una prova riproducibile del requisito architetturale.
    ```
 
    **Cosa osservare:** ogni freccia rappresenta un'operazione concreta; una
-   riga intermedia è contemporaneamente l'output del passaggio precedente e
+   riga intermedia è sia l'output del passaggio precedente sia
    l'input di quello successivo.
 
 3. **INTERMEDIATE STATE — Segui le consegne intermedie**
@@ -3549,19 +3549,19 @@ dubbio generico in una prova riproducibile del requisito architetturale.
    modificare; l'informazione necessaria alle lezioni successive resta
    allineata.
 
-5. **OUTPUT — Dai un nome al nuovo stato**
+5. **OUTPUT — Definisci il nuovo stato**
 
    Alla fine possediamo **una descrizione precisa del suo limite di contesto**. Questo è il nuovo punto di
    partenza del corso, non un semplice valore temporaneo.
 
-   **Cosa osservare:** l'output risponde alla bussola iniziale e può essere
+   **Cosa osservare:** l'output conferma l'obiettivo indicato nella sintesi iniziale e può essere
    passato alla lezione successiva senza ricostruire il processo da zero.
 
 ### Dove siamo arrivati
 
 La trasformazione è completa quando **una descrizione precisa del suo limite di contesto** è disponibile e il
 vincolo della lezione è ancora rispettato. A questo punto possiamo fermarci:
-aggiungere già il passaggio successivo renderebbe meno chiaro quale
+anticipare il passaggio successivo renderebbe meno chiaro quale
 responsabilità appartiene a questa lezione.
 
 - **Cambiato:** un predittore del token successivo funzionante è diventato **una descrizione precisa del suo limite di contesto**.
@@ -3586,7 +3586,7 @@ solo token finale.
 
 > **Stato dell'esempio ricorrente:** confrontiamo `The cat` con un altro
 > prefix che termina in `cat`, così diventa visibile ciò che il bigram model
-> dimentica della storia precedente.
+> ignora del prefisso precedente.
 
 | Prefix | Ultimo token | Distribuzione del prossimo token |
 |---|---|---|
@@ -3658,7 +3658,7 @@ Questo confronto controllato è in `study/lessons/16_bigram_limit.py`.
 
 ## Lezione 17 — Token embedding
 
-### Bussola della lezione: cosa e perché
+### Sintesi della lezione: obiettivo e risultato
 
 - **Prima:** token ID interi che identificano categorie, ma non offrono una geometria utile
 - **Obiettivo:** sostituire ogni ID con un vettore appreso di C feature
@@ -3701,7 +3701,7 @@ Questo è il nuovo oggetto concreto consegnato alla lezione successiva.
 2. **OPERATION — Token embedding**
 
    Applichiamo l'operazione **Rappresenta ogni token con un feature vector appreso**. La traccia seguente mostra
-   gli oggetti nell'ordine in cui vengono letti, trasformati e consegnati al
+   gli oggetti nell'ordine di lettura, trasformazione e uso nel
    passaggio successivo:
 
    ```learngpt-visual
@@ -3744,7 +3744,7 @@ Questo è il nuovo oggetto concreto consegnato alla lezione successiva.
    ```
 
    **Cosa osservare:** ogni freccia rappresenta un'operazione concreta; una
-   riga intermedia è contemporaneamente l'output del passaggio precedente e
+   riga intermedia è sia l'output del passaggio precedente sia
    l'input di quello successivo.
 
 3. **INTERMEDIATE STATE — Segui le consegne intermedie**
@@ -3766,19 +3766,19 @@ Questo è il nuovo oggetto concreto consegnato alla lezione successiva.
    modificare; l'informazione necessaria alle lezioni successive resta
    allineata.
 
-5. **OUTPUT — Dai un nome al nuovo stato**
+5. **OUTPUT — Definisci il nuovo stato**
 
    Alla fine possediamo **$C$ feature apprese per token**. Questo è il nuovo punto di
    partenza del corso, non un semplice valore temporaneo.
 
-   **Cosa osservare:** l'output risponde alla bussola iniziale e può essere
+   **Cosa osservare:** l'output conferma l'obiettivo indicato nella sintesi iniziale e può essere
    passato alla lezione successiva senza ricostruire il processo da zero.
 
 ### Dove siamo arrivati
 
-La trasformazione è completa quando **$C$ feature apprese per token** è disponibile e il
+La trasformazione è completa quando **$C$ feature apprese per token** sono disponibili e il
 vincolo della lezione è ancora rispettato. A questo punto possiamo fermarci:
-aggiungere già il passaggio successivo renderebbe meno chiaro quale
+anticipare il passaggio successivo renderebbe meno chiaro quale
 responsabilità appartiene a questa lezione.
 
 - **Cambiato:** un ID per token è diventato **$C$ feature apprese per token**.
@@ -3864,7 +3864,7 @@ I livelli di rappresentazione e uscita separati vivono in `study/snapshots/lesso
 
 ### Codice ↔ matematica ↔ significato
 
-Questo ponte è incluso qui perché il codice implementa direttamente una trasformazione matematica.
+Questa sezione mostra come il codice realizza direttamente la trasformazione matematica.
 
 | Codice | Lettura matematica | In parole semplici |
 |---|---|---|
@@ -3878,7 +3878,7 @@ Questo ponte è incluso qui perché il codice implementa direttamente una trasfo
 
 ## Lezione 18 — Embedding di posizione
 
-### Bussola della lezione: cosa e perché
+### Sintesi della lezione: obiettivo e risultato
 
 - **Prima:** token vector che identificano il contenuto, ma non la posizione
 - **Obiettivo:** aggiungere a ogni token vector un position vector appreso
@@ -3923,7 +3923,7 @@ il proprio indice.
 2. **OPERATION — Embedding di posizione**
 
    Applichiamo l'operazione **Aggiungi informazioni su dove si verifica ogni token**. La traccia seguente mostra
-   gli oggetti nell'ordine in cui vengono letti, trasformati e consegnati al
+   gli oggetti nell'ordine di lettura, trasformazione e uso nel
    passaggio successivo:
 
    ```learngpt-visual
@@ -3943,7 +3943,7 @@ il proprio indice.
    {
      "type": "matrix-operation",
      "title": "Somma identità del token e posizione feature per feature",
-     "description": "La somma elementwise arricchisce cat con la posizione 1 senza mescolarlo con un altro token.",
+     "description": "La somma elementwise aggiunge a cat l'informazione della posizione 1 senza combinarlo con un altro token.",
      "operands": [
        {"label": "Token embedding E[cat]", "shape": "1 × 3", "values": [["0.4", "−0.1", "0.7"]]},
        {"label": "Position embedding P[1]", "shape": "1 × 3", "values": [["0.0", "0.2", "−0.1"]]}
@@ -3967,7 +3967,7 @@ il proprio indice.
    ```
 
    **Cosa osservare:** ogni freccia rappresenta un'operazione concreta; una
-   riga intermedia è contemporaneamente l'output del passaggio precedente e
+   riga intermedia è sia l'output del passaggio precedente sia
    l'input di quello successivo.
 
 3. **INTERMEDIATE STATE — Segui le consegne intermedie**
@@ -3989,19 +3989,19 @@ il proprio indice.
    modificare; l'informazione necessaria alle lezioni successive resta
    allineata.
 
-5. **OUTPUT — Dai un nome al nuovo stato**
+5. **OUTPUT — Definisci il nuovo stato**
 
    Alla fine possediamo **identità del token e posizione nella sequenza**. Questo è il nuovo punto di
    partenza del corso, non un semplice valore temporaneo.
 
-   **Cosa osservare:** l'output risponde alla bussola iniziale e può essere
+   **Cosa osservare:** l'output conferma l'obiettivo indicato nella sintesi iniziale e può essere
    passato alla lezione successiva senza ricostruire il processo da zero.
 
 ### Dove siamo arrivati
 
-La trasformazione è completa quando **identità del token e posizione nella sequenza** è disponibile e il
+La trasformazione è completa quando **identità del token e posizione nella sequenza** sono disponibili e il
 vincolo della lezione è ancora rispettato. A questo punto possiamo fermarci:
-aggiungere già il passaggio successivo renderebbe meno chiaro quale
+anticipare il passaggio successivo renderebbe meno chiaro quale
 responsabilità appartiene a questa lezione.
 
 - **Cambiato:** l'identità dei token ma non l'ordine è diventato **identità del token e posizione nella sequenza**.
@@ -4093,7 +4093,7 @@ Il limite di contesto durante generation è anche aggiunto in `study/snapshots/l
 
 ### Codice ↔ matematica ↔ significato
 
-Questo ponte è incluso qui perché il codice implementa direttamente una trasformazione matematica.
+Questa sezione mostra come il codice realizza direttamente la trasformazione matematica.
 
 | Codice | Lettura matematica | In parole semplici |
 |---|---|---|
@@ -4109,7 +4109,7 @@ Questo ponte è incluso qui perché il codice implementa direttamente una trasfo
 
 ## Lezione 19 — Causal self-attention head
 
-### Bussola della lezione: cosa e perché
+### Sintesi della lezione: obiettivo e risultato
 
 - **Prima:** ogni token possiede identità e posizione, ma non informazioni dagli altri token
 - **Obiettivo:** permettere a ogni posizione di raccogliere il contesto utile dal prefisso visibile
@@ -4119,27 +4119,28 @@ Questo ponte è incluso qui perché il codice implementa direttamente una trasfo
 ### Comprendere la trasformazione
 
 Prima di questa lezione, `The`, `cat`, `sleeps`, `here` e `.` hanno vettori
-diversi perché rappresentano token e posizioni diverse, ma ogni vettore vive
-ancora isolato. Il token `sleeps` non ha un meccanismo per recuperare
-informazioni da `The` o `cat`. La **self-attention** introduce precisamente
-questa comunicazione: per ogni posizione costruisce una nuova rappresentazione
-mescolando le informazioni dei token che quella posizione è autorizzata a
-vedere.
+diversi perché rappresentano token e posizioni diverse, ma ogni vettore dipende
+solo dal proprio token e dalla propria posizione. Il token `sleeps` non ha ancora
+un meccanismo per usare informazioni provenienti da `The` o `cat`. La
+**self-attention** introduce precisamente questa dipendenza dal contesto: per
+ogni posizione costruisce una nuova rappresentazione combinando le informazioni
+dei token ammessi dal vincolo causale.
 
-Prima di introdurre query, key e value appresi, immagina la forma più semplice
-dell'idea. Scegli una posizione, assegna uno score ai token visibili, trasforma
-quegli score in pesi che sommano a uno e calcola una media pesata delle
-informazioni visibili. Letta così, la self-attention significa che un token
-costruisce un nuovo context vector decidendo quanto prendere da se stesso e
-dai token precedenti. La meccanica Q/K/V qui sotto è il modo parametrico con
-cui un Transformer produce quegli score e sceglie quali informazioni possano
-essere mescolate.
+Prima di introdurre query, key e value appresi, considera la versione minima del
+procedimento. Scegli una posizione, assegna uno score ai token consentiti,
+trasforma quegli score in pesi che sommano a uno e calcola una media pesata delle
+informazioni disponibili. In questi termini, la self-attention permette a un
+token di costruire un nuovo context vector usando informazioni proprie e dei
+token precedenti. Il meccanismo Q/K/V qui sotto è il modo parametrico con cui un
+Transformer produce quegli score e stabilisce quali informazioni entrano
+nell'output.
 
-Per capire il processo, separiamo tre ruoli. La **query** descrive che cosa sta
-cercando il token corrente; le **key** descrivono come ogni token si presenta
-al confronto; i **value** contengono l'informazione che può essere trasferita.
+Per capire il processo, separiamo tre ruoli. La **query** descrive il confronto
+che il token corrente deve eseguire; le **key** descrivono le informazioni usate
+per confrontare ogni token candidato; i **value** contengono l'informazione che
+può contribuire all'output.
 Query, key e value sono vettori diversi ottenuti con proiezioni apprese. Per
-questo non basta dire che un token “guarda” un altro: prima il modello misura
+questo non basta dire che un token usa un altro token: prima il modello misura
 la compatibilità tra query e key, poi usa il risultato per decidere quanto di
 ogni value deve entrare nell'output.
 
@@ -4153,18 +4154,18 @@ una percentuale e non è ancora sicuro dal punto di vista causale.
 
 Gli score vengono prima divisi per `√2`, perché la head ha due feature. Lo
 scaling impedisce che dot product più larghi crescano troppo e rendano la
-softmax eccessivamente sicura. Poi interviene la **causal mask**: mentre
-predice dalla posizione `sleeps`, il modello può vedere `The`, `cat` e
-`sleeps`, ma non `here` né `.`. I due score futuri diventano `−∞`; dopo la
-softmax, corrispondono esattamente a peso zero. La causalità non suggerisce al
-modello di ignorare il futuro: glielo rende matematicamente inaccessibile.
+softmax eccessivamente concentrata. Poi interviene la **causal mask**: mentre
+predice dalla posizione `sleeps`, il modello può usare `The`, `cat` e `sleeps`,
+ma non `here` né `.`. I due score futuri diventano `−∞`; dopo la softmax,
+corrispondono esattamente a peso zero. La causalità non suggerisce al modello di
+ignorare il futuro: rende quelle posizioni matematicamente inaccessibili.
 
 La softmax trasforma gli score consentiti nei pesi
-`[0.25,0.25,0.50,0,0]`, che sommano a uno. Ora possiamo leggere il risultato
-come una miscela: il 25% dell'informazione viene dal value di `The`, il 25% da
-`cat` e il 50% da `sleeps`. Questi numeri non vengono aggiunti direttamente
-alla query. Formano invece la riga `A_sleeps` della matrice di attention, che
-viene moltiplicata per la matrice `V` dei value.
+`[0.25,0.25,0.50,0,0]`, che sommano a uno. Il risultato si legge così: il 25%
+dell'informazione deriva dal value di `The`, il 25% da `cat` e il 50% da
+`sleeps`. Questi numeri non vengono aggiunti direttamente alla query. Formano
+invece la riga `A_sleeps` della matrice di attention, che viene moltiplicata per
+la matrice `V` dei value.
 
 I vettori numerici dell'esempio sono scelti per rendere il conto leggibile,
 non sono regole linguistiche scritte a mano. Nel modello reale, le matrici
@@ -4176,29 +4177,29 @@ il modello apprende quali confronti e quali contenuti siano utili all'interno
 di quella struttura.
 
 Questa distinzione evita l'equivoco più comune: attention **non calcola
-`Q×V`** e non “aggiunge semplicemente `V`”. `QKᵀ` decide *dove guardare*;
+`Q×V`** e non “aggiunge semplicemente `V`”. `QKᵀ` decide *quali posizioni pesare*;
 la softmax converte quella decisione in pesi; `A×V` combina *le informazioni
-da trasportare*. Con i value e i pesi arrotondati dell'esempio, la query di
+dei value*. Con i value e i pesi arrotondati dell'esempio, la query di
 `sleeps` produce circa `[1.00,1.25]`. Le due componenti sono somme ponderate
-calcolate separatamente: ogni feature dell'output raccoglie la stessa miscela
-di token, ma valori di feature differenti.
+calcolate separatamente: ogni feature dell'output usa gli stessi pesi sui token,
+ma valori di feature differenti.
 
 Anche il risultato arrotondato `[1.00,1.25]` non è una traduzione leggibile
 della parola `sleeps`.
-Sono due coordinate nello spazio di feature della head: acquistano significato
+Sono due coordinate nello spazio di feature della head: assumono significato
 solo perché le trasformazioni successive sanno come usarle. Il valore da
-seguire qui è la provenienza: entrambe le coordinate dipendono esclusivamente
-da token consentiti e conservano una traccia ponderata del prefisso. Più
-avanti, le altre head offriranno miscele differenti e una proiezione riunirà
-queste prospettive nel residual stream.
+seguire qui è la dipendenza causale: entrambe le coordinate dipendono
+esclusivamente da token consentiti e conservano informazione ponderata del
+prefisso. Più avanti, le altre head produrranno combinazioni differenti e una
+proiezione riunirà i loro output nel residual stream.
 
 Nel modello reale lo stesso procedimento avviene per ogni posizione, per ogni
 elemento del batch e per ogni head. Le matrici sono più grandi, ma la logica
 non cambia: confronta, limita il campo visibile, normalizza e combina. Il nuovo
 vettore di `sleeps` è quindi contestualizzato perché incorpora informazione dal
 suo prefisso. Non è ancora il risultato finale del Transformer: una singola
-head offre una sola prospettiva, che la prossima lezione affiancherà ad altre
-head per catturare relazioni diverse.
+head produce un solo tipo di combinazione, che la prossima lezione affiancherà
+ad altre head per rappresentare relazioni diverse.
 
 ### Trasformazione, passo dopo passo
 
@@ -4392,7 +4393,7 @@ head per catturare relazioni diverse.
 ### Dove siamo arrivati
 
 Il token `sleeps` non è più rappresentato soltanto dalla propria identità e
-posizione: il suo nuovo vettore contiene una miscela controllata del prefisso
+posizione: il suo nuovo vettore contiene una somma ponderata del prefisso
 `The cat sleeps`. La stessa trasformazione viene eseguita per ogni posizione,
 sempre rispettando la direzione causale. Abbiamo così introdotto il primo
 meccanismo con cui i token comunicano all'interno del modello.
@@ -4401,7 +4402,7 @@ meccanismo con cui i token comunicano all'interno del modello.
 - **Preservato:** ordine temporale, assi batch/tempo e divieto di osservare token futuri.
 - **Prossimo passo:** eseguire più head in parallelo per apprendere diversi tipi di relazione.
 
-> **Se ricordi una sola cosa:** `QKᵀ` sceglie dove guardare, la softmax crea i
+> **Se ricordi una sola cosa:** `QKᵀ` sceglie quali posizioni pesare, la softmax crea i
 > pesi e `A×V` combina le informazioni visibili.
 
 ### Come leggere la matematica
@@ -4491,7 +4492,7 @@ $$
 | proiezioni $R W_Q$, $R W_K$, $R W_V$ | `[B,T,C] × [C,D]` | `[B,T,D]` | $C$ |
 | confronto $QK^{\mathsf T}$ | `[B,T,D] × [B,D,T]` | `[B,T,T]` | $D$ |
 | softmax per riga | `[B,T,T]` | `[B,T,T]` | nessuno |
-| miscela $AV'$ | `[B,T,T] × [B,T,D]` | `[B,T,D]` | tempo delle key |
+| combinazione $AV'$ | `[B,T,T] × [B,T,D]` | `[B,T,D]` | tempo delle key |
 
 ```mermaid
 flowchart LR
@@ -4555,7 +4556,7 @@ La `SelfAttentionHead` completa si trova in `study/snapshots/lesson_19/model.py`
 
 ### Codice ↔ matematica ↔ significato
 
-Questo ponte è incluso qui perché il codice implementa direttamente una trasformazione matematica.
+Questa sezione mostra come il codice realizza direttamente la trasformazione matematica.
 
 | Codice | Lettura matematica | In parole semplici |
 |---|---|---|
@@ -4564,7 +4565,7 @@ Questo ponte è incluso qui perché il codice implementa direttamente una trasfo
 
 ## Lezione 20 — Multi-head attention
 
-### Bussola della lezione: cosa e perché
+### Sintesi della lezione: obiettivo e risultato
 
 - **Prima:** una sola vista contestuale
 - **Obiettivo:** Esegui più viste di attention in parallelo
@@ -4622,7 +4623,7 @@ Il risultato resta un tensor `[B,T,C]` pronto per la proiezione successiva.
 2. **OPERATION — Multi-head attention**
 
    Applichiamo l'operazione **Esegui più viste di attention in parallelo**. La traccia seguente mostra
-   gli oggetti nell'ordine in cui vengono letti, trasformati e consegnati al
+   gli oggetti nell'ordine di lettura, trasformazione e uso nel
    passaggio successivo:
 
    ```learngpt-mermaid
@@ -4637,7 +4638,7 @@ Il risultato resta un tensor `[B,T,C]` pronto per la proiezione successiva.
    ```
 
    **Cosa osservare:** ogni freccia rappresenta un'operazione concreta; una
-   riga intermedia è contemporaneamente l'output del passaggio precedente e
+   riga intermedia è sia l'output del passaggio precedente sia
    l'input di quello successivo.
 
 3. **INTERMEDIATE STATE — Segui le consegne intermedie**
@@ -4659,19 +4660,19 @@ Il risultato resta un tensor `[B,T,C]` pronto per la proiezione successiva.
    modificare; l'informazione necessaria alle lezioni successive resta
    allineata.
 
-5. **OUTPUT — Dai un nome al nuovo stato**
+5. **OUTPUT — Definisci il nuovo stato**
 
    Alla fine possediamo **$H$ viste contestuali riunite in $C$ feature**. Questo è il nuovo punto di
    partenza del corso, non un semplice valore temporaneo.
 
-   **Cosa osservare:** l'output risponde alla bussola iniziale e può essere
+   **Cosa osservare:** l'output conferma l'obiettivo indicato nella sintesi iniziale e può essere
    passato alla lezione successiva senza ricostruire il processo da zero.
 
 ### Dove siamo arrivati
 
-La trasformazione è completa quando **$H$ viste contestuali riunite in $C$ feature** è disponibile e il
+La trasformazione è completa quando **$H$ viste contestuali riunite in $C$ feature** sono disponibili e il
 vincolo della lezione è ancora rispettato. A questo punto possiamo fermarci:
-aggiungere già il passaggio successivo renderebbe meno chiaro quale
+anticipare il passaggio successivo renderebbe meno chiaro quale
 responsabilità appartiene a questa lezione.
 
 - **Cambiato:** una sola vista contestuale è diventato **$H$ viste contestuali riunite in $C$ feature**.
@@ -4766,7 +4767,7 @@ Questo è il loop multi-head letterale presente in
 
 ### Codice ↔ matematica ↔ significato
 
-Questo ponte è incluso qui perché il codice implementa direttamente una trasformazione matematica.
+Questa sezione mostra come il codice realizza direttamente la trasformazione matematica.
 
 | Codice | Lettura matematica | In parole semplici |
 |---|---|---|
@@ -4780,11 +4781,11 @@ Questo ponte è incluso qui perché il codice implementa direttamente una trasfo
 
 ## Lezione 21 — Attention output projection
 
-### Bussola della lezione: cosa e perché
+### Sintesi della lezione: obiettivo e risultato
 
 - **Prima:** slice di feature separate per head
-- **Obiettivo:** Mescola le attention head concatenate nello spazio delle feature del residual stream
-- **Dopo:** un attention update mescolato
+- **Obiettivo:** integra le attention head concatenate nello spazio delle feature del residual stream
+- **Dopo:** un attention update proiettato
 - **Vincolo:** gli assi batch/tempo e il vincolo causale restano intatti mentre cambiano le feature
 
 ### Comprendere la trasformazione
@@ -4804,7 +4805,7 @@ la stessa interfaccia `[B,T,C]`.
 {
   "type": "matrix-operation",
   "title": "Output projection delle head concatenate",
-  "description": "La matrice W_O e il bias b_O mescolano tutte le slice in un unico update largo C.",
+  "description": "La matrice W_O e il bias b_O combinano tutte le slice in un unico update largo C.",
   "operands": [
     {"label": "head concatenate", "shape": "1 × 4", "values": [["1.00", "1.25", "−0.20", "0.80"]]},
     {"label": "W_O", "shape": "4 × 4", "values": [["w00", "w01", "w02", "w03"], ["w10", "w11", "w12", "w13"], ["w20", "w21", "w22", "w23"], ["w30", "w31", "w32", "w33"]]},
@@ -4816,7 +4817,7 @@ la stessa interfaccia `[B,T,C]`.
 ```
 
 I valori esatti vengono appresi. Input e output mantengono larghezza C, ma le
-coordinate di uscita sono miscele delle slice, non copie separate. La somma al
+coordinate di uscita sono combinazioni lineari delle slice, non copie separate. La somma al
 residual stream avverrà nella lezione successiva.
 
 La parola “projection” può nascondere l'operazione concreta. In ogni posizione
@@ -4827,7 +4828,7 @@ esse hanno restituito. Mantenere `[B,T,C]` è il contratto che renderà possibil
 la residual addition della prossima lezione.
 Non modifica la causal mask né aggiunge posizioni: applica la stessa
 trasformazione affine C-to-C a ogni riga. Il nuovo stato è un singolo update
-mescolato, non più un insieme di slice che i layer successivi devono
+proiettato, non più un insieme di slice che i layer successivi devono
 interpretare separatamente.
 
 ### Trasformazione, passo dopo passo
@@ -4843,25 +4844,25 @@ interpretare separatamente.
 
 2. **OPERATION — Attention output projection**
 
-   Applichiamo l'operazione **Mescola le attention head concatenate nello spazio delle feature del residual stream**. La traccia seguente mostra
-   gli oggetti nell'ordine in cui vengono letti, trasformati e consegnati al
+   Applichiamo l'operazione **integra le attention head concatenate nello spazio delle feature del residual stream**. La traccia seguente mostra
+   gli oggetti nell'ordine di lettura, trasformazione e uso nel
    passaggio successivo:
 
    ```learngpt-visual
    {
      "type": "tensor-flow",
      "title": "Dalle slice separate a un attention update",
-     "description": "La projection mescola le feature ma conserva batch, tempo e larghezza C.",
+     "description": "La projection combina le feature ma conserva batch, tempo e larghezza C.",
      "stages": [
        {"label": "Output concatenati delle head", "shape": "B × T × C", "note": "slice ancora separate lungo C"},
        {"label": "Output projection appresa", "shape": "[B,T,C]", "note": "stessa trasformazione per ogni posizione"},
-       {"label": "Attention update mescolato", "shape": "B × T × C", "note": "compatibile con il residual stream"}
+       {"label": "Attention update proiettato", "shape": "B × T × C", "note": "compatibile con il residual stream"}
      ]
    }
    ```
 
    **Cosa osservare:** ogni freccia rappresenta un'operazione concreta; una
-   riga intermedia è contemporaneamente l'output del passaggio precedente e
+   riga intermedia è sia l'output del passaggio precedente sia
    l'input di quello successivo.
 
 3. **INTERMEDIATE STATE — Segui le consegne intermedie**
@@ -4883,28 +4884,28 @@ interpretare separatamente.
    modificare; l'informazione necessaria alle lezioni successive resta
    allineata.
 
-5. **OUTPUT — Dai un nome al nuovo stato**
+5. **OUTPUT — Definisci il nuovo stato**
 
-   Alla fine possediamo **un attention update mescolato**. Questo è il nuovo punto di
+   Alla fine possediamo **un attention update proiettato**. Questo è il nuovo punto di
    partenza del corso, non un semplice valore temporaneo.
 
-   **Cosa osservare:** l'output risponde alla bussola iniziale e può essere
+   **Cosa osservare:** l'output conferma l'obiettivo indicato nella sintesi iniziale e può essere
    passato alla lezione successiva senza ricostruire il processo da zero.
 
 ### Dove siamo arrivati
 
-La trasformazione è completa quando **un attention update mescolato** è disponibile e il
+La trasformazione è completa quando **un attention update proiettato** è disponibile e il
 vincolo della lezione è ancora rispettato. A questo punto possiamo fermarci:
-aggiungere già il passaggio successivo renderebbe meno chiaro quale
+anticipare il passaggio successivo renderebbe meno chiaro quale
 responsabilità appartiene a questa lezione.
 
-- **Cambiato:** slice di feature separate per head è diventato **un attention update mescolato**.
+- **Cambiato:** slice di feature separate per head è diventato **un attention update proiettato**.
 - **Preservato:** gli assi batch/tempo e il vincolo causale restano intatti mentre cambiano le feature.
 - **Prossimo passo:** **Attention residual connection** userà questo risultato come nuovo input.
 
 > **Se ricordi una sola cosa:** il risultato importante non è il nome
 > dell'operazione, ma il nuovo stato verificabile che essa produce:
-> **un attention update mescolato**.
+> **un attention update proiettato**.
 
 ### Come leggere la matematica
 
@@ -4921,18 +4922,18 @@ output, preservando gli assi batch e tempo.
 ### Esempio visivo svolto
 
 > **Stato dell'esempio ricorrente:** concateniamo gli output delle head
-> calcolati per `sleeps`, poi li mescoliamo in un unico update per quel token.
+> calcolati per `sleeps`, poi li proiettiamo in un unico update per quel token.
 
 ```learngpt-visual
 {
   "type": "tensor-flow",
-  "title": "Unisci le slice delle head, poi impara a mescolarle",
+  "title": "Unisci le slice delle head, poi applica una proiezione appresa",
   "description": "La concatenazione ripristina C canali e W_O trasforma le slice fisse in un singolo update largo C.",
   "stages": [
     {"label": "Output delle head: [0.8, −0.2] e [0.1, 0.6]", "shape": "2 × D = 2", "note": "due viste contestuali indipendenti"},
-    {"label": "Stato concatenato: [0.8, −0.2, 0.1, 0.6]", "shape": "C = 4", "note": "slice adiacenti ma non ancora mescolate"},
-    {"label": "Moltiplica per W_O", "shape": "C", "note": "feature mixing appreso"},
-    {"label": "Update mescolato largo C", "shape": "C", "note": "compatibile con il residual stream"}
+    {"label": "Stato concatenato: [0.8, −0.2, 0.1, 0.6]", "shape": "C = 4", "note": "slice adiacenti prima della proiezione"},
+    {"label": "Moltiplica per W_O", "shape": "C", "note": "combinazione appresa delle feature"},
+    {"label": "Update proiettato largo C", "shape": "C", "note": "compatibile con il residual stream"}
   ]
 }
 ```
@@ -4941,7 +4942,7 @@ $W_O$ consente a ogni feature di output di usare informazioni provenienti da
 tutte le head.
 
 Le head concatenate occupano slice fisse dell'asse delle feature. Una matrice
-appresa $W_O\in\mathbb R^{C\times C}$ le mescola:
+appresa $W_O\in\mathbb R^{C\times C}$ le combina:
 
 $$\operatorname{MHA}(R)=\operatorname{Concat}(O_1,\ldots,O_H)W_O+b_O.$$
 
@@ -4972,18 +4973,18 @@ La proiezione è introdotta in `study/snapshots/lesson_21/model.py`.
   ogni posizione batch e tempo.
 - `torch.cat(attended_outputs, dim=-1)` unisce gli output delle head in
   `[B,T,num_heads*D]`, cioè `[B,T,C]`.
-- `self.output_projection(concatenated_embeddings)` mescola l'asse delle feature
+- `self.output_projection(concatenated_embeddings)` combina l'asse delle feature
   concatenato e ripristina `[B,T,C]`.
 - `return projected_embeddings, attention_weights_by_head` separa la
   rappresentazione usata dal modello dalle attention map diagnostiche.
 
 ### Codice ↔ matematica ↔ significato
 
-Questo ponte è incluso qui perché il codice implementa direttamente una trasformazione matematica.
+Questa sezione mostra come il codice realizza direttamente la trasformazione matematica.
 
 | Codice | Lettura matematica | In parole semplici |
 |---|---|---|
-| `self.output_projection(concatenated)` | $O_{cat}W_O$ | mescola le feature provenienti da tutte le head |
+| `self.output_projection(concatenated)` | $O_{cat}W_O$ | combina le feature provenienti da tutte le head |
 
 ### Programmato rispetto ad appreso
 
@@ -4996,7 +4997,7 @@ Questo ponte è incluso qui perché il codice implementa direttamente una trasfo
 
 ## Lezione 22 — Attention residual connection
 
-### Bussola della lezione: cosa e perché
+### Sintesi della lezione: obiettivo e risultato
 
 - **Prima:** stato e risultato attention separati
 - **Obiettivo:** Aggiungi l'attention update senza sostituire lo stato esistente
@@ -5035,7 +5036,7 @@ un identity path utile sia all'informazione sia ai gradienti.
 I due operandi hanno ruoli diversi. Il residual source è lo stato esistente
 prima di attention; il branch output è informazione contestuale appena
 calcolata. Nessuno dei due è una percentuale o un target. Dopo la somma rimane
-un solo residual stream, quindi i layer successivi non devono trasportare
+un solo residual stream, quindi i layer successivi non devono gestire
 separatamente i due tensor. Preservare C è sia un requisito matematico sia il
 contratto architetturale del block, e garantisce che il nuovo stato possa
 proseguire senza adapter.
@@ -5057,7 +5058,7 @@ residual stream lo conserva insieme all'informazione precedente.
 2. **OPERATION — Attention residual connection**
 
    Applichiamo l'operazione **Aggiungi l'attention update senza sostituire lo stato esistente**. La traccia seguente mostra
-   gli oggetti nell'ordine in cui vengono letti, trasformati e consegnati al
+   gli oggetti nell'ordine di lettura, trasformazione e uso nel
    passaggio successivo:
 
    ```learngpt-visual
@@ -5075,7 +5076,7 @@ residual stream lo conserva insieme all'informazione precedente.
    ```
 
    **Cosa osservare:** ogni freccia rappresenta un'operazione concreta; una
-   riga intermedia è contemporaneamente l'output del passaggio precedente e
+   riga intermedia è sia l'output del passaggio precedente sia
    l'input di quello successivo.
 
 3. **INTERMEDIATE STATE — Segui le consegne intermedie**
@@ -5097,19 +5098,19 @@ residual stream lo conserva insieme all'informazione precedente.
    modificare; l'informazione necessaria alle lezioni successive resta
    allineata.
 
-5. **OUTPUT — Dai un nome al nuovo stato**
+5. **OUTPUT — Definisci il nuovo stato**
 
    Alla fine possediamo **un residual stream che contiene entrambi**. Questo è il nuovo punto di
    partenza del corso, non un semplice valore temporaneo.
 
-   **Cosa osservare:** l'output risponde alla bussola iniziale e può essere
+   **Cosa osservare:** l'output conferma l'obiettivo indicato nella sintesi iniziale e può essere
    passato alla lezione successiva senza ricostruire il processo da zero.
 
 ### Dove siamo arrivati
 
 La trasformazione è completa quando **un residual stream che contiene entrambi** è disponibile e il
 vincolo della lezione è ancora rispettato. A questo punto possiamo fermarci:
-aggiungere già il passaggio successivo renderebbe meno chiaro quale
+anticipare il passaggio successivo renderebbe meno chiaro quale
 responsabilità appartiene a questa lezione.
 
 - **Cambiato:** stato e risultato attention separati è diventato **un residual stream che contiene entrambi**.
@@ -5181,7 +5182,7 @@ La skip connection è illustrata in `study/snapshots/lesson_22/model.py`.
 
 ### Codice ↔ matematica ↔ significato
 
-Questo ponte è incluso qui perché il codice implementa direttamente una trasformazione matematica.
+Questa sezione mostra come il codice realizza direttamente la trasformazione matematica.
 
 | Codice | Lettura matematica | In parole semplici |
 |---|---|---|
@@ -5194,7 +5195,7 @@ Questo ponte è incluso qui perché il codice implementa direttamente una trasfo
 
 ## Lezione 23 — LayerNorm prima di attention
 
-### Bussola della lezione: cosa e perché
+### Sintesi della lezione: obiettivo e risultato
 
 - **Prima:** feature con scale variabili
 - **Obiettivo:** Normalizza la scala delle feature di ogni token prima dell'attention
@@ -5230,7 +5231,7 @@ utili quando il training le scopre.
 ```
 
 La normalizzazione avviene sulle C feature di un token, indipendentemente per
-ogni posizione batch/tempo. Non mescola token. Poiché `γ` e `β` possono
+ogni posizione batch/tempo. Non combina token diversi. Poiché `γ` e `β` possono
 riscalare e traslare le coordinate, è più preciso parlare di branch
 normalizzato che affermare che il risultato finale abbia sempre media zero e
 varianza uno.
@@ -5238,8 +5239,8 @@ varianza uno.
 La posizione prima di attention è essenziale. Attention legge la copia
 normalizzata, mentre la residual addition usa la sorgente non modificata.
 Spostare LayerNorm dopo la somma definirebbe un block post-norm con un data path
-diverso. Qui l'obiettivo è più preciso: stabilizzare ciò che legge il branch
-appreso senza interrompere l'identity highway. La shape resta `[B,T,C]` e il
+diverso. Qui l'obiettivo è più preciso: stabilizzare l'input del branch
+appreso senza interrompere l'identity path. La shape resta `[B,T,C]` e il
 calcolo continua a essere indipendente per ogni posizione.
 Il risultato alimenta attention, mentre lo skip path conserva esattamente lo
 stato ricevuto dal block.
@@ -5258,7 +5259,7 @@ stato ricevuto dal block.
 2. **OPERATION — LayerNorm prima di attention**
 
    Applichiamo l'operazione **Normalizza la scala delle feature di ogni token prima dell'attention**. La traccia seguente mostra
-   gli oggetti nell'ordine in cui vengono letti, trasformati e consegnati al
+   gli oggetti nell'ordine di lettura, trasformazione e uso nel
    passaggio successivo:
 
    ```learngpt-visual
@@ -5276,7 +5277,7 @@ stato ricevuto dal block.
    ```
 
    **Cosa osservare:** ogni freccia rappresenta un'operazione concreta; una
-   riga intermedia è contemporaneamente l'output del passaggio precedente e
+   riga intermedia è sia l'output del passaggio precedente sia
    l'input di quello successivo.
 
 3. **INTERMEDIATE STATE — Segui le consegne intermedie**
@@ -5298,22 +5299,22 @@ stato ricevuto dal block.
    modificare; l'informazione necessaria alle lezioni successive resta
    allineata.
 
-5. **OUTPUT — Dai un nome al nuovo stato**
+5. **OUTPUT — Definisci il nuovo stato**
 
    Alla fine possediamo **feature standardizzate**. Questo è il nuovo punto di
    partenza del corso, non un semplice valore temporaneo.
 
-   **Cosa osservare:** l'output risponde alla bussola iniziale e può essere
+   **Cosa osservare:** l'output conferma l'obiettivo indicato nella sintesi iniziale e può essere
    passato alla lezione successiva senza ricostruire il processo da zero.
 
 ### Dove siamo arrivati
 
-La trasformazione è completa quando **feature standardizzate** è disponibile e il
+La trasformazione è completa quando **feature standardizzate** sono disponibili e il
 vincolo della lezione è ancora rispettato. A questo punto possiamo fermarci:
-aggiungere già il passaggio successivo renderebbe meno chiaro quale
+anticipare il passaggio successivo renderebbe meno chiaro quale
 responsabilità appartiene a questa lezione.
 
-- **Cambiato:** feature con scale variabili è diventato **feature standardizzate**.
+- **Cambiato:** feature con scale variabili sono diventate **feature standardizzate**.
 - **Preservato:** gli assi batch/tempo e il vincolo causale restano intatti mentre cambiano le feature.
 - **Prossimo passo:** **Feed-forward network** userà questo risultato come nuovo input.
 
@@ -5336,7 +5337,7 @@ Media e varianza riassumono le $C$ feature di un token; poi si sottrae la media,
 ### Esempio visivo svolto
 
 > **Stato dell'esempio ricorrente:** normalizziamo un piccolo feature vector
-> che rappresenta `sleeps` prima di attention, senza mescolarlo con le altre
+> che rappresenta `sleeps` prima di attention, senza combinarlo con le altre
 > posizioni.
 
 Per il feature vector $x=[1,2,3]$ di un token:
@@ -5363,7 +5364,7 @@ $$
 $$
 
 La normalizzazione agisce sull'asse delle feature, indipendentemente per ogni
-posizione batch/tempo; non mescola i token. LearnGPT usa un'architettura
+posizione batch/tempo; non combina token diversi. LearnGPT usa un'architettura
 pre-norm:
 $R'=R+\operatorname{MHA}(\operatorname{LN}(R))$. Lo skip path conserva quindi
 lo stato originale, mentre il branch di attention riceve un input
@@ -5403,7 +5404,7 @@ La pre-normalizzazione è introdotta in `study/snapshots/lesson_23/model.py`.
 
 ### Codice ↔ matematica ↔ significato
 
-Questo ponte è incluso qui perché il codice implementa direttamente una trasformazione matematica.
+Questa sezione mostra come il codice realizza direttamente la trasformazione matematica.
 
 | Codice | Lettura matematica | In parole semplici |
 |---|---|---|
@@ -5417,7 +5418,7 @@ Questo ponte è incluso qui perché il codice implementa direttamente una trasfo
 
 ## Lezione 24 — Feed-forward network
 
-### Bussola della lezione: cosa e perché
+### Sintesi della lezione: obiettivo e risultato
 
 - **Prima:** feature contestuali con trasformazioni per posizione limitate
 - **Obiettivo:** Normalizzare, trasformare e aggiungere un update non lineare indipendentemente in ogni posizione token
@@ -5484,7 +5485,7 @@ il feed-forward network e non cambiano l'interfaccia esterna.
 2. **OPERATION — Secondo branch residual pre-norm**
 
    Applichiamo l'operazione **Normalizzare, trasformare e aggiungere un update non lineare indipendentemente in ogni posizione token**. La traccia seguente mostra
-   gli oggetti nell'ordine in cui vengono letti, trasformati e consegnati al
+   gli oggetti nell'ordine di lettura, trasformazione e uso nel
    passaggio successivo:
 
    ```learngpt-visual
@@ -5503,7 +5504,7 @@ il feed-forward network e non cambiano l'interfaccia esterna.
    ```
 
    **Cosa osservare:** ogni freccia rappresenta un'operazione concreta; una
-   riga intermedia è contemporaneamente l'output del passaggio precedente e
+   riga intermedia è sia l'output del passaggio precedente sia
    l'input di quello successivo.
 
 3. **INTERMEDIATE STATE — Segui le consegne intermedie**
@@ -5525,19 +5526,19 @@ il feed-forward network e non cambiano l'interfaccia esterna.
    modificare; l'informazione necessaria alle lezioni successive resta
    allineata.
 
-5. **OUTPUT — Dai un nome al nuovo stato**
+5. **OUTPUT — Definisci il nuovo stato**
 
    Alla fine possediamo **un solo residual stream che contiene lo stato precedente e il suo update non lineare**. Questo è il nuovo punto di
    partenza del corso, non un semplice valore temporaneo.
 
-   **Cosa osservare:** l'output risponde alla bussola iniziale e può essere
+   **Cosa osservare:** l'output conferma l'obiettivo indicato nella sintesi iniziale e può essere
    passato alla lezione successiva senza ricostruire il processo da zero.
 
 ### Dove siamo arrivati
 
 La trasformazione è completa quando **un solo residual stream che contiene lo stato precedente e il suo update non lineare** è disponibile e il
 vincolo della lezione è ancora rispettato. A questo punto possiamo fermarci:
-aggiungere già il passaggio successivo renderebbe meno chiaro quale
+anticipare il passaggio successivo renderebbe meno chiaro quale
 responsabilità appartiene a questa lezione.
 
 - **Cambiato:** feature contestuali con trasformazioni per posizione limitate sono diventate **uno stato residual arricchito da un update non lineare normalizzato**.
@@ -5648,10 +5649,10 @@ presenti in `study/snapshots/lesson_24/model.py`.
   nascosto largo `4C`.
 - `nn.GELU()` è un'attivazione non lineare liscia. Senza di essa, due layer
   lineari consecutivi collasserebbero in un'unica trasformazione lineare.
-- `self.project = nn.Linear(4 * embedding_size, embedding_size)` ripristina il
+- `self.project = nn.Linear(4 * embedding_size, embedding_size)` ripristina
   la larghezza `C` richiesta dal residual stream.
 - I livelli lineari agiscono solo sull'ultima dimensione, quindi `[B, T, C]` diventa
-  `[B,T,4C]` e poi `[B,T,C]`; le posizioni non vengono mescolate.
+  `[B,T,4C]` e poi `[B,T,C]`; le posizioni non vengono combinate tra loro.
 - `hidden`, `activated` e `output` rendono esplicito l'ordine letterale usato
   dallo snapshot: espansione, attivazione e proiezione.
 - `feed_forward_input = self.feed_forward_layer_norm(residual_after_attention)`
@@ -5662,7 +5663,7 @@ presenti in `study/snapshots/lesson_24/model.py`.
 
 ### Codice ↔ matematica ↔ significato
 
-Questo ponte è incluso qui perché il codice implementa direttamente una trasformazione matematica.
+Questa sezione mostra come il codice realizza direttamente la trasformazione matematica.
 
 | Codice | Lettura matematica | In parole semplici |
 |---|---|---|
@@ -5677,7 +5678,7 @@ Questo ponte è incluso qui perché il codice implementa direttamente una trasfo
 
 ## Lezione 25 — Blocco Transformer
 
-### Bussola della lezione: cosa e perché
+### Sintesi della lezione: obiettivo e risultato
 
 - **Prima:** componenti neurali separati
 - **Obiettivo:** Combina LayerNorm, attention, residual connection e MLP in un blocco riutilizzabile
@@ -5739,7 +5740,7 @@ non cambiare il contratto deterministico di shape del block.
 2. **OPERATION — Blocco Transformer**
 
    Applichiamo l'operazione **Combina LayerNorm, attention, residual connection e MLP in un blocco riutilizzabile**. La traccia seguente mostra
-   gli oggetti nell'ordine in cui vengono letti, trasformati e consegnati al
+   gli oggetti nell'ordine di lettura, trasformazione e uso nel
    passaggio successivo:
 
    ```learngpt-mermaid
@@ -5751,7 +5752,7 @@ non cambiare il contratto deterministico di shape del block.
    ```
 
    **Cosa osservare:** ogni freccia rappresenta un'operazione concreta; una
-   riga intermedia è contemporaneamente l'output del passaggio precedente e
+   riga intermedia è sia l'output del passaggio precedente sia
    l'input di quello successivo.
 
 3. **INTERMEDIATE STATE — Segui le consegne intermedie**
@@ -5773,19 +5774,19 @@ non cambiare il contratto deterministico di shape del block.
    modificare; l'informazione necessaria alle lezioni successive resta
    allineata.
 
-5. **OUTPUT — Dai un nome al nuovo stato**
+5. **OUTPUT — Definisci il nuovo stato**
 
    Alla fine possediamo **un blocco Transformer componibile**. Questo è il nuovo punto di
    partenza del corso, non un semplice valore temporaneo.
 
-   **Cosa osservare:** l'output risponde alla bussola iniziale e può essere
+   **Cosa osservare:** l'output conferma l'obiettivo indicato nella sintesi iniziale e può essere
    passato alla lezione successiva senza ricostruire il processo da zero.
 
 ### Dove siamo arrivati
 
 La trasformazione è completa quando **un blocco Transformer componibile** è disponibile e il
 vincolo della lezione è ancora rispettato. A questo punto possiamo fermarci:
-aggiungere già il passaggio successivo renderebbe meno chiaro quale
+anticipare il passaggio successivo renderebbe meno chiaro quale
 responsabilità appartiene a questa lezione.
 
 - **Cambiato:** componenti neurali separati è diventato **un blocco Transformer componibile**.
@@ -5885,7 +5886,7 @@ Il Transformer block riutilizzabile è definito in
 
 ### Codice ↔ matematica ↔ significato
 
-Questo ponte è incluso qui perché il codice implementa direttamente una trasformazione matematica.
+Questa sezione mostra come il codice realizza direttamente la trasformazione matematica.
 
 | Codice | Lettura matematica | In parole semplici |
 |---|---|---|
@@ -5899,7 +5900,7 @@ Questo ponte è incluso qui perché il codice implementa direttamente una trasfo
 
 ## Lezione 26 — Più blocchi Transformer
 
-### Bussola della lezione: cosa e perché
+### Sintesi della lezione: obiettivo e risultato
 
 - **Prima:** una trasformazione contestuale
 - **Obiettivo:** Ripetere il blocco Transformer più volte
@@ -5950,7 +5951,7 @@ Invertire due block produrrebbe infatti un modello diverso.
 2. **OPERATION — Più blocchi Transformer**
 
    Applichiamo l'operazione **Ripetere il blocco Transformer più volte**. La traccia seguente mostra
-   gli oggetti nell'ordine in cui vengono letti, trasformati e consegnati al
+   gli oggetti nell'ordine di lettura, trasformazione e uso nel
    passaggio successivo:
 
    ```learngpt-mermaid
@@ -5961,7 +5962,7 @@ Invertire due block produrrebbe infatti un modello diverso.
    ```
 
    **Cosa osservare:** ogni freccia rappresenta un'operazione concreta; una
-   riga intermedia è contemporaneamente l'output del passaggio precedente e
+   riga intermedia è sia l'output del passaggio precedente sia
    l'input di quello successivo.
 
 3. **INTERMEDIATE STATE — Segui le consegne intermedie**
@@ -5983,19 +5984,19 @@ Invertire due block produrrebbe infatti un modello diverso.
    modificare; l'informazione necessaria alle lezioni successive resta
    allineata.
 
-5. **OUTPUT — Dai un nome al nuovo stato**
+5. **OUTPUT — Definisci il nuovo stato**
 
    Alla fine possediamo **una gerarchia di $L$ trasformazioni contestuali**. Questo è il nuovo punto di
    partenza del corso, non un semplice valore temporaneo.
 
-   **Cosa osservare:** l'output risponde alla bussola iniziale e può essere
+   **Cosa osservare:** l'output conferma l'obiettivo indicato nella sintesi iniziale e può essere
    passato alla lezione successiva senza ricostruire il processo da zero.
 
 ### Dove siamo arrivati
 
 La trasformazione è completa quando **una gerarchia di $L$ trasformazioni contestuali** è disponibile e il
 vincolo della lezione è ancora rispettato. A questo punto possiamo fermarci:
-aggiungere già il passaggio successivo renderebbe meno chiaro quale
+anticipare il passaggio successivo renderebbe meno chiaro quale
 responsabilità appartiene a questa lezione.
 
 - **Cambiato:** una trasformazione contestuale è diventato **una gerarchia di $L$ trasformazioni contestuali**.
@@ -6090,7 +6091,7 @@ Lo stack viene visualizzato in `study/snapshots/lesson_26/model.py`.
 
 ### Codice ↔ matematica ↔ significato
 
-Questo ponte è incluso qui perché il codice implementa direttamente una trasformazione matematica.
+Questa sezione mostra come il codice realizza direttamente la trasformazione matematica.
 
 | Codice | Lettura matematica | In parole semplici |
 |---|---|---|
@@ -6098,7 +6099,7 @@ Questo ponte è incluso qui perché il codice implementa direttamente una trasfo
 
 ## Lezione 27 — LayerNorm finale prima dell'output head esistente
 
-### Bussola della lezione: cosa e perché
+### Sintesi della lezione: obiettivo e risultato
 
 - **Prima:** vettori contestuali inviati direttamente all'output head introdotto nella lezione 17
 - **Obiettivo:** Normalizzare lo stack residual completo prima della projection sul vocabulary già esistente
@@ -6155,7 +6156,7 @@ Il tensor risultante è direttamente compatibile con loss e sampling.
 2. **OPERATION — Inserisci Final LayerNorm prima dell'output head esistente**
 
    Applichiamo l'operazione **Normalizzare lo stack residual completo prima della projection sul vocabulary già esistente**. La traccia seguente mostra
-   gli oggetti nell'ordine in cui vengono letti, trasformati e consegnati al
+   gli oggetti nell'ordine di lettura, trasformazione e uso nel
    passaggio successivo:
 
    ```learngpt-visual
@@ -6173,7 +6174,7 @@ Il tensor risultante è direttamente compatibile con loss e sampling.
    ```
 
    **Cosa osservare:** ogni freccia rappresenta un'operazione concreta; una
-   riga intermedia è contemporaneamente l'output del passaggio precedente e
+   riga intermedia è sia l'output del passaggio precedente sia
    l'input di quello successivo.
 
 3. **INTERMEDIATE STATE — Segui le consegne intermedie**
@@ -6195,19 +6196,19 @@ Il tensor risultante è direttamente compatibile con loss e sampling.
    modificare; l'informazione necessaria alle lezioni successive resta
    allineata.
 
-5. **OUTPUT — Dai un nome al nuovo stato**
+5. **OUTPUT — Definisci il nuovo stato**
 
    Alla fine possediamo **vocabulary logits per ogni posizione**. Questo è il nuovo punto di
    partenza del corso, non un semplice valore temporaneo.
 
-   **Cosa osservare:** l'output risponde alla bussola iniziale e può essere
+   **Cosa osservare:** l'output conferma l'obiettivo indicato nella sintesi iniziale e può essere
    passato alla lezione successiva senza ricostruire il processo da zero.
 
 ### Dove siamo arrivati
 
-La trasformazione è completa quando **vocabulary logits per ogni posizione** è disponibile e il
+La trasformazione è completa quando **vocabulary logits per ogni posizione** sono disponibili e il
 vincolo della lezione è ancora rispettato. A questo punto possiamo fermarci:
-aggiungere già il passaggio successivo renderebbe meno chiaro quale
+anticipare il passaggio successivo renderebbe meno chiaro quale
 responsabilità appartiene a questa lezione.
 
 - **Cambiato:** i vettori contestuali finali vengono ora normalizzati prima che l'output head esistente produca **vocabulary logits per ogni posizione**.
@@ -6295,7 +6296,7 @@ subito prima dell'head preesistente in
 
 ### Codice ↔ matematica ↔ significato
 
-Questo ponte è incluso qui perché il codice implementa direttamente una trasformazione matematica.
+Questa sezione mostra come il codice realizza direttamente la trasformazione matematica.
 
 | Codice | Lettura matematica | In parole semplici |
 |---|---|---|
@@ -6306,7 +6307,7 @@ Questo ponte è incluso qui perché il codice implementa direttamente una trasfo
 
 ## Lezione 28 — Transformer training
 
-### Bussola della lezione: cosa e perché
+### Sintesi della lezione: obiettivo e risultato
 
 - **Prima:** un modello completo con pesi iniziali
 - **Obiettivo:** Allena l'intero Transformer end to end
@@ -6365,7 +6366,7 @@ training.
 2. **OPERATION — Transformer training**
 
    Applichiamo l'operazione **Allena l'intero Transformer end to end**. La traccia seguente mostra
-   gli oggetti nell'ordine in cui vengono letti, trasformati e consegnati al
+   gli oggetti nell'ordine di lettura, trasformazione e uso nel
    passaggio successivo:
 
    ```learngpt-mermaid
@@ -6378,7 +6379,7 @@ training.
    ```
 
    **Cosa osservare:** ogni freccia rappresenta un'operazione concreta; una
-   riga intermedia è contemporaneamente l'output del passaggio precedente e
+   riga intermedia è sia l'output del passaggio precedente sia
    l'input di quello successivo.
 
 3. **INTERMEDIATE STATE — Segui le consegne intermedie**
@@ -6400,19 +6401,19 @@ training.
    modificare; l'informazione necessaria alle lezioni successive resta
    allineata.
 
-5. **OUTPUT — Dai un nome al nuovo stato**
+5. **OUTPUT — Definisci il nuovo stato**
 
    Alla fine possediamo **lo stesso modello con pesi aggiornati dall'errore di previsione**. Questo è il nuovo punto di
    partenza del corso, non un semplice valore temporaneo.
 
-   **Cosa osservare:** l'output risponde alla bussola iniziale e può essere
+   **Cosa osservare:** l'output conferma l'obiettivo indicato nella sintesi iniziale e può essere
    passato alla lezione successiva senza ricostruire il processo da zero.
 
 ### Dove siamo arrivati
 
 La trasformazione è completa quando **lo stesso modello con pesi aggiornati dall'errore di previsione** è disponibile e il
 vincolo della lezione è ancora rispettato. A questo punto possiamo fermarci:
-aggiungere già il passaggio successivo renderebbe meno chiaro quale
+anticipare il passaggio successivo renderebbe meno chiaro quale
 responsabilità appartiene a questa lezione.
 
 - **Cambiato:** un modello completo con pesi iniziali è diventato **lo stesso modello con pesi aggiornati dall'errore di previsione**.
@@ -6535,7 +6536,7 @@ Il breve training run con seed fisso si trova in
 
 ### Codice ↔ matematica ↔ significato
 
-Questo ponte è incluso qui perché il codice implementa direttamente una trasformazione matematica.
+Questa sezione mostra come il codice realizza direttamente la trasformazione matematica.
 
 | Codice | Lettura matematica | In parole semplici |
 |---|---|---|
@@ -6551,7 +6552,7 @@ Questo ponte è incluso qui perché il codice implementa direttamente una trasfo
 
 ## Lezione 29 — Stima della loss
 
-### Bussola della lezione: cosa e perché
+### Sintesi della lezione: obiettivo e risultato
 
 - **Prima:** la loss rumorosa di un singolo batch
 - **Obiettivo:** Calcola la media di più loss per ottenere una misura più affidabile
@@ -6576,7 +6577,7 @@ aggiornamenti. Le due medie rispondono a domande diverse: la stima di training
 descrive i dati da cui l'optimizer può imparare; quella di validation mostra
 come gli stessi parametri si comportano su dati che non li modificano.
 
-Servono entrambe. Una training loss in discesa accompagnata da una validation
+Servono entrambe. Una training loss in discesa insieme a una validation
 loss in crescita può indicare che il modello si sta specializzando troppo sui
 dati di training. Se scendono entrambe, l'apprendimento è più probabilmente
 utile anche fuori dai batch già visti. Rimangono stime campionarie, non medie
@@ -6763,7 +6764,7 @@ Il valutatore riutilizzabile è in `study/snapshots/lesson_29/training.py`.
 
 ### Codice ↔ matematica ↔ significato
 
-Questo ponte è incluso qui perché il codice implementa direttamente una trasformazione matematica.
+Questa sezione mostra come il codice realizza direttamente la trasformazione matematica.
 
 | Codice | Lettura matematica | In parole semplici |
 |---|---|---|
@@ -6774,7 +6775,7 @@ Questo ponte è incluso qui perché il codice implementa direttamente una trasfo
 
 ## Lezione 30 — Checkpoint
 
-### Bussola della lezione: cosa e perché
+### Sintesi della lezione: obiettivo e risultato
 
 - **Prima:** modello, optimizer e avanzamento esistono soltanto nella memoria del processo
 - **Obiettivo:** raccogliere e salvare il minimo stato implementato necessario a ricaricare modello e optimizer compatibili
@@ -6800,10 +6801,10 @@ ricostruire un'architettura con shape compatibili. Infine `char_to_id` e
 che prima indicava un carattere potrebbe essere interpretato in modo diverso
 al caricamento.
 
-È utile pensare al checkpoint come a un albero con una radice unica. La versione
-implementata contiene esattamente sette campi: `model_state_dict`,
+La versione implementata del checkpoint contiene esattamente sette campi:
+`model_state_dict`,
 `optimizer_state_dict`, `model_config`, `step`, `losses`, `char_to_id` e
-`id_to_char`. I campi non sono file indipendenti da mescolare liberamente:
+`id_to_char`. I campi non sono file indipendenti da combinare liberamente:
 appartengono allo stesso esperimento. Se caricassimo i pesi in una
 configurazione con dimensioni diverse, PyTorch segnalerebbe shape
 incompatibili; con un tokenizer diverso, gli stessi numeri indicherebbero
@@ -6823,7 +6824,7 @@ salvataggio e caricamento con pochi oggetti leggibili. La distinzione serve
 piuttosto a non confondere due traguardi diversi: **persistente** significa che
 lo stato può sopravvivere alla chiusura del programma; **crash-safe** significa
 che anche un'interruzione durante la scrittura non espone un artefatto parziale.
-Qui raggiungiamo il primo traguardo e lasciamo esplicitamente il secondo alle
+Qui raggiungiamo il primo obiettivo e lasciamo esplicitamente il secondo alle
 lezioni production.
 
 La semplice presenza di `checkpoint.pt` non dimostra quindi che il salvataggio
@@ -7024,7 +7025,7 @@ Le funzioni di salvataggio e caricamento sono in `study/snapshots/lesson_30/chec
 
 ## Lezione 31 — Generazione da un checkpoint
 
-### Bussola della lezione: cosa e perché
+### Sintesi della lezione: obiettivo e risultato
 
 - **Prima:** un checkpoint e un prompt leggibile
 - **Obiettivo:** Ricostruisci un modello da un checkpoint e genera in modo indipendente
@@ -7234,7 +7235,7 @@ Il percorso di caricamento indipendente è in
 
 ## Lezione 32 — Controlli del sampling
 
-### Bussola della lezione: cosa e perché
+### Sintesi della lezione: obiettivo e risultato
 
 - **Prima:** un vettore di logits grezzi per il token successivo
 - **Obiettivo:** controllare quanto è conservativo o vario il token sampling
@@ -7412,7 +7413,7 @@ propagati da `study/snapshots/lesson_32/generate.py`.
 
 ### Codice ↔ matematica ↔ significato
 
-Questo ponte è incluso qui perché il codice implementa direttamente una trasformazione matematica.
+Questa sezione mostra come il codice realizza direttamente la trasformazione matematica.
 
 | Codice | Lettura matematica | In parole semplici |
 |---|---|---|
@@ -7427,7 +7428,7 @@ Questo ponte è incluso qui perché il codice implementa direttamente una trasfo
 
 ## Lezione 33 — Checkpoint migliore
 
-### Bussola della lezione: cosa e perché
+### Sintesi della lezione: obiettivo e risultato
 
 - **Prima:** stati valutati senza un vincitore di qualità conservato
 - **Obiettivo:** conserva lo stato con la validation loss stimata più bassa osservata finora
@@ -7592,7 +7593,7 @@ La regola di selezione è in `study/snapshots/lesson_33/training.py`.
 
 ## Lezione 34 — Optimizer e scheduler
 
-### Bussola della lezione: cosa e perché
+### Sintesi della lezione: obiettivo e risultato
 
 - **Prima:** gradienti grezzi e learning rate fisso
 - **Obiettivo:** rendere gli aggiornamenti adattativi e limitati, con un learning rate che prima cresce in warmup e poi decresce
@@ -7614,7 +7615,7 @@ aggiornamento insolitamente grande viene contenuto. È una protezione per lo
 step corrente; non stabilisce l'andamento del learning rate nel tempo.
 
 AdamW usa poi le stime mobili del primo e del secondo momento per adattare gli
-aggiornamenti alla storia recente di ciascun parametro. Il weight decay
+aggiornamenti in base alle stime recenti di ciascun parametro. Il weight decay
 disaccoppiato riduce inoltre i parametri indipendentemente dal gradiente della
 loss. I parameter group separati arriveranno soltanto nella lezione 36: nella
 lezione 34 l'unico gruppo riceve il weight decay configurato. Per
@@ -7816,7 +7817,7 @@ Gli helper scheduler e optimizer sono in `study/snapshots/lesson_34/training.py`
 
 ### Codice ↔ matematica ↔ significato
 
-Questo ponte è incluso qui perché il codice implementa direttamente una trasformazione matematica.
+Questa sezione mostra come il codice realizza direttamente la trasformazione matematica.
 
 | Codice | Lettura matematica | In parole semplici |
 |---|---|---|
@@ -7829,7 +7830,7 @@ Questo ponte è incluso qui perché il codice implementa direttamente una trasfo
 
 ## Lezione 35 — Dropout e weight tying
 
-### Bussola della lezione: cosa e perché
+### Sintesi della lezione: obiettivo e risultato
 
 - **Prima:** rami deterministici e tabelle separate
 - **Obiettivo:** Regolarizza le attivazioni e condividi la tabella input/output token
@@ -8004,7 +8005,7 @@ feed-forward path di `study/snapshots/lesson_35/model.py`.
 
 ### Codice ↔ matematica ↔ significato
 
-Questo ponte è incluso qui perché il codice implementa direttamente una trasformazione matematica.
+Questa sezione mostra come il codice realizza direttamente la trasformazione matematica.
 
 | Codice | Lettura matematica | In parole semplici |
 |---|---|---|
@@ -8020,7 +8021,7 @@ Questo ponte è incluso qui perché il codice implementa direttamente una trasfo
 
 ## Lezione 36 — Dati di produzione e gruppi optimizer
 
-### Bussola della lezione: cosa e perché
+### Sintesi della lezione: obiettivo e risultato
 
 - **Prima:** pochi dati character-level interamente in memoria
 - **Obiettivo:** Sostituisci percorsi di dati giocattolo e gestione ingenua dei parametri con quelli orientati alla produzione
@@ -8036,10 +8037,10 @@ production finale.
 
 Il tokenizer character-level e i tensor interamente in memoria rendono
 semplice osservare ogni passaggio, ma non rappresentano il modo in cui un
-language model più grande gestisce il testo. Questo è il ponte dal tokenizer
+language model più grande gestisce il testo. Questo è il passaggio dal tokenizer
 didattico al tokenizer di produzione. Il character tokenizer ha insegnato
 l'idea di indirizzo con un vocabulary minuscolo creato dal testo corrente. Il
-tokenizer GPT-2 BPE porta invece un vocabulary esterno fisso, token ID per
+tokenizer GPT-2 BPE introduce invece un vocabulary esterno fisso, token ID per
 frammenti frequenti e gestione esplicita del token speciale consentito
 `<|endoftext|>`. Qui il corpus viene codificato con quel tokenizer BPE di
 GPT-2. Una frase come `The cat sleeps here.` non viene più
@@ -8279,7 +8280,7 @@ Questo confine production coinvolge `batching.py`, `tokenizer.py`, `device.py`,
 
 ## Lezione 37 — Gradient accumulation
 
-### Bussola della lezione: cosa e perché
+### Sintesi della lezione: obiettivo e risultato
 
 - **Prima:** un solo micro-batch, limitato dalla memoria disponibile
 - **Obiettivo:** costruire il gradiente di un effective batch da più forward pass piccoli
@@ -8474,7 +8475,7 @@ Il ciclo di accumulo è in `study/snapshots/lesson_37/training.py`.
 
 ### Codice ↔ matematica ↔ significato
 
-Questo ponte è incluso qui perché il codice implementa direttamente una trasformazione matematica.
+Questa sezione mostra come il codice realizza direttamente la trasformazione matematica.
 
 | Codice | Lettura matematica | In parole semplici |
 |---|---|---|
@@ -8489,7 +8490,7 @@ Questo ponte è incluso qui perché il codice implementa direttamente una trasfo
 
 ## Lezione 38 — Configurazione e resume
 
-### Bussola della lezione: cosa e perché
+### Sintesi della lezione: obiettivo e risultato
 
 - **Prima:** valori separati per modello, training e generation
 - **Obiettivo:** raggruppare la configurazione per serializzarla e ripristinare esplicitamente modello, optimizer e step
@@ -8716,7 +8717,7 @@ Le classi di configurazione sono in `study/snapshots/lesson_38/config.py`; il re
 
 ## Lezione 39 — Last-token output head
 
-### Bussola della lezione: cosa e perché
+### Sintesi della lezione: obiettivo e risultato
 
 - **Prima:** logits sul vocabulary per ogni posizione del prefisso
 - **Obiettivo:** proiettare soltanto lo stato del token finale durante la generation
@@ -8895,7 +8896,7 @@ Il percorso condizionale è in `study/snapshots/lesson_39/model.py`.
 
 ### Codice ↔ matematica ↔ significato
 
-Questo ponte è incluso qui perché il codice implementa direttamente una trasformazione matematica.
+Questa sezione mostra come il codice realizza direttamente la trasformazione matematica.
 
 | Codice | Lettura matematica | In parole semplici |
 |---|---|---|
@@ -8903,7 +8904,7 @@ Questo ponte è incluso qui perché il codice implementa direttamente una trasfo
 
 ## Lezione 40 — Scaled dot-product attention
 
-### Bussola della lezione: cosa e perché
+### Sintesi della lezione: obiettivo e risultato
 
 - **Prima:** le operazioni dell'attention eseguite separatamente
 - **Obiettivo:** usare l'operatore SDPA di PyTorch per la stessa equazione dell'attention causale
@@ -9111,7 +9112,7 @@ Entrambi i percorsi coesistono in `study/snapshots/lesson_40/model.py`.
 
 ### Codice ↔ matematica ↔ significato
 
-Questo ponte è incluso qui perché il codice implementa direttamente una trasformazione matematica.
+Questa sezione mostra come il codice realizza direttamente la trasformazione matematica.
 
 | Codice | Lettura matematica | In parole semplici |
 |---|---|---|
@@ -9125,7 +9126,7 @@ Questo ponte è incluso qui perché il codice implementa direttamente una trasfo
 
 ## Lezione 41 — Flag di performance
 
-### Bussola della lezione: cosa e perché
+### Sintesi della lezione: obiettivo e risultato
 
 - **Prima:** un training loop single-process corretto, con selezione device-aware di AdamW fused ma senza compilazione o mixed precision
 - **Obiettivo:** abilitare compilazione e mixed precision soltanto dove supportate
@@ -9158,7 +9159,7 @@ scaling CUDA float16; le combinazioni non supportate mantengono il percorso
 conservativo o falliscono in modo esplicito. In particolare, la procedura
 controllata per MPS lascia disabilitata la mixed precision. Queste funzionalità
 non richiedono una loss o una politica dell'optimizer diversa. Separatamente,
-questo snapshot porta il default di
+questo snapshot imposta il default di
 `TrainingConfig.gradient_accumulation_steps` da `2` a `1` per il piccolo
 esempio della lezione. L'algoritmo di accumulation resta disponibile, ma i
 token effettivi per update cambiano se il chiamante non sovrascrive il campo.
@@ -9336,7 +9337,7 @@ Questi percorsi opzionali runtime sono in `study/snapshots/lesson_41/training.py
 
 ### Codice ↔ matematica ↔ significato
 
-Questo ponte è incluso qui perché il codice implementa direttamente una trasformazione matematica.
+Questa sezione mostra come il codice realizza direttamente la trasformazione matematica.
 
 | Codice | Lettura matematica | In parole semplici |
 |---|---|---|
@@ -9352,7 +9353,7 @@ Questo ponte è incluso qui perché il codice implementa direttamente una trasfo
 
 ## Lezione 42 — Progetto finale
 
-### Bussola della lezione: cosa e perché
+### Sintesi della lezione: obiettivo e risultato
 
 - **Prima:** componenti corretti ma osservati soprattutto uno alla volta
 - **Obiettivo:** collegare dati, modello, training, valutazione, checkpoint e generation in un unico flusso
@@ -9441,14 +9442,14 @@ uscire e quale proprietà non deve cambiare? Se la loss non scende, possiamo
 prima verificare l'allineamento tra `X` e `Y`; se il modello non si ricarica,
 possiamo confrontare config e chiavi del checkpoint; se la generation produce
 ID validi ma testo incoerente, possiamo separare sampling, modello e decode.
-Questa lettura per contratti evita di trattare la pipeline come una scatola
-nera unica e rende ogni errore localizzabile.
+Questa lettura per contratti evita di trattare la pipeline come un unico
+processo opaco e rende ogni errore localizzabile.
 
-È importante anche distinguere tre forme di stato che viaggiano insieme ma non
+È importante anche distinguere tre forme di stato salvate insieme ma non
 sono la stessa cosa. L'**architettura** descrive le operazioni possibili; i
 **parametri appresi** registrano ciò che il training ha modificato; le
 **evidenze del run**, come metriche e dataset fingerprint, spiegano come quello
-stato è stato ottenuto. Un checkpoint affidabile collega le tre prospettive,
+stato è stato ottenuto. Un checkpoint affidabile mantiene coerenti queste tre parti,
 mentre la generation ne riusa soltanto la parte necessaria a calcolare il
 prossimo token.
 
@@ -9868,7 +9869,7 @@ L'integrazione eseguibile è `study/lessons/42_final_project.py`. I file in
 
 Un GPT è un classificatore differenziabile del token successivo, riutilizzato in
 ogni posizione. Il testo diventa una sequenza di ID categorici; le tabelle
-trasformano gli ID in vettori; l'attention causale combina soltanto la storia
+trasformano gli ID in vettori; l'attention causale combina soltanto il prefisso
 visibile; gli MLP trasformano ogni posizione; i residual path conservano e
 accumulano informazioni; l'output head sul vocabulary produce logits; la cross-entropy
 misura l'errore sul token successivo corretto; la backpropagation assegna la
