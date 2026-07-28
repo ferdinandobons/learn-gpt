@@ -472,10 +472,16 @@ When a lesson talks about a file such as
 `study/lessons/01_read_text.py` or `study/snapshots/lesson_12/model.py`, that
 file lives in the repository.
 
-The **Programming** panel shows the exact code for the current lesson, the diff
-from the previous lesson, and the complete snapshot of the project at that
-point. Use the repository link when you want to open the same code directly on
-GitHub.
+Inside the website, each lesson is available through three panels:
+
+- **Graph:** shows the visual structure of the current step, including data
+  flow, tensor shapes, and the relationship between the components being added.
+- **Mathematics:** shows the formulas, matrix operations, tensor dimensions,
+  and numerical checks needed to understand the step precisely.
+- **Programming:** shows the exact code for the current lesson, the diff from
+  the previous lesson, and the complete snapshot of the project at that point.
+
+Use the repository link when you want to open the same code directly on GitHub.
 
 You can read the course without installing anything. You only need the setup
 below if you want to run the code on your own computer.

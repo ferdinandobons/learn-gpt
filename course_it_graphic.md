@@ -1,4 +1,4 @@
-<!-- source-sha256: 8d86f6ad019e8f1acb3f7b92e15f53d8337cad9e8c5358bc0138def0482643f9 -->
+<!-- source-sha256: 8445da448ac1e40ffd15dec16175bdd4ffef8566c80ba831b4e11505c8abd6a2 -->
 
 # LearnGPT — Corso grafico e matematico
 
@@ -496,10 +496,19 @@ una lezione parla di un file come
 `study/lessons/01_read_text.py` o `study/snapshots/lesson_12/model.py`, quel
 file si trova nel repository.
 
-Il pannello **Programmazione** mostra il codice esatto della lezione corrente,
-il diff rispetto alla lezione precedente e lo snapshot completo del progetto in
-quel punto. Usa il link al repository quando vuoi aprire lo stesso codice
-direttamente su GitHub.
+Dentro il sito, ogni lezione è disponibile attraverso tre pannelli:
+
+- **Grafico:** mostra la struttura visiva del passaggio corrente, incluso il
+  flusso dei dati, le shape dei tensor e la relazione tra i componenti che
+  vengono aggiunti.
+- **Matematica:** mostra formule, operazioni tra matrici, dimensioni dei tensor
+  e controlli numerici necessari per capire il passaggio in modo preciso.
+- **Programmazione:** mostra il codice esatto della lezione corrente, il diff
+  rispetto alla lezione precedente e lo snapshot completo del progetto in quel
+  punto.
+
+Usa il link al repository quando vuoi aprire lo stesso codice direttamente su
+GitHub.
 
 Puoi leggere il corso senza installare nulla. Il setup qui sotto ti serve solo
 se vuoi eseguire il codice sul tuo computer.
