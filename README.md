@@ -1,68 +1,91 @@
 # LearnGPT
 
-LearnGPT is a study-first GPT project inspired by Andrej Karpathy's
-[nanoGPT](https://github.com/karpathy/nanoGPT). Its goal is to decompose the
-main ideas behind GPT-style decoder-only Transformers into small, precise
-lessons before bringing them back together in a clean final PyTorch project.
+LearnGPT è un progetto didattico dedicato alla costruzione di un modello GPT,
+ispirato a [nanoGPT](https://github.com/karpathy/nanoGPT) di Andrej Karpathy.
+L'obiettivo è spiegare in modo progressivo le idee principali dei Transformer
+decoder-only in stile GPT e applicarle, una alla volta, fino a ottenere un
+progetto PyTorch completo e funzionante.
 
-The repository is intentionally more explicit than nanoGPT. Instead of hiding
-the model behind compact production code, each concept is introduced step by
-step: tokenization, batches, embeddings, causal self-attention, multi-head
-attention, Transformer blocks, optimization, checkpointing, and generation.
+Il repository privilegia la chiarezza didattica. Ogni concetto viene introdotto
+in un passaggio specifico: tokenization, batch, embedding, causal self-attention,
+multi-head attention, blocchi Transformer, ottimizzazione, checkpoint e
+generazione.
 
-The interactive course is available at
+Il corso interattivo gratuito è disponibile su
 [learngpt.ferdinandobonsegna.com](https://learngpt.ferdinandobonsegna.com/).
-This repository is the canonical public source for the lesson code, snapshots,
-and final PyTorch project used by the course.
+Il sito contiene le spiegazioni, la matematica, le rappresentazioni grafiche e
+il codice associato a ogni lezione. Questo repository è la fonte pubblica
+ufficiale degli script, degli snapshot progressivi e del progetto PyTorch finale
+utilizzati dal corso.
 
-## About
+## LearnGPT: sito, corso e repository
 
-The course is maintained in a code-first guide and in an aligned bilingual
-graphical edition:
+LearnGPT è composto da due parti coordinate:
 
-- [course_en.md](course_en.md): concise English path tied to lesson code.
-- [course_en_graphic.md](course_en_graphic.md): detailed English narrative,
-  mathematics, worked examples, and diagrams.
-- [course_it_graphic.md](course_it_graphic.md): human-authored Italian
-  translation with international technical terms kept in English.
-- [Course authoring contract](docs/COURSE_AUTHORING_CONTRACT.md): durable rules
-  for lesson structure, natural Italian, panel ownership, code links, and
-  publication checks.
-- [How to train runbook](docs/FINAL_TRAINING_RUNBOOK.md): canonical
-  macOS/MPS and Windows/CUDA workflow.
-- [CUDA training optimizations](CUDA_TRAINING_OPTIMIZATIONS.md): measured
-  fused-attention, batching, logging, and VRAM tradeoffs on NVIDIA hardware.
-- [Video series guide](docs/VIDEO_SERIES_GUIDE.md): teaching the 42
-  checkpoints and the final experiment.
-- [Model memory and training limits](docs/MODEL_MEMORY_AND_TRAINING_LIMITS.md):
-  how parameters, activations, context, and optimizer state affect an 8 GB local
-  training run.
+- il **sito web**, che presenta il percorso gratuito in italiano e in inglese,
+  con 42 lezioni tecniche più una lezione iniziale di orientamento;
+- il **repository GitHub**, che contiene il codice Python eseguibile di ogni
+  passaggio, lo stato completo del progetto dopo ciascuna lezione e
+  l'implementazione finale.
 
-All 42 lessons use the same bilingual readability contract: a continuous
-beginner-friendly narrative, a semantic timeline of three to seven steps
-according to the transformation's real complexity, and an explicit
-before/goal/after/invariant summary. English and Italian must always be updated
-together, with technical terms kept in their conventional English form. The
-Italian edition is the default website experience and must read as natural
-Italian, not as a literal translation.
+È possibile seguire tutte le spiegazioni direttamente dal sito senza installare
+nulla. Il repository serve per eseguire il codice sul proprio computer,
+controllare nel dettaglio le modifiche introdotte da ogni lezione e riprodurre
+l'intero percorso fino al training e alla generazione.
 
-## What This Project Contains
+Il corso viene mantenuto attraverso una guida collegata al codice e due edizioni
+grafiche allineate:
 
-- A lesson-by-lesson study path for building a GPT-like language model.
-- Reproducible lesson snapshots under `study/snapshots/`.
-- A clean final project under `final_project/`.
-- GPT-2 BPE tokenization with `tiktoken`.
-- FineWeb-Edu data preparation for local training.
-- Reproducible randomized experimental subsets derived from processed data.
-- Memmapped `train.bin` / `val.bin` loading for large local datasets.
-- CPU, CUDA, and Apple Silicon MPS device selection.
-- AdamW optimizer groups, gradient accumulation, learning-rate scheduling,
-  gradient clipping, GPT-style initialization, atomic best/latest checkpoints,
-  resume support, chunked vocabulary projection, MPS gradient-integrity checks,
-  target-aware context diagnostics, optional mixed precision, fused multi-head
-  QKV attention, lightweight progress logging, and optional `torch.compile`.
+- [course_en.md](course_en.md): percorso sintetico in inglese collegato al
+  codice delle lezioni;
+- [course_en_graphic.md](course_en_graphic.md): edizione inglese completa di
+  spiegazioni, matematica, esempi svolti e diagrammi;
+- [course_it_graphic.md](course_it_graphic.md): edizione italiana scritta in
+  modo naturale, mantenendo in inglese i termini tecnici internazionali;
+- [Contratto di scrittura del corso](docs/COURSE_AUTHORING_CONTRACT.md): regole
+  per la struttura delle lezioni, la qualità dell'italiano, la responsabilità
+  dei pannelli, i link al codice e i controlli di pubblicazione;
+- [Procedura completa di training](docs/FINAL_TRAINING_RUNBOOK.md): flusso di
+  riferimento per macOS/MPS e Windows/CUDA;
+- [Ottimizzazioni del training CUDA](CUDA_TRAINING_OPTIMIZATIONS.md): misurazioni
+  su fused attention, batching, logging e utilizzo della VRAM su hardware
+  NVIDIA;
+- [Guida alla serie video](docs/VIDEO_SERIES_GUIDE.md): struttura didattica dei
+  42 passaggi e dell'esperimento finale;
+- [Memoria del modello e limiti del training](docs/MODEL_MEMORY_AND_TRAINING_LIMITS.md):
+  effetto di parametri, attivazioni, contesto e stato dell'optimizer su un
+  training locale con 8 GB di memoria.
 
-## Project Layout
+Tutte le 42 lezioni rispettano lo stesso criterio di leggibilità nelle due
+lingue: una spiegazione continua adatta anche a chi affronta questi concetti per
+la prima volta, una sequenza da tre a sette passaggi definita in base alla
+complessità reale della trasformazione e un riepilogo esplicito di stato
+iniziale, obiettivo, stato finale e vincolo. Le versioni inglese e italiana
+devono essere aggiornate insieme. I termini tecnici mantengono la forma inglese
+comunemente usata. Sul sito l'italiano è la lingua predefinita e il testo deve
+risultare naturale, non una traduzione letterale.
+
+## Contenuto del progetto
+
+- Un percorso organizzato per lezioni per costruire un language model simile a
+  GPT.
+- Snapshot riproducibili delle lezioni in `study/snapshots/`.
+- Un progetto finale completo in `final_project/`.
+- Tokenization BPE di GPT-2 con `tiktoken`.
+- Preparazione di FineWeb-Edu per il training locale.
+- Sottoinsiemi sperimentali casuali e riproducibili derivati dai dati
+  processati.
+- Caricamento tramite memory mapping di `train.bin` e `val.bin` per dataset
+  locali di grandi dimensioni.
+- Selezione del dispositivo tra CPU, CUDA e MPS su Apple Silicon.
+- Gruppi dell'optimizer AdamW, gradient accumulation, pianificazione del
+  learning rate, gradient clipping, inizializzazione in stile GPT, checkpoint
+  atomici `best` e `latest`, ripresa del training, proiezione del vocabolario a
+  blocchi, controlli di integrità dei gradienti su MPS, diagnostica del contesto
+  basata sui target, mixed precision opzionale, fused multi-head QKV attention,
+  logging essenziale dell'avanzamento e supporto opzionale per `torch.compile`.
+
+## Struttura del progetto
 
 ```text
 LearnGPT/
@@ -82,13 +105,13 @@ LearnGPT/
 
   data/
     README.md
-    study_sample.txt     # tracked, small, and used by lessons
-    raw/                 # ignored by Git
-    processed/           # ignored by Git
+    study_sample.txt     # versionato, ridotto e usato dalle lezioni
+    raw/                 # ignorato da Git
+    processed/           # ignorato da Git
 
   study/
-    lessons/             # numbered lesson scripts
-    snapshots/           # lesson-specific project snapshots
+    lessons/             # script numerati delle lezioni
+    snapshots/           # snapshot del progetto per ogni lezione
 
   final_project/
     config.py
@@ -113,15 +136,15 @@ LearnGPT/
     test_final_project.py
 ```
 
-`study/` is for learning. `final_project/` is the clean current version of the
-project. Datasets, checkpoints, and generated model files are intentionally not
-tracked by Git.
+`study/` contiene il percorso didattico. `final_project/` contiene la versione
+completa e aggiornata del progetto. Dataset, checkpoint e file generati dal
+modello non vengono versionati in Git.
 
-## Quick Start: Study The Course
+## Avvio rapido: seguire il corso
 
-Use Python 3.12 or newer; Python 3.13 is the recommended and CI-tested version.
-Clone the repository, then create a local virtual environment on macOS or
-Linux:
+Usa Python 3.12 o una versione successiva. Python 3.13 è la versione consigliata
+e verificata dalla CI. Clona il repository, quindi crea un ambiente virtuale
+locale su macOS o Linux:
 
 ```bash
 git clone https://github.com/ferdinandobons/learn-gpt.git
@@ -134,14 +157,15 @@ source .venv/bin/activate
 python -m pip install --upgrade pip setuptools wheel
 ```
 
-Install dependencies:
+Installa le dipendenze:
 
 ```bash
 python -m pip install -r final_project/requirements.txt
 ```
 
-On Windows PowerShell, use the environment interpreter directly. For ordinary
-CPU study runs, install the common dependencies and the CPU wheel explicitly:
+Su Windows PowerShell usa direttamente l'interprete dell'ambiente virtuale. Per
+eseguire le lezioni su CPU, installa le dipendenze comuni e specifica
+esplicitamente il wheel per CPU:
 
 ```powershell
 py -3.13 -m venv .venv
@@ -150,93 +174,95 @@ py -3.13 -m venv .venv
 .\.venv\Scripts\python.exe -m pip install torch==2.12.1 --index-url https://download.pytorch.org/whl/cpu
 ```
 
-If this machine will train with NVIDIA CUDA, install the CUDA wheel from the
-backend section below instead of the CPU-wheel command.
+Se il computer verrà usato per il training con NVIDIA CUDA, installa il wheel
+CUDA indicato nella sezione dedicata ai backend invece di quello per CPU.
 
-Validate the repository structure:
+Verifica la struttura del repository:
 
 ```bash
 python -B tools/validate_learngpt.py
 ```
 
-Run the final-project regression tests:
+Esegui i test di regressione del progetto finale:
 
 ```bash
 python -B -m unittest discover -s tests -v
 ```
 
-Run a specific lesson:
+Esegui una lezione specifica:
 
 ```bash
 python -B study/lessons/01_read_text.py
 ```
 
-Run the final lesson smoke test:
+Esegui lo smoke test dell'ultima lezione:
 
 ```bash
 python -B study/lessons/42_final_project.py
 ```
 
-Run the complete clean-clone teaching gate:
+Esegui il controllo completo del percorso didattico partendo da un clone pulito:
 
 ```bash
 python -B tools/run_all_lessons.py
 ```
 
-Read either course path while running the numbered lesson scripts. The
-graphical editions use one consistent division of responsibility: the central
-narrative explains the process, the Mathematics material owns formulas and
-complete calculations, and the Programming material owns syntax and code.
-`study/snapshots/` keeps the complete code state for each lesson. Lessons use the tracked
-`data/study_sample.txt`; the 10 GiB corpus is required only for real training.
-GitHub Actions repeats the validator, regression suite, and all 42 lessons on
-both Linux and Windows.
+Consulta il percorso del corso mentre esegui gli script numerati. Le edizioni
+grafiche adottano una separazione precisa: la spiegazione centrale descrive il
+processo, il pannello Matematica contiene formule e calcoli completi, mentre il
+pannello Programmazione contiene sintassi e codice. `study/snapshots/` conserva
+lo stato completo del codice per ogni lezione. Le lezioni usano il file
+versionato `data/study_sample.txt`; il corpus da 10 GiB serve soltanto per il
+training reale. GitHub Actions esegue il validatore, i test di regressione e
+tutte le 42 lezioni sia su Linux sia su Windows.
 
-## PyTorch Installation By Backend
+## Installazione di PyTorch in base al backend
 
-For most local study runs, `python -m pip install -r final_project/requirements.txt`
-is enough. For real training, install the PyTorch build that matches your
-hardware first, then install the remaining project dependencies. The
-requirements file pins the exact versions used by the verified run.
+Per la maggior parte delle esecuzioni locali è sufficiente
+`python -m pip install -r final_project/requirements.txt`. Per un training reale,
+installa prima la build di PyTorch adatta all'hardware, quindi le altre
+dipendenze del progetto. Il file dei requirements specifica le versioni esatte
+usate nell'esecuzione verificata.
 
-Use the official [PyTorch install selector](https://pytorch.org/get-started/locally/)
-when you need the latest backend-specific command.
+Usa il [selettore di installazione ufficiale di PyTorch](https://pytorch.org/get-started/locally/)
+per ottenere il comando più recente relativo al backend utilizzato.
 
 <details>
-<summary>Apple Silicon MPS PyTorch install</summary>
+<summary>Installazione di PyTorch per Apple Silicon MPS</summary>
 
-On macOS with Apple Silicon, install the tested standard macOS wheel and the
-remaining pinned dependencies:
+Su macOS con Apple Silicon, installa il wheel standard per macOS già verificato
+e le dipendenze rimanenti nelle versioni specificate:
 
 ```bash
 python -m pip install -r final_project/requirements.txt
 ```
 
-Verify MPS from a normal Terminal session:
+Verifica MPS da una normale sessione del Terminale:
 
 ```bash
 python -c "import torch; print(torch.backends.mps.is_built(), torch.backends.mps.is_available()); print(torch.ones(1, device='mps'))"
 ```
 
-Expected result:
+Risultato previsto:
 
 ```text
 True True
 tensor(..., device='mps:0')
 ```
 
-If this prints `True False` inside a managed or sandboxed shell, rerun the same
-check from a normal Terminal. Sandboxed processes can be blocked from creating a
-Metal device even when the Mac supports MPS.
+Se il comando restituisce `True False` in una shell gestita o isolata, ripeti lo
+stesso controllo in una normale sessione del Terminale. I processi isolati
+possono non avere il permesso di creare un dispositivo Metal anche quando il Mac
+supporta MPS.
 
 </details>
 
 <details>
-<summary>NVIDIA CUDA PyTorch install</summary>
+<summary>Installazione di PyTorch per NVIDIA CUDA</summary>
 
-Choose the CUDA wheel that matches your machine from the PyTorch install
-selector. The controlled Windows profile pins PyTorch 2.12.1 and uses the
-CUDA 12.6 wheel:
+Scegli dal selettore di installazione di PyTorch il wheel CUDA adatto al
+computer. Il profilo Windows controllato usa PyTorch 2.12.1 e il wheel per
+CUDA 12.6:
 
 ```powershell
 .\.venv\Scripts\python.exe -m pip uninstall -y torch
@@ -244,31 +270,33 @@ CUDA 12.6 wheel:
 .\.venv\Scripts\python.exe -m pip install -r final_project\requirements-common.txt
 ```
 
-The uninstall makes a CPU-to-CUDA transition unambiguous: pip otherwise treats
-an already installed CPU build with the same version number as satisfied.
+La disinstallazione rende esplicito il passaggio da CPU a CUDA. In caso
+contrario, `pip` considera già soddisfatta una build CPU installata con lo stesso
+numero di versione.
 
-Verify CUDA:
+Verifica CUDA:
 
 ```powershell
 .\.venv\Scripts\python.exe -c "import torch; print(torch.version.cuda); print(torch.cuda.is_available()); print(torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'no cuda device')"
 ```
 
-See the [how to train runbook](docs/FINAL_TRAINING_RUNBOOK.md) if the
-official selector requires a different wheel index for the installed driver.
+Consulta la [procedura completa di training](docs/FINAL_TRAINING_RUNBOOK.md) se
+il selettore ufficiale richiede un indice dei wheel diverso per il driver
+installato.
 
 </details>
 
 <details>
-<summary>CPU-only PyTorch install</summary>
+<summary>Installazione di PyTorch solo per CPU</summary>
 
-Use this when you do not have a GPU backend available:
+Usa questa configurazione quando non è disponibile un backend GPU:
 
 ```bash
 python -m pip install torch==2.12.1 --index-url https://download.pytorch.org/whl/cpu
 python -m pip install -r final_project/requirements-common.txt
 ```
 
-Verify CPU:
+Verifica la CPU:
 
 ```bash
 python -c "import torch; print(torch.__version__); print(torch.ones(1).device)"
@@ -276,18 +304,19 @@ python -c "import torch; print(torch.__version__); print(torch.ones(1).device)"
 
 </details>
 
-## How to Train: Copy-Ready Quick Start
+## Come eseguire il training: procedura rapida
 
-The final project trains on
-[FineWeb-Edu](https://huggingface.co/datasets/HuggingFaceFW/fineweb-edu) using
-the GPT-2 BPE tokenizer. The dataset is not committed to the repository.
+Il progetto finale esegue il training su
+[FineWeb-Edu](https://huggingface.co/datasets/HuggingFaceFW/fineweb-edu) usando
+il tokenizer BPE di GPT-2. Il dataset non è incluso nel repository.
 
-The canonical, fully explained workflow is the
-[how to train runbook](docs/FINAL_TRAINING_RUNBOOK.md). The commands below
-are a compact reference; keep the runbook open for setup, monitoring, resume,
-Windows PowerShell, and troubleshooting.
+La procedura completa di riferimento è documentata nella
+[guida al training](docs/FINAL_TRAINING_RUNBOOK.md). I comandi seguenti
+costituiscono una sintesi operativa. Consulta la guida per configurazione,
+monitoraggio, ripresa del training, uso di Windows PowerShell e risoluzione dei
+problemi.
 
-Prepare about 10 GB of tokenized data:
+Prepara circa 10 GB di dati tokenizzati:
 
 ```bash
 python -B final_project/prepare_data.py \
@@ -295,7 +324,7 @@ python -B final_project/prepare_data.py \
   --output-dir data/processed/fineweb_edu
 ```
 
-This creates:
+Il comando crea:
 
 ```text
 data/processed/fineweb_edu/
@@ -304,29 +333,31 @@ data/processed/fineweb_edu/
   meta.json
 ```
 
-Validate the canonical local data:
+Verifica i dati locali di riferimento:
 
 ```bash
 python -B tools/validate_learngpt.py \
   --training-data-dir data/processed/fineweb_edu
 ```
 
-Choose one training backend. Expand only the section that matches your machine.
+Scegli un backend per il training e apri soltanto la sezione corrispondente al
+computer utilizzato.
 
 <details>
-<summary>Apple Silicon MPS training</summary>
+<summary>Training con Apple Silicon MPS</summary>
 
-Check that PyTorch can see MPS:
+Verifica che PyTorch rilevi MPS:
 
 ```bash
 python -c "import torch; print(torch.backends.mps.is_built(), torch.backends.mps.is_available())"
 ```
 
-Run this check from a normal Terminal session. Some managed or sandboxed shells
-can be blocked from creating a Metal device and may print `True False` even
-when MPS works normally outside the sandbox.
+Esegui il controllo da una normale sessione del Terminale. Alcune shell gestite
+o isolate possono non avere il permesso di creare un dispositivo Metal e
+restituire `True False`, anche quando MPS funziona correttamente al di fuori
+dell'ambiente isolato.
 
-Smoke test MPS with one tiny training step:
+Esegui uno smoke test di MPS con un solo passaggio di training ridotto:
 
 ```bash
 python -m final_project.training \
@@ -349,7 +380,7 @@ python -m final_project.training \
   --decay-steps 1
 ```
 
-Generate from the smoke-test checkpoint:
+Genera testo a partire dal checkpoint dello smoke test:
 
 ```bash
 python -m final_project.generate \
@@ -361,10 +392,11 @@ python -m final_project.generate \
   --top-k 20
 ```
 
-### Controlled real training on an 8 GB Apple Silicon Mac
+### Training reale controllato su un Mac Apple Silicon con 8 GB
 
-Keep the complete processed corpus as the canonical source and create a
-separate, reproducible 1 GiB experiment for this compute-bounded run:
+Mantieni il corpus processato completo come fonte di riferimento e crea un
+esperimento separato e riproducibile da 1 GiB per questa esecuzione con risorse
+di calcolo limitate:
 
 ```bash
 .venv/bin/python -B -m final_project.prepare_subset \
@@ -376,42 +408,47 @@ separate, reproducible 1 GiB experiment for this compute-bounded run:
   --chunk-tokens 65536
 ```
 
-The command only reads `fineweb_edu` and writes a new 1 GiB local dataset. It
-selects non-overlapping token chunks in a deterministic order, so the same
-source dataset and seed reproduce the same experiment.
+Il comando legge soltanto `fineweb_edu` e scrive un nuovo dataset locale da
+1 GiB. Seleziona blocchi di token non sovrapposti in ordine deterministico:
+usando lo stesso dataset sorgente e lo stesso seed si ottiene lo stesso
+esperimento.
 
-#### Why the previous MPS run failed
+#### Perché la precedente esecuzione su MPS non ha funzionato
 
-The failure was in the backward pass, not in FineWeb-Edu or tokenization. Two
-MPS problems contributed. The monolithic `256 -> 50257` vocabulary projection
-returned a wrong hidden-state gradient direction even when its forward loss was
-correct. Separately, `optimizer.zero_grad(set_to_none=True)` made MPS allocate
-new leaf-gradient buffers and intermittently produced enormous gradients.
-Clipping those gradients to `1.0` limited their size but could not repair their
-direction, so the model drifted toward nearly the same high-frequency
-distribution for every prompt.
+Il problema si trovava nel backward pass, non in FineWeb-Edu o nella
+tokenization. Hanno contribuito due comportamenti di MPS. La proiezione unica del
+vocabolario `256 -> 50257` restituiva una direzione errata per il gradiente
+dell'hidden state, anche quando la loss del forward pass era corretta. Inoltre,
+`optimizer.zero_grad(set_to_none=True)` induceva MPS ad allocare nuovi buffer per
+i gradienti dei tensori foglia e produceva occasionalmente gradienti molto
+elevati. Il gradient clipping a `1.0` ne limitava la dimensione, ma non poteva
+correggerne la direzione. Di conseguenza, il modello tendeva a produrre quasi la
+stessa distribuzione di token ad alta frequenza per ogni prompt.
 
-The corrected path now:
+La procedura corretta:
 
-- projects the 50,257-token vocabulary in chunks of at most 32,768 entries;
-- allocates persistent MPS gradient buffers and clears them in place;
-- performs a discarded warm-up backward pass before training;
-- requires two identical MPS backward passes to agree with each other and with
-  a CPU reference before the first optimizer update;
-- rejects a raw gradient norm above `100`, retries the exact same batches up to
-  three times, and stops without applying an update if every attempt fails.
+- divide la proiezione del vocabolario da 50.257 token in blocchi da non più di
+  32.768 elementi;
+- alloca buffer persistenti per i gradienti MPS e li azzera senza ricrearli;
+- esegue prima del training un backward pass di warm-up il cui risultato viene
+  scartato;
+- prima del primo aggiornamento dell'optimizer richiede che due backward pass
+  MPS identici concordino tra loro e con un riferimento calcolato su CPU;
+- rifiuta una norma grezza del gradiente superiore a `100`, ripete gli stessi
+  batch fino a tre volte e si arresta senza applicare aggiornamenti se tutti i
+  tentativi falliscono.
 
-Do not resume one of the checkpoints produced by the affected training path.
-Gradient clipping hid the corruption inside their learned weights, so there is
-no reliable way to repair them. Start from random initialization with a new,
-previously unused checkpoint path.
+Non riprendere il training da checkpoint prodotti dalla procedura interessata
+dal problema. Il gradient clipping ha nascosto l'errore nei pesi appresi e non
+esiste un metodo affidabile per correggerli. Parti da un'inizializzazione casuale
+e usa un nuovo percorso di checkpoint mai utilizzato in precedenza.
 
-#### Complete 45,000-step run
+#### Esecuzione completa da 45.000 passaggi
 
-This is the single controlled command for the 17.7M-parameter model. At batch
-size 4, context 256, and eight accumulated micro-batches, it processes 8,192
-tokens per optimizer step and about 368.6 million token positions in 45,000
-steps:
+Questo è il comando controllato per il modello da 17,7 milioni di parametri. Con
+batch size 4, contesto 256 e otto micro-batch accumulati, elabora 8.192 token per
+aggiornamento dell'optimizer e circa 368,6 milioni di posizioni di token in
+45.000 passaggi:
 
 ```bash
 caffeinate -i .venv/bin/python -B -m final_project.training \
@@ -443,49 +480,56 @@ caffeinate -i .venv/bin/python -B -m final_project.training \
   --context-sensitivity-contexts 32
 ```
 
-Do not add `--mixed-precision` or `--compile-model` to this MPS recipe. They are
-optional features for other backends, not part of the verified path.
+Non aggiungere `--mixed-precision` o `--compile-model` a questa configurazione
+MPS. Sono funzionalità opzionali per altri backend e non fanno parte della
+procedura verificata.
 
-At startup, training runs the MPS repeatability and CPU-parity self-check. It
-will stop before step 1 if the gradients do not agree. During training,
-`grad_norm` is the raw norm measured before clipping; `grad_retries=0` is the
-normal result. A persistent integrity failure aborts the run before the
-optimizer can consume the bad gradient.
+All'avvio, il training esegue il controllo automatico di ripetibilità su MPS e
+di corrispondenza con la CPU. Se i gradienti non concordano, l'esecuzione si
+arresta prima del passaggio 1. Durante il training, `grad_norm` indica la norma
+grezza misurata prima del clipping; `grad_retries=0` è il risultato normale. Un
+errore di integrità persistente interrompe l'esecuzione prima che l'optimizer
+possa usare il gradiente errato.
 
-A complete 45,000-step MPS run passed the startup parity check and used zero
-retries at its saved evaluations. The best checkpoint occurred at step 42,750
-with validation loss `4.2894`; the latest checkpoint reached step 45,000 with
-validation loss `4.4524`, raw gradient norm `2.3872`, and
-`context_loss_gain=+6.1914`. The machine-readable result and a seeded sample
-are recorded in `docs/verified_runs/mps-18m-1g-45000.json`.
+Un'esecuzione MPS completa da 45.000 passaggi ha superato il controllo iniziale
+di corrispondenza e non ha richiesto tentativi aggiuntivi nelle valutazioni
+salvate. Il checkpoint migliore è stato ottenuto al passaggio 42.750 con
+validation loss `4.2894`. Il checkpoint più recente ha raggiunto il passaggio
+45.000 con validation loss `4.4524`, norma grezza del gradiente `2.3872` e
+`context_loss_gain=+6.1914`. Il risultato in formato strutturato e un esempio
+generato con seed definito sono registrati in
+`docs/verified_runs/mps-18m-1g-45000.json`.
 
-`context_js` remains an observational measure of how much the output
-distribution varies across contexts. A value near zero early in training is
-not, by itself, a failure: a new model normally learns broad token frequencies
-before it learns useful context. `context_loss_gain` is target-aware and equals
-the loss with shuffled contexts minus the loss with the correct contexts. A
-positive trend means the real contexts help predict their next tokens; a value
-near zero during the early phase is expected. Neither metric is used as a
-premature hard gate.
+`context_js` rimane una misura osservativa della variazione della distribuzione
+di output tra contesti diversi. Un valore vicino a zero nelle prime fasi del
+training non indica necessariamente un errore: un modello appena inizializzato
+apprende normalmente le frequenze generali dei token prima di usare in modo
+efficace il contesto. `context_loss_gain` tiene conto dei target ed equivale alla
+loss con contesti rimescolati meno la loss con i contesti corretti. Un andamento
+positivo indica che i contesti reali aiutano a prevedere i token successivi; un
+valore vicino a zero nella fase iniziale è previsto. Nessuna delle due metriche
+viene usata come criterio rigido di arresto nelle fasi iniziali.
 
-With GPT-style initialization, the first loss should be close to `ln(50257)`,
-approximately `10.82`, rather than tens or hundreds. Loss should then trend
-down over many evaluations; individual validation points can still fluctuate.
+Con l'inizializzazione in stile GPT, la prima loss dovrebbe essere vicina a
+`ln(50257)`, quindi circa `10.82`, non nell'ordine delle decine o delle
+centinaia. In seguito dovrebbe diminuire su più valutazioni, anche se i singoli
+valori di validation possono oscillare.
 
-No artificial delay is needed between steps. `caffeinate` prevents sleep and
-macOS already manages thermal throttling. Keep the Mac on a hard surface with
-clear airflow and stop only if macOS reports sustained thermal or memory
-pressure.
+Non servono pause artificiali tra i passaggi. `caffeinate` impedisce la
+sospensione e macOS gestisce già il thermal throttling. Mantieni il Mac su una
+superficie rigida che non ostacoli la ventilazione e interrompi l'esecuzione
+soltanto se macOS segnala una pressione termica o di memoria persistente.
 
-Training writes two atomic checkpoints:
+Il training scrive due checkpoint atomici:
 
 ```text
-checkpoints/learngpt-mps-18m-stable-1g-v2.pt         # best validation loss
-checkpoints/learngpt-mps-18m-stable-1g-v2-latest.pt  # latest evaluated step
+checkpoints/learngpt-mps-18m-stable-1g-v2.pt         # validation loss migliore
+checkpoints/learngpt-mps-18m-stable-1g-v2-latest.pt  # ultimo passaggio valutato
 ```
 
-If the terminal or Mac is interrupted, resume only this new, verified run. The
-step count remains the total target, not 45,000 additional steps:
+Se il Terminale o il Mac si interrompono, riprendi soltanto questa nuova
+esecuzione verificata. Il numero di passaggi rimane l'obiettivo totale, non
+indica altri 45.000 passaggi:
 
 ```bash
 caffeinate -i .venv/bin/python -B -m final_project.training \
@@ -496,7 +540,7 @@ caffeinate -i .venv/bin/python -B -m final_project.training \
   --training-steps 45000
 ```
 
-Generate reproducibly:
+Esegui una generazione riproducibile:
 
 ```bash
 .venv/bin/python -B -m final_project.generate \
@@ -509,54 +553,62 @@ Generate reproducibly:
   --seed 1337
 ```
 
-This run trains a small base language model. Its job is to continue prompts in
-plausible English; it is not yet an instruction-following assistant and will
-not reliably answer questions. Assistant-style behavior requires a later
-instruction-tuning stage on prompt-response examples.
+Questa esecuzione addestra un piccolo base language model. Il modello completa
+prompt in inglese in modo plausibile, ma non è un assistente addestrato a seguire
+istruzioni e non risponde in modo affidabile alle domande. Un comportamento da
+assistente richiede una fase successiva di instruction tuning su esempi composti
+da prompt e risposta.
 
-If MPS is not available in the current PyTorch runtime, fix the PyTorch/macOS
-environment before training with `--device mps`.
-
-</details>
-
-<details>
-<summary>NVIDIA CUDA training</summary>
-
-The Windows/CUDA path trains the same controlled model as MPS: context 256,
-embedding width 256, 4 heads, 6 blocks, the seeded 1 GiB subset, 8,192
-effective tokens per optimizer step, and a total target of 45,000 steps. CUDA
-uses FP16 autocast with a checkpointed GradScaler and zero MPS-style gradient
-retries. A transient FP16 overflow lowers the scale and repeats the exact same
-batch and step, up to eight times, before failing closed.
-
-The canonical CUDA command also enables `--fused-attention`, which projects Q,
-K, and V for every head together and runs one batched SDPA call per block.
-`--log-interval` prints inexpensive progress between the less frequent
-validation and checkpoint events controlled by `--eval-interval`.
-
-Follow the exact two-phase PowerShell procedure in
-[How to Train Runbook: Windows NVIDIA CUDA](docs/FINAL_TRAINING_RUNBOOK.md#6-windows-nvidia-cuda-smoke-gate-and-complete-run).
-It runs a 20-step gate with the real architecture, then resumes that same
-checkpoint to step 45,000. The section also includes 4, 6, and 8 GiB VRAM
-profiles and the matching generation command.
-
-For the larger measured NVIDIA profile and its throughput/VRAM evidence, read
-[CUDA training optimizations](CUDA_TRAINING_OPTIMIZATIONS.md).
-
-This backend path is code-reviewed and covered by CPU-side checkpoint tests,
-including GradScaler state and overflow backoff/retry. The final hardware gate
-must still run on the target NVIDIA machine before a long job is considered
-verified.
+Se MPS non è disponibile nel runtime PyTorch corrente, correggi la
+configurazione di PyTorch o macOS prima di avviare il training con
+`--device mps`.
 
 </details>
 
 <details>
-<summary>CPU fallback training</summary>
+<summary>Training con NVIDIA CUDA</summary>
 
-CPU always works when PyTorch is installed, but it is much slower for real
-training. Use this mainly for smoke tests or very small runs.
+La procedura Windows/CUDA addestra lo stesso modello controllato usato su MPS:
+contesto 256, dimensione dell'embedding 256, 4 head, 6 blocchi, sottoinsieme
+riproducibile da 1 GiB, 8.192 token effettivi per aggiornamento dell'optimizer e
+un obiettivo totale di 45.000 passaggi. CUDA usa l'autocast FP16 con un
+GradScaler salvato nel checkpoint e non applica i tentativi aggiuntivi previsti
+per i gradienti MPS. Un overflow FP16 temporaneo riduce la scala e ripete
+esattamente lo stesso batch e lo stesso passaggio fino a otto volte, quindi
+interrompe l'esecuzione se il problema persiste.
 
-Train:
+Il comando CUDA di riferimento abilita anche `--fused-attention`, che proietta
+insieme Q, K e V per tutte le head ed esegue una singola chiamata SDPA in batch
+per ogni blocco. `--log-interval` stampa informazioni essenziali
+sull'avanzamento tra gli eventi meno frequenti di validazione e salvataggio dei
+checkpoint, controllati da `--eval-interval`.
+
+Segui la procedura PowerShell in due fasi descritta in
+[Guida al training: Windows NVIDIA CUDA](docs/FINAL_TRAINING_RUNBOOK.md#6-windows-nvidia-cuda-smoke-gate-and-complete-run).
+La procedura esegue un controllo da 20 passaggi con l'architettura reale, quindi
+riprende lo stesso checkpoint fino al passaggio 45.000. La sezione comprende
+anche i profili per 4, 6 e 8 GiB di VRAM e il relativo comando di generazione.
+
+Per il profilo NVIDIA più grande sottoposto a misurazione e per i dati relativi
+a throughput e VRAM, consulta le
+[ottimizzazioni del training CUDA](CUDA_TRAINING_OPTIMIZATIONS.md).
+
+Questa procedura per CUDA è stata sottoposta a code review ed è coperta da test
+dei checkpoint eseguiti su CPU, compresi lo stato del GradScaler e la gestione
+di riduzione e ripetizione dopo un overflow. Prima di considerare verificato un
+training prolungato, è comunque necessario completare il controllo finale
+sull'hardware NVIDIA di destinazione.
+
+</details>
+
+<details>
+<summary>Training di ripiego su CPU</summary>
+
+Quando PyTorch è installato, la CPU è sempre disponibile, ma risulta molto più
+lenta per un training reale. Usa questa modalità soprattutto per smoke test o
+esecuzioni molto ridotte.
+
+Avvia il training:
 
 ```bash
 python -m final_project.training \
@@ -574,7 +626,7 @@ python -m final_project.training \
   --eval-batches 5
 ```
 
-Resume:
+Riprendi il training:
 
 ```bash
 python -m final_project.training \
@@ -585,7 +637,7 @@ python -m final_project.training \
   --training-steps 200
 ```
 
-Generate:
+Genera:
 
 ```bash
 python -m final_project.generate \
@@ -600,44 +652,51 @@ python -m final_project.generate \
 
 </details>
 
-The training CLI prints the Python and PyTorch runtime, selected device,
-dataset size, model and training configuration, validation loss, learning
-rate, raw pre-clipping gradient norm, retry count, target-aware context
-diagnostics, CUDA AMP retry/overflow counts, tokens per second, and estimated
-remaining time. `--log-interval N` prints lightweight step metrics every `N`
-updates without triggering validation or a checkpoint write.
+La CLI del training mostra i runtime Python e PyTorch, il dispositivo
+selezionato, la dimensione del dataset, la configurazione del modello e del
+training, la validation loss, il learning rate, la norma grezza del gradiente
+prima del clipping, il numero di tentativi, la diagnostica del contesto basata
+sui target, i conteggi di tentativi e overflow di CUDA AMP, i token elaborati al
+secondo e il tempo rimanente stimato. `--log-interval N` stampa metriche
+essenziali ogni `N` aggiornamenti senza avviare la validazione o scrivere un
+checkpoint.
 
-## Publishing Checkpoints
+## Pubblicazione dei checkpoint
 
-Checkpoints can become large, so they are ignored by Git. If you want to share a
-trained model publicly, prefer GitHub Release assets or an external model host
-instead of committing `.pt`, `.pth`, or `.ckpt` files to the repository.
+I checkpoint possono raggiungere dimensioni elevate e sono quindi ignorati da
+Git. Per condividere pubblicamente un modello addestrato, usa gli asset di una
+GitHub Release o una piattaforma esterna per modelli invece di aggiungere al
+repository file `.pt`, `.pth` o `.ckpt`.
 
-## Relationship To nanoGPT
+## Relazione con nanoGPT
 
-LearnGPT follows the local `../AndrejKarpathy/nanoGPT` implementation as its architectural
-and training reference:
+LearnGPT usa l'implementazione locale `../AndrejKarpathy/nanoGPT` come
+riferimento per architettura e training:
 
-- decoder-only Transformer architecture
-- learned token and position embeddings
-- causal self-attention
-- multi-head attention
-- pre-LayerNorm Transformer blocks
-- residual connections
-- MLP/feed-forward blocks with GELU
-- tied token-embedding and output weights with GPT-style initialization
-- AdamW training
-- gradient accumulation, clipping, warmup, and cosine learning-rate decay
-- train/validation evaluation, checkpointing, and autoregressive generation
+- architettura Transformer decoder-only;
+- embedding appresi per token e posizione;
+- causal self-attention;
+- multi-head attention;
+- blocchi Transformer pre-LayerNorm;
+- residual connection;
+- blocchi MLP/feed-forward con GELU;
+- pesi condivisi tra token embedding e output, con inizializzazione in stile
+  GPT;
+- training con AdamW;
+- gradient accumulation, clipping, warm-up e decadimento coseno del learning
+  rate;
+- valutazione su training e validation set, checkpoint e generazione
+  autoregressiva.
 
-The main difference is educational structure. nanoGPT batches Q/K/V into one
-projection and includes production-oriented features such as real DDP, MFU
-reporting, and pretrained GPT-2 import. LearnGPT uses separate Q/K/V projections
-and verbose names so every tensor shape is inspectable. It keeps mixed precision
-and `torch.compile` optional, explains DDP without launching it, and adds
-reproducible FineWeb-Edu subsets, MPS gradient-integrity checks, and target-aware
-context diagnostics for compute-bounded local experiments.
+La differenza principale riguarda la struttura didattica. nanoGPT raggruppa
+Q/K/V in un'unica proiezione e include funzioni orientate alla produzione, come
+DDP reale, calcolo dell'MFU e importazione dei pesi preaddestrati di GPT-2.
+LearnGPT usa proiezioni Q/K/V separate e nomi espliciti per rendere controllabile
+la forma di ogni tensore. Mantiene opzionali mixed precision e `torch.compile`,
+spiega DDP senza avviarlo e aggiunge sottoinsiemi riproducibili di FineWeb-Edu,
+controlli di integrità dei gradienti su MPS e diagnostica del contesto basata sui
+target per esperimenti locali con risorse di calcolo limitate.
 
-## License
+## Licenza
 
-LearnGPT is released under the [MIT License](LICENSE).
+LearnGPT è distribuito con [licenza MIT](LICENSE).

@@ -32,7 +32,7 @@
       "number": 3,
       "title": "Run the repository gates",
       "action": "Run the validator, regression tests, and the final self-contained lesson smoke test.",
-      "success": "Structure, English-only content, snapshot alignment, checkpoint logic, and the compact final pipeline all pass."
+      "success": "Structure, language-specific content, snapshot alignment, checkpoint logic, and the compact final pipeline all pass."
     },
     {
       "number": 4,

@@ -958,7 +958,19 @@ def check_markdown_basics(project_dir: Path, errors: list[str]) -> None:
                 "",
                 language_scan_text,
             )
-        if ITALIAN_PUBLIC_PATTERN.search(language_scan_text):
+        if name == "README.md":
+            required_italian_sections = (
+                "## LearnGPT: sito, corso e repository",
+                "## Avvio rapido: seguire il corso",
+                "## Come eseguire il training: procedura rapida",
+                "## Licenza",
+            )
+            for section in required_italian_sections:
+                if section not in text:
+                    errors.append(
+                        f"README.md must contain the Italian section: {section}"
+                    )
+        elif ITALIAN_PUBLIC_PATTERN.search(language_scan_text):
             errors.append(f"{name} must remain English-only")
 
     english_course = read_text(project_dir / "course_en.md")
